@@ -1,4 +1,11 @@
-import { differenceInDays } from 'date-fns'
+import {
+  differenceInDays,
+  startOfMonth,
+  endOfMonth,
+  startOfWeek,
+  endOfWeek,
+  eachDayOfInterval,
+} from 'date-fns'
 import type { Phase } from '@/types'
 
 // ------------------------------------------------------------
@@ -73,4 +80,41 @@ const INFOS_PAR_PHASE: Record<Phase, InfosPhase> = {
 
 export function getInfosPhase(phase: Phase): InfosPhase {
   return INFOS_PAR_PHASE[phase]
+}
+
+// ------------------------------------------------------------
+// Calendrier mensuel
+// ------------------------------------------------------------
+
+/**
+ * Génère la grille du calendrier (semaines × jours) pour un mois donné.
+ * mois : 0-indexé (0 = janvier), comme le constructeur Date standard.
+ */
+export function genererJoursCalendrier(annee: number, mois: number): Date[][] {
+  const debutMois = startOfMonth(new Date(annee, mois))
+  const finMois = endOfMonth(debutMois)
+  const debutGrille = startOfWeek(debutMois, { weekStartsOn: 1 }) // Semaine commence lundi
+  const finGrille = endOfWeek(finMois, { weekStartsOn: 1 })
+
+  const tousJours = eachDayOfInterval({ start: debutGrille, end: finGrille })
+
+  // Découpe en lignes de 7 jours
+  const semaines: Date[][] = []
+  for (let i = 0; i < tousJours.length; i += 7) {
+    semaines.push(tousJours.slice(i, i + 7))
+  }
+  return semaines
+}
+
+/**
+ * Retourne la phase et le jour du cycle pour une date donnée.
+ */
+export function getInfosJour(
+  date: Date,
+  lastStartDate: Date,
+  cycleLength: number
+): { phase: Phase; jourDuCycle: number } {
+  const jourDuCycle = getCycleDay(lastStartDate, date, cycleLength)
+  const phase = getPhaseForDay(jourDuCycle, cycleLength)
+  return { phase, jourDuCycle }
 }
