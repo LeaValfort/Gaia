@@ -1,9 +1,12 @@
-import { createClient } from '@supabase/supabase-js'
+import { createBrowserClient } from '@supabase/ssr'
 
-// Ces variables sont lues depuis le fichier .env à la racine du projet
-const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!
-const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
-
-// Client Supabase partagé dans toute l'application
-// À importer partout où on a besoin d'accéder à la base de données
-export const supabase = createClient(supabaseUrl, supabaseAnonKey)
+/**
+ * Client Supabase côté navigateur.
+ * Utilise createBrowserClient (@supabase/ssr) plutôt que createClient
+ * pour stocker le code PKCE dans les cookies (et non localStorage),
+ * ce qui permet au serveur de lire la session lors du callback OAuth.
+ */
+export const supabase = createBrowserClient(
+  process.env.NEXT_PUBLIC_SUPABASE_URL!,
+  process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
+)
