@@ -35,6 +35,7 @@ yarn-error.log*
 
 # Fichiers de credentials Google OAuth (ne jamais committer)
 client_secret*.json
+client_secret_432699611120-g0gbrg7gscgns6g09b0e19o8g8d0h7b0.apps.googleusercontent.com.json
 
 # vercel
 .vercel

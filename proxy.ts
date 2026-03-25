@@ -2,12 +2,12 @@ import { createServerClient } from '@supabase/ssr'
 import { NextResponse, type NextRequest } from 'next/server'
 
 /**
- * Middleware Next.js — s'exécute sur CHAQUE requête avant le rendu.
+ * Proxy Next.js 16 — s'exécute sur CHAQUE requête avant le rendu (Node.js runtime).
  * Deux rôles :
  * 1. Rafraîchir automatiquement la session Supabase (token JWT)
  * 2. Rediriger vers /login si l'utilisatrice n'est pas connectée
  */
-export async function middleware(request: NextRequest) {
+export async function proxy(request: NextRequest) {
   let reponse = NextResponse.next({
     request,
   })
@@ -55,7 +55,7 @@ export async function middleware(request: NextRequest) {
   return reponse
 }
 
-// Le middleware s'applique à toutes les routes sauf les assets statiques
+// Le proxy s'applique à toutes les routes sauf les assets statiques
 export const config = {
   matcher: [
     '/((?!_next/static|_next/image|favicon.ico|.*\\.(?:svg|png|jpg|jpeg|gif|webp)$).*)',
