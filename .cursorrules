@@ -1,0 +1,139 @@
+# .cursorrules — Mon Plan de Vie
+# Ces règles s'appliquent à CHAQUE réponse. Ne jamais les ignorer.
+
+## Contexte du projet
+Application web personnelle de suivi cycle / sport / alimentation.
+Stack : Next.js 14, TypeScript, Tailwind, shadcn/ui, Lucide React, Supabase.
+Lire SPECS.md pour le contexte complet avant chaque feature.
+
+## Mon niveau
+Je suis débutante en développement. Tu dois :
+- Expliquer ce que tu fais AVANT de coder (quels fichiers, pourquoi)
+- Attendre ma validation avant de créer plusieurs fichiers
+- Commenter le code complexe en français, simplement
+- Si je ne comprends pas, réexpliquer autrement sans jugement
+- Me signaler si je te demande quelque chose qui casserait les règles
+
+---
+
+## RÈGLES ABSOLUES — ne jamais enfreindre
+
+### Structure
+- 1 fichier = 1 responsabilité, maximum 150 lignes par fichier
+- Si un fichier dépasse 150 lignes → le découper sans que je le demande
+- Toute logique métier va dans `lib/` UNIQUEMENT, jamais dans les pages
+- Tous les appels Supabase vont dans `lib/db/` UNIQUEMENT, nulle part ailleurs
+- Les composants dans `components/` reçoivent des props, ils ne fetchent jamais
+
+### TypeScript
+- Toujours typer les props des composants
+- Tous les types partagés vivent dans `types/index.ts`
+- Pas de `any`, jamais
+- Les fonctions complexes ont un type de retour explicite
+
+### Nommage
+- Noms explicites et en français si c'est du domaine métier
+  - ✓ getCyclePhase(), WorkoutCard, DailyLogForm
+  - ✗ getData(), Card2, handleClick123
+- Composants React : PascalCase (ex: PhaseCard)
+- Fonctions et variables : camelCase (ex: getCycleDay)
+- Fichiers de composants : PascalCase.tsx
+- Fichiers de lib/hooks : camelCase.ts
+
+### UI
+- Utiliser shadcn/ui pour TOUS les éléments UI (boutons, inputs, selects, modales)
+- Utiliser Lucide React pour TOUTES les icônes
+- Jamais de style inline — toujours des classes Tailwind
+- Dark mode obligatoire sur chaque composant (classes dark: Tailwind)
+- Responsive obligatoire : mobile first, breakpoints sm/md/lg
+
+### Code
+- Jamais de console.log laissé dans le code final
+- Toujours gérer les erreurs (try/catch sur les appels BDD)
+- Toujours gérer les états loading et error dans les composants
+- Pas de magic numbers — utiliser des constantes nommées
+  - ✓ const MAX_PAIN_LEVEL = 10
+  - ✗ if (pain > 10)
+
+---
+
+## PROCESSUS — à suivre pour chaque feature
+
+### Avant de coder
+1. Lire SPECS.md pour comprendre le contexte
+2. Annoncer : "Je vais créer/modifier ces fichiers : [liste]. Voici pourquoi : [raison]."
+3. Attendre la validation si c'est une feature importante (3+ fichiers)
+
+### Pendant le développement
+- Coder une chose à la fois, pas tout d'un coup
+- Proposer d'abord le squelette (structure), puis le détail
+- Si une décision n'est pas claire dans SPECS.md → demander avant de supposer
+
+### Après avoir codé
+- Rappeler comment tester ce qui vient d'être créé
+- Signaler si quelque chose d'autre doit être mis à jour (types, BDD, etc.)
+
+---
+
+## EXEMPLES — bon vs mauvais
+
+### ✗ Mauvais (à ne jamais faire)
+```typescript
+// Dans app/cycle/page.tsx — TOUT mélangé
+export default async function CyclePage() {
+  const { data } = await supabase.from('daily_logs').select() // BDD dans la page
+  const phase = data[0].day > 4 ? 'folliculaire' : 'menstruation' // logique dans la page
+  return <div style={{ color: 'red' }}>{phase}</div> // style inline
+}
+```
+
+### ✓ Bon
+```typescript
+// lib/cycle.ts — logique isolée
+export function getPhaseForDay(day: number, cycleLength: number): Phase { ... }
+
+// lib/db/cycle.ts — BDD isolée
+export async function getDailyLogs(userId: string): Promise<DailyLog[]> { ... }
+
+// components/cycle/PhaseCard.tsx — UI isolée, reçoit des props
+interface PhaseCardProps { phase: Phase; day: number }
+export function PhaseCard({ phase, day }: PhaseCardProps) { ... }
+
+// app/cycle/page.tsx — orchestre uniquement
+const phase = getPhaseForDay(cycleDay, cycleLength)
+return <PhaseCard phase={phase} day={cycleDay} />
+```
+
+---
+
+## COMMANDES UTILES — à me rappeler si besoin
+
+```bash
+# Installer shadcn/ui
+npx shadcn@latest init
+
+# Ajouter un composant shadcn
+npx shadcn@latest add button
+npx shadcn@latest add calendar
+npx shadcn@latest add input
+
+# Installer les dépendances du projet
+npm install lucide-react date-fns recharts next-themes @supabase/supabase-js
+
+# Démarrer en local
+npm run dev
+
+# Vérifier les types TypeScript
+npx tsc --noEmit
+```
+
+---
+
+## PHRASES UTILES — je peux les utiliser à tout moment
+
+- "Explique-moi ce fichier ligne par ligne simplement."
+- "Ce code respecte-t-il nos règles ? Sinon, refactorise-le."
+- "Avant de coder, dis-moi exactement ce que tu vas créer et pourquoi."
+- "Je ne comprends pas [X]. Réexplique avec une analogie simple."
+- "Quel est l'ordre logique pour coder cette feature ?"
+

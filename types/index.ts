@@ -1,0 +1,146 @@
+// ============================================================
+// Tous les types TypeScript du projet Gaia
+// Ce fichier est la source de vérité pour tous les types partagés
+// ============================================================
+
+// ------------------------------------------------------------
+// Cycle
+// ------------------------------------------------------------
+
+/** Les 4 phases du cycle menstruel */
+export type Phase = 'menstruation' | 'folliculaire' | 'ovulation' | 'luteale'
+
+/** Un cycle menstruel enregistré en base */
+export interface Cycle {
+  id: string
+  user_id: string
+  start_date: string        // format ISO : "2026-03-01"
+  cycle_length: number      // durée en jours, défaut 26
+  notes: string | null
+  created_at: string
+}
+
+/** Le journal quotidien (énergie, douleur, humeur) */
+export interface DailyLog {
+  id: string
+  user_id: string
+  date: string              // format ISO : "2026-03-25"
+  cycle_day: number | null  // jour dans le cycle (1 à N)
+  phase: Phase | null
+  energy: number | null     // 1 à 5
+  pain: number | null       // 0 à 10
+  mood: string | null
+  notes: string | null
+  created_at: string
+}
+
+// ------------------------------------------------------------
+// Sport
+// ------------------------------------------------------------
+
+/** Types de séances de sport possibles */
+export type TypeSeance = 'muscu' | 'natation' | 'yoga' | 'escalade' | 'autre'
+
+/** Lieu d'entraînement */
+export type Lieu = 'maison' | 'salle'
+
+/** Une séance de sport */
+export interface Workout {
+  id: string
+  user_id: string
+  date: string
+  type: TypeSeance
+  duration_min: number | null
+  location: Lieu | null
+  feeling: number | null    // ressenti 1 à 5
+  notes: string | null
+  created_at: string
+}
+
+/** Une série d'exercice de musculation */
+export interface WorkoutSet {
+  id: string
+  workout_id: string
+  exercise_name: string
+  sets: number | null
+  reps: number | null
+  weight_kg: number | null
+}
+
+/** Détail d'une séance de natation */
+export interface SwimLog {
+  id: string
+  workout_id: string
+  level: number | null          // niveau 1 à 4
+  total_distance_m: number | null
+  crawl_m: number | null
+  breaststroke_m: number | null
+  block_structure: string | null // ex: "5x(50B+150C)"
+}
+
+// ------------------------------------------------------------
+// Alimentation
+// ------------------------------------------------------------
+
+/** Checklist anti-inflammatoire de la semaine */
+export interface NutritionLog {
+  id: string
+  user_id: string
+  week_start: string            // lundi de la semaine, format ISO
+  checklist: Record<string, boolean>  // { "omega3": true, "legumes": false, ... }
+  batch_done: boolean
+  notes: string | null
+  created_at: string
+}
+
+// ------------------------------------------------------------
+// To-do
+// ------------------------------------------------------------
+
+/** Une tâche de la to-do liste quotidienne */
+export interface Todo {
+  id: string
+  user_id: string
+  date: string
+  text: string
+  done: boolean
+  auto: boolean               // true = générée automatiquement par l'appli
+  created_at: string
+}
+
+// ------------------------------------------------------------
+// Paramètres utilisateur
+// ------------------------------------------------------------
+
+/** Thème de l'interface */
+export type Theme = 'light' | 'dark' | 'system'
+
+/** Préférences et paramètres de l'utilisatrice */
+export interface UserPreferences {
+  id: string
+  user_id: string
+  cycle_length: number          // durée du cycle, défaut 26
+  last_cycle_start: string | null
+  food_likes: string[]
+  food_dislikes: string[]
+  food_allergies: string[]
+  cook_time_minutes: number     // temps de cuisine dispo, défaut 30
+  theme: Theme
+  notifications: boolean
+}
+
+// ------------------------------------------------------------
+// Constantes métier
+// ------------------------------------------------------------
+
+/** Valeurs min/max pour les saisies utilisateur */
+export const ENERGY_MIN = 1
+export const ENERGY_MAX = 5
+export const PAIN_MIN = 0
+export const PAIN_MAX = 10
+export const FEELING_MIN = 1
+export const FEELING_MAX = 5
+export const SWIM_LEVEL_MIN = 1
+export const SWIM_LEVEL_MAX = 4
+export const DEFAULT_CYCLE_LENGTH = 26
+export const DEFAULT_COOK_TIME = 30
