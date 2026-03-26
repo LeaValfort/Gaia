@@ -9,6 +9,7 @@ import { getNutritionLogSemaine } from '@/lib/db/nutrition'
 import { getCycleDay, getPhaseForDay, getInfosPhase } from '@/lib/cycle'
 import { getRecommandationAlim, creerChecklistVide } from '@/lib/nutrition'
 import { CheckCircle2 } from 'lucide-react'
+import { SuggestionsPlats } from '@/components/alimentation/SuggestionsPlats'
 import type { Phase } from '@/types'
 
 export default async function PageAlimentation() {
@@ -65,6 +66,18 @@ export default async function PageAlimentation() {
               ))}
             </ul>
           </div>
+        )}
+
+        {/* Suggestions IA — uniquement si la phase est connue */}
+        {phase && (
+          <SuggestionsPlats
+            phase={phase}
+            conseilAlim={getRecommandationAlim(phase).details.join('. ')}
+            likes={prefs?.food_likes ?? []}
+            dislikes={prefs?.food_dislikes ?? []}
+            allergies={prefs?.food_allergies ?? []}
+            tempsCuisine={prefs?.cook_time_minutes ?? 30}
+          />
         )}
 
         {/* Checklist hebdomadaire + batch cooking */}
