@@ -2,6 +2,7 @@ import { format } from 'date-fns'
 import { fr } from 'date-fns/locale'
 import { Settings } from 'lucide-react'
 import Link from 'next/link'
+import { redirect } from 'next/navigation'
 import { creerClientServeur } from '@/lib/supabase-server'
 import { getPreferencesUtilisateur } from '@/lib/db/cycle'
 import { getDailyLogParDate } from '@/lib/db/dailyLog'
@@ -13,7 +14,14 @@ import { DailyLogForm } from '@/components/cycle/DailyLogForm'
 import { TodoList } from '@/components/todo/TodoList'
 import { Button } from '@/components/ui/button'
 
-export default async function PageAujourdhui() {
+export default async function PageAujourdhui({
+  searchParams,
+}: {
+  searchParams: Promise<{ code?: string }>
+}) {
+  // Si l'URL contient encore ?code= (résidu du callback OAuth), on nettoie l'URL
+  const params = await searchParams
+  if (params.code) redirect('/')
   const supabase = await creerClientServeur()
   const { data: { user } } = await supabase.auth.getUser()
 
