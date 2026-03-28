@@ -1,7 +1,8 @@
-import type { Phase } from '@/types'
+import type { Phase, TypeYoga } from '@/types'
 
 // ------------------------------------------------------------
-// Niveaux de natation (1 → 4)
+// Niveaux de natation (1 → 5) — version allégée pour les composants legacy
+// La version complète avec critères est dans lib/data/swimming.ts
 // ------------------------------------------------------------
 
 export interface NiveauNatation {
@@ -11,26 +12,11 @@ export interface NiveauNatation {
 }
 
 export const NIVEAUX_NATATION: Record<number, NiveauNatation> = {
-  1: {
-    label: 'Départ',
-    description: '5 × (50m brasse + 150m crawl)',
-    distanceTotale: 1000,
-  },
-  2: {
-    label: 'Étape 1',
-    description: '5 × (25m brasse + 175m crawl)',
-    distanceTotale: 1100,
-  },
-  3: {
-    label: 'Étape 2',
-    description: '5 × (200m crawl + 30s pause)',
-    distanceTotale: 1300,
-  },
-  4: {
-    label: 'Étape 3',
-    description: '3 × (400m crawl + 1min pause)',
-    distanceTotale: 1600,
-  },
+  1: { label: 'Départ',              description: '5×(50B + 150C)',       distanceTotale: 1000 },
+  2: { label: 'Étape 1',             description: '5×(25B + 175C)',       distanceTotale: 1100 },
+  3: { label: 'Étape 2',             description: '5×200C + 30s pause',   distanceTotale: 1300 },
+  4: { label: 'Étape 3',             description: '3×400C + 1min pause',  distanceTotale: 1600 },
+  5: { label: 'Étape 4 — Objectif',  description: '800C+100B+8×50C+300C', distanceTotale: 2000 },
 }
 
 export function getNiveauNatation(level: number): NiveauNatation {
@@ -39,9 +25,10 @@ export function getNiveauNatation(level: number): NiveauNatation {
 
 // ------------------------------------------------------------
 // Yoga selon la phase du cycle
+// TypeYoga est défini dans types/index.ts
 // ------------------------------------------------------------
 
-export type TypeYoga = 'yin' | 'flow' | 'power'
+export type { TypeYoga }
 
 interface ConseilYoga {
   typeRecommande: TypeYoga

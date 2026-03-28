@@ -159,3 +159,28 @@ CREATE POLICY "Accès personnel swim_logs" ON swim_logs
   FOR ALL USING (
     EXISTS (SELECT 1 FROM workouts WHERE workouts.id = swim_logs.workout_id AND workouts.user_id = auth.uid())
   );
+
+-- ============================================================
+-- TABLE : exercises (catalogue de référence)
+-- Liste statique des exercices disponibles dans l'appli.
+-- Pas de user_id : catalogue partagé, lecture seule par tous.
+-- ============================================================
+CREATE TABLE IF NOT EXISTS exercises (
+  id           uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+  name         text NOT NULL,
+  muscles      text[],
+  category     text,           -- 'compound' | 'isolation' | 'gainage'
+  seance       text,           -- 'full_body' | 'upper_lower'
+  location     text,           -- 'maison' | 'salle' | 'both'
+  sets_default integer,
+  reps_default integer,
+  rest_seconds integer,
+  description  text,
+  tip          text,
+  progression  text
+);
+
+ALTER TABLE exercises ENABLE ROW LEVEL SECURITY;
+-- Lisible par toutes les utilisatrices authentifiées (catalogue public)
+CREATE POLICY "Exercises lisibles" ON exercises
+  FOR SELECT USING (auth.role() = 'authenticated');

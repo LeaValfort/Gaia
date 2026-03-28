@@ -141,6 +141,79 @@ export const PAIN_MAX = 10
 export const FEELING_MIN = 1
 export const FEELING_MAX = 5
 export const SWIM_LEVEL_MIN = 1
-export const SWIM_LEVEL_MAX = 4
+export const SWIM_LEVEL_MAX = 5
 export const DEFAULT_CYCLE_LENGTH = 26
 export const DEFAULT_COOK_TIME = 30
+
+// ------------------------------------------------------------
+// Sport — exercices muscu
+// ------------------------------------------------------------
+
+/** Lieu disponible pour un exercice (maison, salle, ou les deux) */
+export type LieuDisponibilite = Lieu | 'both'
+
+/** Type de séance de musculation */
+export type TypeSeanceMuscle = 'full_body' | 'upper_lower'
+
+/** Catégorie d'exercice */
+export type CategorieExercice = 'compound' | 'isolation' | 'gainage'
+
+/** Unité pour les répétitions (reps ou secondes pour le gainage) */
+export type UniteRep = 'reps' | 'secondes'
+
+/** Un exercice du catalogue */
+export interface Exercice {
+  nom: string
+  muscles: string[]
+  categorie: CategorieExercice
+  seance: TypeSeanceMuscle
+  lieu: LieuDisponibilite
+  seriesDefaut: number
+  repsDefaut: number
+  unite: UniteRep
+  reposSecondes: number
+  description: string
+  descriptionSalle?: string  // différente si l'équipement salle change
+  conseil: string
+  progression: string
+}
+
+// ------------------------------------------------------------
+// Sport — natation détaillée
+// ------------------------------------------------------------
+
+/** Un niveau natation avec sa structure complète */
+export interface NiveauNatationDetail {
+  level: number
+  nom: string
+  description: string
+  structure: string
+  distanceTotale: number
+  crawlM: number
+  brasseM: number
+  critere: string
+}
+
+// ------------------------------------------------------------
+// Sport — yoga
+// ------------------------------------------------------------
+
+/** Type de séance yoga */
+export type TypeYoga = 'yin' | 'flow' | 'power'
+
+/** Une posture dans une séance yoga */
+export interface PostureYoga {
+  nom: string
+  dureeSec: number
+  benefice: string
+}
+
+/** Une séance yoga complète avec ses postures */
+export interface SeanceYoga {
+  type: TypeYoga
+  nom: string
+  phaseCycle: Phase[]
+  dureeMin: number
+  description: string
+  postures: PostureYoga[]
+}
