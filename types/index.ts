@@ -187,12 +187,17 @@ export interface NiveauNatationDetail {
   level: number
   nom: string
   description: string
-  structure: string
-  distanceTotale: number
+  structure: string          // set principal uniquement
+  exerciceTechnique: string  // drill spécifique au niveau
+  distanceTotale: number     // échauffement + drill + set principal
   crawlM: number
   brasseM: number
   critere: string
 }
+
+/** Échauffement commun à tous les niveaux (150 m) */
+export const ECHAUFFEMENT_NATATION = '2L brasse lente (50m) + 2L crawl lent (50m) + 2L dos (50m)'
+export const ECHAUFFEMENT_M = 150
 
 // ------------------------------------------------------------
 // Sport — yoga

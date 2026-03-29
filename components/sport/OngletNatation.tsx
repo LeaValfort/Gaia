@@ -8,7 +8,7 @@ import { Input } from '@/components/ui/input'
 import { Textarea } from '@/components/ui/textarea'
 import { loggerSeanceNatation } from '@/lib/db/workouts'
 import { NIVEAUX_DETAIL, getNiveauDetail } from '@/lib/data/swimming'
-import { SWIM_LEVEL_MIN, SWIM_LEVEL_MAX } from '@/types'
+import { SWIM_LEVEL_MIN, SWIM_LEVEL_MAX, ECHAUFFEMENT_NATATION } from '@/types'
 import { format } from 'date-fns'
 
 export function OngletNatation() {
@@ -78,15 +78,34 @@ export function OngletNatation() {
       </div>
 
       {/* Détail du niveau sélectionné */}
-      <div className="rounded-xl border border-neutral-200 dark:border-neutral-700 bg-neutral-50 dark:bg-neutral-800/50 p-4 flex flex-col gap-2">
+      <div className="rounded-xl border border-neutral-200 dark:border-neutral-700 bg-neutral-50 dark:bg-neutral-800/50 p-4 flex flex-col gap-3">
         <p className="text-xs font-semibold text-neutral-400 uppercase tracking-wide">Structure de la séance</p>
-        <p className="text-lg font-mono font-bold text-neutral-900 dark:text-neutral-50">{niveauInfo.structure}</p>
-        <div className="flex gap-4 text-sm text-neutral-500 dark:text-neutral-400">
+
+        {/* Échauffement — commun à tous les niveaux */}
+        <div className="flex items-start gap-2.5">
+          <span className="text-[11px] font-bold uppercase tracking-wide text-neutral-400 w-16 shrink-0 mt-0.5">Éch.</span>
+          <span className="text-sm text-neutral-600 dark:text-neutral-300">{ECHAUFFEMENT_NATATION} <span className="font-semibold">= 150 m</span></span>
+        </div>
+
+        {/* Exercice technique — spécifique au niveau */}
+        <div className="flex items-start gap-2.5">
+          <span className="text-[11px] font-bold uppercase tracking-wide text-neutral-400 w-16 shrink-0 mt-0.5">Drill</span>
+          <span className="text-sm text-neutral-600 dark:text-neutral-300">{niveauInfo.exerciceTechnique} <span className="font-semibold">= 100 m</span></span>
+        </div>
+
+        {/* Set principal */}
+        <div className="flex items-start gap-2.5">
+          <span className="text-[11px] font-bold uppercase tracking-wide text-neutral-400 w-16 shrink-0 mt-0.5">Set</span>
+          <span className="text-lg font-mono font-bold text-neutral-900 dark:text-neutral-50">{niveauInfo.structure}</span>
+        </div>
+
+        {/* Distances + critère */}
+        <div className="flex flex-wrap gap-3 text-sm text-neutral-500 dark:text-neutral-400 mt-1">
           <span>🏊 Crawl : {niveauInfo.crawlM} m</span>
           <span>🤽 Brasse : {niveauInfo.brasseM} m</span>
           <span>📏 Total : {niveauInfo.distanceTotale} m</span>
         </div>
-        <div className="flex items-start gap-2 mt-1 text-xs text-neutral-500 dark:text-neutral-400">
+        <div className="flex items-start gap-2 text-xs text-neutral-500 dark:text-neutral-400">
           <ChevronRight size={13} className="shrink-0 mt-0.5" />
           <span><span className="font-medium">Critère niveau suivant :</span> {niveauInfo.critere}</span>
         </div>

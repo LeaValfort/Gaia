@@ -12,11 +12,11 @@ export interface NiveauNatation {
 }
 
 export const NIVEAUX_NATATION: Record<number, NiveauNatation> = {
-  1: { label: 'Départ',              description: '5×(50B + 150C)',       distanceTotale: 1000 },
-  2: { label: 'Étape 1',             description: '5×(25B + 175C)',       distanceTotale: 1100 },
-  3: { label: 'Étape 2',             description: '5×200C + 30s pause',   distanceTotale: 1300 },
-  4: { label: 'Étape 3',             description: '3×400C + 1min pause',  distanceTotale: 1600 },
-  5: { label: 'Étape 4 — Objectif',  description: '800C+100B+8×50C+300C', distanceTotale: 2000 },
+  1: { label: 'Départ',              description: 'Éch.+Bras seul+5×(50B+150C)', distanceTotale: 1250 },
+  2: { label: 'Étape 1',             description: 'Éch.+Catch-up+5×(25B+175C)',  distanceTotale: 1350 },
+  3: { label: 'Étape 2',             description: 'Éch.+Bilatérale+5×200C+30s',  distanceTotale: 1550 },
+  4: { label: 'Étape 3',             description: 'Éch.+Jambes+3×400C+1min',     distanceTotale: 1850 },
+  5: { label: 'Étape 4 — Objectif',  description: 'Éch.+Jambes+sprints+2000m+',  distanceTotale: 2250 },
 }
 
 export function getNiveauNatation(level: number): NiveauNatation {
