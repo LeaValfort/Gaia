@@ -5,6 +5,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { OngletMuscu } from '@/components/sport/OngletMuscu'
 import { OngletNatation } from '@/components/sport/OngletNatation'
 import { OngletYoga } from '@/components/sport/OngletYoga'
+import { ActivityLog } from '@/components/sport/ActivityLog'
 import { getPreferencesUtilisateur } from '@/lib/db/cycle'
 import { getSeancesDuJour } from '@/lib/db/workouts'
 import { getCycleDay, getPhaseForDay, getInfosPhase } from '@/lib/cycle'
@@ -43,16 +44,11 @@ export default async function PageSport() {
         )}
 
         <Tabs defaultValue="muscu">
-          <TabsList className="w-full sm:w-auto">
-            <TabsTrigger value="muscu" className="flex-1 sm:flex-none">
-              Muscu {seances.muscu && '✏️'}
-            </TabsTrigger>
-            <TabsTrigger value="natation" className="flex-1 sm:flex-none">
-              Natation {seances.natation && '✏️'}
-            </TabsTrigger>
-            <TabsTrigger value="yoga" className="flex-1 sm:flex-none">
-              Yoga {seances.yoga && '✏️'}
-            </TabsTrigger>
+          <TabsList className="w-full grid grid-cols-4">
+            <TabsTrigger value="muscu">Muscu {seances.muscu && '✏️'}</TabsTrigger>
+            <TabsTrigger value="natation">Natation {seances.natation && '✏️'}</TabsTrigger>
+            <TabsTrigger value="yoga">Yoga {seances.yoga && '✏️'}</TabsTrigger>
+            <TabsTrigger value="autre">Autre sport</TabsTrigger>
           </TabsList>
 
           <div className="mt-6 rounded-2xl border border-neutral-200 dark:border-neutral-800 bg-white dark:bg-neutral-900 p-5">
@@ -64,6 +60,9 @@ export default async function PageSport() {
             </TabsContent>
             <TabsContent value="yoga">
               <OngletYoga phase={phase} seanceExistante={seances.yoga} />
+            </TabsContent>
+            <TabsContent value="autre">
+              <ActivityLog />
             </TabsContent>
           </div>
         </Tabs>

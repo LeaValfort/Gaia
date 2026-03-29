@@ -190,6 +190,40 @@ CREATE POLICY "Exercises lisibles" ON exercises
 -- À exécuter dans l'éditeur SQL Supabase.
 -- ADD COLUMN IF NOT EXISTS = sûr à relancer plusieurs fois.
 -- ============================================================
+-- ============================================================
+-- TABLE : activity_logs (autres sports : escalade, vélo, course...)
+-- ============================================================
+CREATE TABLE IF NOT EXISTS activity_logs (
+  id               uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+  user_id          uuid REFERENCES auth.users NOT NULL,
+  date             date NOT NULL,
+  sport_type       text NOT NULL,
+  sport_name       text,
+  duration_min     integer,
+  distance_km      decimal,
+  elevation_m      integer,
+  speed_kmh        decimal,
+  pace_min_km      decimal,
+  calories         integer,
+  heart_rate_avg   integer,
+  heart_rate_max   integer,
+  difficulty       text,
+  routes_completed integer,
+  sport_style      text,
+  repetitions      integer,
+  feeling          text,
+  notes            text,
+  created_at       timestamptz DEFAULT now()
+);
+ALTER TABLE activity_logs ENABLE ROW LEVEL SECURITY;
+CREATE POLICY "Activites personnelles" ON activity_logs
+  FOR ALL USING (auth.uid() = user_id);
+
+-- ============================================================
+-- MIGRATION : colonnes journal enrichi dans daily_logs
+-- À exécuter dans l'éditeur SQL Supabase.
+-- ADD COLUMN IF NOT EXISTS = sûr à relancer plusieurs fois.
+-- ============================================================
 ALTER TABLE daily_logs ADD COLUMN IF NOT EXISTS emotions      text[];
 ALTER TABLE daily_logs ADD COLUMN IF NOT EXISTS symptoms      text[];
 ALTER TABLE daily_logs ADD COLUMN IF NOT EXISTS libido        text;

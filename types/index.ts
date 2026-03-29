@@ -103,6 +103,55 @@ export interface SwimLog {
   block_structure: string | null // ex: "5x(50B+150C)"
 }
 
+// ------------------------------------------------------------
+// Autres activités sportives (escalade, vélo, course...)
+// ------------------------------------------------------------
+
+/** Type d'activité pour l'onglet "Autre sport" */
+export type TypeActivite = 'escalade' | 'velo' | 'course' | 'pilates' | 'danse' | 'rando' | 'autre'
+
+/** Une entrée dans activity_logs */
+export interface ActivityLog {
+  id: string
+  user_id: string
+  date: string
+  sport_type: TypeActivite
+  sport_name: string | null
+  duration_min: number | null
+  distance_km: number | null
+  elevation_m: number | null
+  speed_kmh: number | null
+  pace_min_km: number | null
+  calories: number | null
+  heart_rate_avg: number | null
+  heart_rate_max: number | null
+  difficulty: string | null
+  routes_completed: number | null
+  sport_style: string | null
+  repetitions: number | null
+  feeling: string | null
+  notes: string | null
+  created_at: string
+}
+
+/** Données du formulaire (toutes en string, converties à la sauvegarde) */
+export interface ActivityLogFormData {
+  sport_type: TypeActivite | null
+  sport_name: string
+  duration_min: string
+  distance_km: string
+  elevation_m: string
+  calories: string
+  heart_rate_avg: string
+  heart_rate_max: string
+  difficulty: string
+  routes_completed: string
+  sport_style: string
+  repetitions: string
+  feeling: string
+  notes: string
+}
+
 // Types pour la lecture et modification des séances existantes
 export interface WorkoutMuscuComplet {
   id: string
