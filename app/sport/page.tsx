@@ -6,6 +6,7 @@ import { OngletMuscu } from '@/components/sport/OngletMuscu'
 import { OngletNatation } from '@/components/sport/OngletNatation'
 import { OngletYoga } from '@/components/sport/OngletYoga'
 import { getPreferencesUtilisateur } from '@/lib/db/cycle'
+import { getSeancesDuJour } from '@/lib/db/workouts'
 import { getCycleDay, getPhaseForDay, getInfosPhase } from '@/lib/cycle'
 import { PhaseCard } from '@/components/cycle/PhaseCard'
 import type { Phase } from '@/types'
@@ -14,7 +15,8 @@ export default async function PageSport() {
   const prefs = await getPreferencesUtilisateur()
 
   const aujourdhui = new Date()
-  const dateAffichee = format(aujourdhui, "EEEE d MMMM", { locale: fr })
+  const date = format(aujourdhui, 'yyyy-MM-dd')
+  const dateAffichee = format(aujourdhui, 'EEEE d MMMM', { locale: fr })
 
   let phase: Phase | null = null
   let jourDuCycle: number | null = null
@@ -22,6 +24,9 @@ export default async function PageSport() {
     jourDuCycle = getCycleDay(new Date(prefs.last_cycle_start), aujourdhui, prefs.cycle_length)
     phase = getPhaseForDay(jourDuCycle, prefs.cycle_length)
   }
+
+  // Récupère les séances déjà enregistrées aujourd'hui (pour le mode édition)
+  const seances = await getSeancesDuJour(date)
 
   return (
     <>
@@ -33,28 +38,32 @@ export default async function PageSport() {
           <p className="text-sm text-neutral-500 dark:text-neutral-400 mt-1 capitalize">{dateAffichee}</p>
         </div>
 
-        {/* Rappel de la phase si disponible */}
         {phase && jourDuCycle && (
           <PhaseCard phase={phase} jourDuCycle={jourDuCycle} infos={getInfosPhase(phase)} />
         )}
 
-        {/* Onglets */}
         <Tabs defaultValue="muscu">
           <TabsList className="w-full sm:w-auto">
-            <TabsTrigger value="muscu" className="flex-1 sm:flex-none">Muscu</TabsTrigger>
-            <TabsTrigger value="natation" className="flex-1 sm:flex-none">Natation</TabsTrigger>
-            <TabsTrigger value="yoga" className="flex-1 sm:flex-none">Yoga</TabsTrigger>
+            <TabsTrigger value="muscu" className="flex-1 sm:flex-none">
+              Muscu {seances.muscu && '✏️'}
+            </TabsTrigger>
+            <TabsTrigger value="natation" className="flex-1 sm:flex-none">
+              Natation {seances.natation && '✏️'}
+            </TabsTrigger>
+            <TabsTrigger value="yoga" className="flex-1 sm:flex-none">
+              Yoga {seances.yoga && '✏️'}
+            </TabsTrigger>
           </TabsList>
 
           <div className="mt-6 rounded-2xl border border-neutral-200 dark:border-neutral-800 bg-white dark:bg-neutral-900 p-5">
             <TabsContent value="muscu">
-              <OngletMuscu />
+              <OngletMuscu seanceExistante={seances.muscu} />
             </TabsContent>
             <TabsContent value="natation">
-              <OngletNatation />
+              <OngletNatation seanceExistante={seances.natation} />
             </TabsContent>
             <TabsContent value="yoga">
-              <OngletYoga phase={phase} />
+              <OngletYoga phase={phase} seanceExistante={seances.yoga} />
             </TabsContent>
           </div>
         </Tabs>

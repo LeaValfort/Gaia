@@ -1,7 +1,7 @@
 'use server'
 
 import { creerClientServeur } from '@/lib/supabase-server'
-import type { Lieu } from '@/types'
+import type { Lieu, WorkoutMuscuComplet, WorkoutNatationComplet, WorkoutYogaComplet } from '@/types'
 
 interface ExerciceData {
   nom: string
@@ -16,6 +16,39 @@ interface SeanceNatationData {
   crawlM: number
   breaststrokeM: number
   blockStructure: string
+}
+
+/**
+ * Récupère les séances (muscu, natation, yoga) enregistrées à une date donnée.
+ * Retourne null pour chaque type si aucune séance n'existe ce jour-là.
+ */
+export async function getSeancesDuJour(date: string): Promise<{
+  muscu: WorkoutMuscuComplet | null
+  natation: WorkoutNatationComplet | null
+  yoga: WorkoutYogaComplet | null
+}> {
+  const supabase = await creerClientServeur()
+  const { data: { user } } = await supabase.auth.getUser()
+  if (!user) return { muscu: null, natation: null, yoga: null }
+
+  const [rMuscu, rNat, rYoga] = await Promise.all([
+    supabase.from('workouts').select('*, workout_sets(*)').eq('user_id', user.id).eq('date', date).eq('type', 'muscu').order('created_at', { ascending: false }).limit(1),
+    supabase.from('workouts').select('*, swim_logs(*)').eq('user_id', user.id).eq('date', date).eq('type', 'natation').order('created_at', { ascending: false }).limit(1),
+    supabase.from('workouts').select('*').eq('user_id', user.id).eq('date', date).eq('type', 'yoga').order('created_at', { ascending: false }).limit(1),
+  ])
+
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const raw = (r: any) => r.data?.[0] ?? null
+
+  const muscuRaw = raw(rMuscu)
+  const natRaw = raw(rNat)
+  const yogaRaw = raw(rYoga)
+
+  return {
+    muscu: muscuRaw ? { id: muscuRaw.id, date: muscuRaw.date, location: muscuRaw.location, feeling: muscuRaw.feeling, notes: muscuRaw.notes, sets: muscuRaw.workout_sets ?? [] } : null,
+    natation: natRaw && natRaw.swim_logs?.[0] ? { id: natRaw.id, date: natRaw.date, feeling: natRaw.feeling, notes: natRaw.notes, swim: natRaw.swim_logs[0] } : null,
+    yoga: yogaRaw ? { id: yogaRaw.id, date: yogaRaw.date, duration_min: yogaRaw.duration_min, feeling: yogaRaw.feeling, notes: yogaRaw.notes } : null,
+  }
 }
 
 /**

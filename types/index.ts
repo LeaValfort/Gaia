@@ -103,6 +103,38 @@ export interface SwimLog {
   block_structure: string | null // ex: "5x(50B+150C)"
 }
 
+// Types pour la lecture et modification des séances existantes
+export interface WorkoutMuscuComplet {
+  id: string
+  date: string
+  location: Lieu | null
+  feeling: number | null
+  notes: string | null
+  sets: WorkoutSet[]
+}
+
+export interface WorkoutNatationComplet {
+  id: string
+  date: string
+  feeling: number | null
+  notes: string | null
+  swim: {
+    level: number
+    total_distance_m: number | null
+    crawl_m: number | null
+    breaststroke_m: number | null
+    block_structure: string | null
+  }
+}
+
+export interface WorkoutYogaComplet {
+  id: string
+  date: string
+  duration_min: number | null
+  feeling: number | null
+  notes: string | null  // format : "[type] notes optionnel"
+}
+
 // ------------------------------------------------------------
 // Alimentation
 // ------------------------------------------------------------
