@@ -1,45 +1,68 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
-import { Plus, Trash2 } from 'lucide-react'
+import { Plus } from 'lucide-react'
 import { Button } from '@/components/ui/button'
-import { Input } from '@/components/ui/input'
+import { ExerciceRangee, type ExerciceFormData } from './ExerciceRangee'
+import { getExercicesParSeance, EXERCICES } from '@/lib/data/exercises'
 import { loggerSeanceMuscu } from '@/lib/db/workouts'
-import type { Lieu } from '@/types'
+import type { Lieu, TypeSeanceMuscle } from '@/types'
 import { format } from 'date-fns'
 
-interface ExerciceForm {
-  nom: string
-  series: string
-  reps: string
-  poids: string
-}
+const EXERCICE_VIDE: ExerciceFormData = { nom: '', series: '3', reps: '10', poids: '', inclus: true, estCustom: true }
 
-const EXERCICE_VIDE: ExerciceForm = { nom: '', series: '', reps: '', poids: '' }
+const LABELS_SEANCE: Record<TypeSeanceMuscle, string> = {
+  full_body: 'Full body',
+  upper_lower: 'Upper / Lower',
+}
 
 export function OngletMuscu() {
   const router = useRouter()
-  const [location, setLocation] = useState<Lieu>('maison')
-  const [exercices, setExercices] = useState<ExerciceForm[]>([{ ...EXERCICE_VIDE }])
+  const [typeSeance, setTypeSeance] = useState<TypeSeanceMuscle | null>(null)
+  const [lieu, setLieu] = useState<Lieu>('maison')
+  const [exercices, setExercices] = useState<ExerciceFormData[]>([])
   const [ressenti, setRessenti] = useState(0)
-  const [notes, setNotes] = useState('')
   const [chargement, setChargement] = useState(false)
   const [sauvegarde, setSauvegarde] = useState(false)
 
-  function mettreAJour(i: number, champ: keyof ExerciceForm, val: string) {
+  // Pré-remplit les exercices quand le type de séance ou le lieu change
+  useEffect(() => {
+    if (!typeSeance) return
+    const liste = getExercicesParSeance(typeSeance, lieu)
+    setExercices(liste.map((e) => ({
+      nom: e.nom,
+      series: String(e.seriesDefaut),
+      reps: String(e.repsDefaut),
+      poids: '',
+      inclus: true,
+      estCustom: false,
+    })))
+  }, [typeSeance, lieu])
+
+  function mettreAJour(i: number, champ: 'nom' | 'series' | 'reps' | 'poids', val: string) {
     setExercices((prev) => prev.map((e, idx) => idx === i ? { ...e, [champ]: val } : e))
   }
 
+  function toggleInclus(i: number) {
+    setExercices((prev) => prev.map((e, idx) => idx === i ? { ...e, inclus: !e.inclus } : e))
+  }
+
+  function supprimer(i: number) {
+    setExercices((prev) => prev.filter((_, idx) => idx !== i))
+  }
+
   async function sauvegarder() {
+    const inclus = exercices.filter((e) => e.inclus && e.nom.trim())
+    if (!inclus.length) return
     setChargement(true)
     try {
       await loggerSeanceMuscu({
         date: format(new Date(), 'yyyy-MM-dd'),
-        location,
+        location: lieu,
         feeling: ressenti || null,
-        notes: notes || null,
-        exercices: exercices.map((e) => ({
+        notes: typeSeance ? LABELS_SEANCE[typeSeance] : null,
+        exercices: inclus.map((e) => ({
           nom: e.nom,
           series: parseInt(e.series) || null,
           reps: parseInt(e.reps) || null,
@@ -47,9 +70,6 @@ export function OngletMuscu() {
         })),
       })
       setSauvegarde(true)
-      setExercices([{ ...EXERCICE_VIDE }])
-      setNotes('')
-      setRessenti(0)
       setTimeout(() => setSauvegarde(false), 3000)
       router.refresh()
     } finally {
@@ -60,56 +80,72 @@ export function OngletMuscu() {
   return (
     <div className="flex flex-col gap-5">
 
+      {/* Type de séance */}
+      <div>
+        <p className="text-xs font-semibold text-neutral-400 uppercase tracking-wide mb-2">Type de séance</p>
+        <div className="flex gap-2">
+          {(Object.entries(LABELS_SEANCE) as [TypeSeanceMuscle, string][]).map(([val, label]) => (
+            <button key={val} onClick={() => setTypeSeance(val)}
+              className={`flex-1 px-4 py-2.5 rounded-xl text-sm font-medium transition-all
+                ${typeSeance === val ? 'bg-neutral-900 dark:bg-white text-white dark:text-neutral-900' : 'bg-neutral-100 dark:bg-neutral-800 text-neutral-600 dark:text-neutral-400'}`}>
+              {label}
+            </button>
+          ))}
+        </div>
+      </div>
+
       {/* Lieu */}
-      <div className="flex gap-2">
-        {(['maison', 'salle'] as Lieu[]).map((l) => (
-          <button
-            key={l}
-            onClick={() => setLocation(l)}
-            className={`px-4 py-2 rounded-xl text-sm font-medium capitalize transition-all
-              ${location === l ? 'bg-neutral-900 dark:bg-white text-white dark:text-neutral-900' : 'bg-neutral-100 dark:bg-neutral-800 text-neutral-600 dark:text-neutral-400'}`}
-          >
-            {l}
-          </button>
-        ))}
+      <div>
+        <p className="text-xs font-semibold text-neutral-400 uppercase tracking-wide mb-2">Lieu</p>
+        <div className="flex gap-2">
+          {(['maison', 'salle'] as Lieu[]).map((l) => (
+            <button key={l} onClick={() => setLieu(l)}
+              className={`px-4 py-2 rounded-xl text-sm font-medium capitalize transition-all
+                ${lieu === l ? 'bg-neutral-900 dark:bg-white text-white dark:text-neutral-900' : 'bg-neutral-100 dark:bg-neutral-800 text-neutral-600 dark:text-neutral-400'}`}>
+              {l}
+            </button>
+          ))}
+        </div>
       </div>
 
       {/* Exercices */}
-      <div className="flex flex-col gap-3">
-        <div className="grid grid-cols-12 gap-2 text-xs font-semibold text-neutral-400 uppercase tracking-wide px-1">
-          <span className="col-span-5">Exercice</span>
-          <span className="col-span-2 text-center">Séries</span>
-          <span className="col-span-2 text-center">Reps</span>
-          <span className="col-span-2 text-center">Kg</span>
-          <span className="col-span-1" />
+      {!typeSeance ? (
+        <p className="text-sm text-neutral-400 text-center py-4">Choisis un type de séance pour voir les exercices recommandés.</p>
+      ) : (
+        <div className="flex flex-col gap-2">
+          <p className="text-xs font-semibold text-neutral-400 uppercase tracking-wide">
+            Exercices ({exercices.filter(e => e.inclus).length} sélectionnés)
+          </p>
+          {exercices.map((e, i) => (
+            <ExerciceRangee key={i} data={e}
+              muscles={!e.estCustom ? EXERCICES.find(ex => ex.nom === e.nom)?.muscles : undefined}
+              onToggle={() => toggleInclus(i)}
+              onChange={(champ, val) => mettreAJour(i, champ, val)}
+              onSupprimer={() => supprimer(i)}
+            />
+          ))}
+          <Button variant="outline" size="sm" onClick={() => setExercices((p) => [...p, { ...EXERCICE_VIDE }])}
+            className="w-fit flex items-center gap-1.5 mt-1">
+            <Plus size={14} /> Ajouter un exercice
+          </Button>
         </div>
-        {exercices.map((e, i) => (
-          <div key={i} className="grid grid-cols-12 gap-2 items-center">
-            <Input className="col-span-5 h-9 text-sm" placeholder="Squat, PDC..." value={e.nom} onChange={(ev) => mettreAJour(i, 'nom', ev.target.value)} />
-            <Input className="col-span-2 h-9 text-sm text-center" placeholder="3" type="number" min={1} value={e.series} onChange={(ev) => mettreAJour(i, 'series', ev.target.value)} />
-            <Input className="col-span-2 h-9 text-sm text-center" placeholder="12" type="number" min={1} value={e.reps} onChange={(ev) => mettreAJour(i, 'reps', ev.target.value)} />
-            <Input className="col-span-2 h-9 text-sm text-center" placeholder="0" type="number" min={0} step={0.5} value={e.poids} onChange={(ev) => mettreAJour(i, 'poids', ev.target.value)} />
-            <button onClick={() => setExercices((p) => p.filter((_, idx) => idx !== i))} disabled={exercices.length === 1} className="col-span-1 flex justify-center text-neutral-300 hover:text-red-500 disabled:opacity-20 transition-colors">
-              <Trash2 size={14} />
-            </button>
-          </div>
-        ))}
-        <Button variant="outline" size="sm" onClick={() => setExercices((p) => [...p, { ...EXERCICE_VIDE }])} className="w-fit flex items-center gap-1.5">
-          <Plus size={14} /> Ajouter un exercice
-        </Button>
-      </div>
+      )}
 
       {/* Ressenti */}
       <div>
         <p className="text-xs font-semibold text-neutral-400 uppercase tracking-wide mb-2">Ressenti</p>
         <div className="flex gap-2">
           {[1, 2, 3, 4, 5].map((val) => (
-            <button key={val} onClick={() => setRessenti(val)} className={`w-10 h-10 rounded-xl text-sm font-semibold transition-all ${ressenti === val ? 'bg-neutral-900 dark:bg-white text-white dark:text-neutral-900 scale-110' : 'bg-neutral-100 dark:bg-neutral-800 text-neutral-600 dark:text-neutral-400'}`}>{val}</button>
+            <button key={val} onClick={() => setRessenti(val)}
+              className={`w-10 h-10 rounded-xl text-sm font-semibold transition-all
+                ${ressenti === val ? 'bg-neutral-900 dark:bg-white text-white dark:text-neutral-900 scale-110' : 'bg-neutral-100 dark:bg-neutral-800 text-neutral-600 dark:text-neutral-400'}`}>
+              {val}
+            </button>
           ))}
         </div>
       </div>
 
-      <Button onClick={sauvegarder} disabled={chargement} className="w-full sm:w-auto sm:self-start">
+      <Button onClick={sauvegarder} disabled={chargement || !exercices.some(e => e.inclus && e.nom.trim())} className="w-full sm:w-auto sm:self-start">
         {chargement ? 'Sauvegarde...' : sauvegarde ? '✓ Séance enregistrée !' : 'Enregistrer la séance'}
       </Button>
     </div>
