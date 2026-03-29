@@ -20,7 +20,7 @@ export interface Cycle {
   created_at: string
 }
 
-/** Le journal quotidien (énergie, douleur, humeur) */
+/** Le journal quotidien (énergie, douleur, humeur + champs enrichis) */
 export interface DailyLog {
   id: string
   user_id: string
@@ -32,6 +32,31 @@ export interface DailyLog {
   mood: string | null
   notes: string | null
   created_at: string
+  // Champs journal enrichi
+  emotions:      string[] | null
+  symptoms:      string[] | null
+  libido:        string | null
+  sleep_quality: string | null
+  sleep_hours:   number | null
+  stress_level:  string | null
+  appetite:      string[] | null
+  flow_intensity: string | null
+  free_note:     string | null
+}
+
+/**
+ * Données du journal enrichi gérées dans DailyLogSectionEtendue.
+ * Séparées du formulaire de base pour ne pas dépasser 150 lignes.
+ */
+export interface ExtendedLogData {
+  emotions:      string[]
+  symptoms:      string[]
+  libido:        string | null
+  sleep_quality: string | null
+  sleep_hours:   string       // saisie texte, converti en number à la sauvegarde
+  appetite:      string[]
+  flow_intensity: string | null
+  free_note:     string
 }
 
 // ------------------------------------------------------------

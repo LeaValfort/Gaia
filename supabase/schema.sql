@@ -184,3 +184,18 @@ ALTER TABLE exercises ENABLE ROW LEVEL SECURITY;
 -- Lisible par toutes les utilisatrices authentifiées (catalogue public)
 CREATE POLICY "Exercises lisibles" ON exercises
   FOR SELECT USING (auth.role() = 'authenticated');
+
+-- ============================================================
+-- MIGRATION : colonnes journal enrichi dans daily_logs
+-- À exécuter dans l'éditeur SQL Supabase.
+-- ADD COLUMN IF NOT EXISTS = sûr à relancer plusieurs fois.
+-- ============================================================
+ALTER TABLE daily_logs ADD COLUMN IF NOT EXISTS emotions      text[];
+ALTER TABLE daily_logs ADD COLUMN IF NOT EXISTS symptoms      text[];
+ALTER TABLE daily_logs ADD COLUMN IF NOT EXISTS libido        text;
+ALTER TABLE daily_logs ADD COLUMN IF NOT EXISTS sleep_quality text;
+ALTER TABLE daily_logs ADD COLUMN IF NOT EXISTS sleep_hours   decimal;
+ALTER TABLE daily_logs ADD COLUMN IF NOT EXISTS stress_level  text;
+ALTER TABLE daily_logs ADD COLUMN IF NOT EXISTS appetite      text[];
+ALTER TABLE daily_logs ADD COLUMN IF NOT EXISTS flow_intensity text;
+ALTER TABLE daily_logs ADD COLUMN IF NOT EXISTS free_note     text;
