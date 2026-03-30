@@ -1,15 +1,16 @@
-import { format } from 'date-fns'
+import { format, startOfWeek, endOfWeek } from 'date-fns'
 import { fr } from 'date-fns/locale'
-import { startOfWeek, endOfWeek } from 'date-fns'
 import { Header } from '@/components/shared/Header'
-import { PhaseCard } from '@/components/cycle/PhaseCard'
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
+import { SemaineRepas } from '@/components/alimentation/SemaineRepas'
 import { ChecklistHebdo } from '@/components/alimentation/ChecklistHebdo'
+import { SuggestionsPlats } from '@/components/alimentation/SuggestionsPlats'
+import { RecettesCourses } from '@/components/alimentation/RecettesCourses'
 import { getPreferencesUtilisateur } from '@/lib/db/cycle'
 import { getNutritionLogSemaine } from '@/lib/db/nutrition'
-import { getCycleDay, getPhaseForDay, getInfosPhase } from '@/lib/cycle'
-import { getRecommandationAlim, creerChecklistVide } from '@/lib/nutrition'
-import { CheckCircle2 } from 'lucide-react'
-import { SuggestionsPlats } from '@/components/alimentation/SuggestionsPlats'
+import { getRecettes, getShoppingItems } from '@/lib/db/recipes'
+import { getCycleDay, getPhaseForDay } from '@/lib/cycle'
+import { creerChecklistVide } from '@/lib/nutrition'
 import type { Phase } from '@/types'
 
 export default async function PageAlimentation() {
@@ -19,9 +20,11 @@ export default async function PageAlimentation() {
   const weekStart = format(lundiSemaine, 'yyyy-MM-dd')
   const labelSemaine = `${format(lundiSemaine, 'd MMM', { locale: fr })} – ${format(dimancheSemaine, 'd MMM', { locale: fr })}`
 
-  const [prefs, logSemaine] = await Promise.all([
+  const [prefs, logSemaine, recettes, articles] = await Promise.all([
     getPreferencesUtilisateur(),
     getNutritionLogSemaine(weekStart),
+    getRecettes(),
+    getShoppingItems(weekStart),
   ])
 
   let phase: Phase | null = null
@@ -33,6 +36,7 @@ export default async function PageAlimentation() {
 
   const checklist = (logSemaine?.checklist as Record<string, boolean>) ?? creerChecklistVide()
   const batchDone = logSemaine?.batch_done ?? false
+  const jourIndex = (aujourdhui.getDay() + 6) % 7 // 0=lundi, 6=dimanche
 
   return (
     <>
@@ -46,46 +50,52 @@ export default async function PageAlimentation() {
           </p>
         </div>
 
-        {/* Phase du jour */}
-        {phase && jourDuCycle && (
-          <PhaseCard phase={phase} jourDuCycle={jourDuCycle} infos={getInfosPhase(phase)} />
-        )}
+        <Tabs defaultValue="semaine">
+          <TabsList className="w-full grid grid-cols-4">
+            <TabsTrigger value="semaine">Cette semaine</TabsTrigger>
+            <TabsTrigger value="checklist">Checklist</TabsTrigger>
+            <TabsTrigger value="suggestions">Suggestions IA</TabsTrigger>
+            <TabsTrigger value="recettes">Recettes</TabsTrigger>
+          </TabsList>
 
-        {/* Recommandations selon la phase */}
-        {phase && (
-          <div className="rounded-2xl border border-neutral-200 dark:border-neutral-800 bg-white dark:bg-neutral-900 p-5 flex flex-col gap-3">
-            <h2 className="font-semibold text-neutral-900 dark:text-neutral-50">
-              {getRecommandationAlim(phase).titre}
-            </h2>
-            <ul className="flex flex-col gap-2">
-              {getRecommandationAlim(phase).details.map((detail, i) => (
-                <li key={i} className="flex items-start gap-2 text-sm text-neutral-600 dark:text-neutral-300">
-                  <CheckCircle2 size={15} className="mt-0.5 shrink-0 text-neutral-400" />
-                  {detail}
-                </li>
-              ))}
-            </ul>
+          <div className="mt-6">
+            <TabsContent value="semaine">
+              <SemaineRepas
+                phase={phase}
+                jourIndex={jourIndex}
+                batchDone={batchDone}
+              />
+            </TabsContent>
+
+            <TabsContent value="checklist">
+              <ChecklistHebdo
+                weekStart={weekStart}
+                checklistInitiale={checklist}
+                batchDoneInitial={batchDone}
+              />
+            </TabsContent>
+
+            <TabsContent value="suggestions">
+              <SuggestionsPlats
+                phase={phase}
+                likes={prefs?.food_likes ?? []}
+                dislikes={prefs?.food_dislikes ?? []}
+                allergies={prefs?.food_allergies ?? []}
+                tempsCuisine={prefs?.cook_time_minutes ?? 30}
+                conseilAlim=""
+              />
+            </TabsContent>
+
+            <TabsContent value="recettes">
+              <RecettesCourses
+                recettesInitiales={recettes}
+                articlesInitiaux={articles}
+                weekStart={weekStart}
+                phase={phase}
+              />
+            </TabsContent>
           </div>
-        )}
-
-        {/* Suggestions IA — uniquement si la phase est connue */}
-        {phase && (
-          <SuggestionsPlats
-            phase={phase}
-            conseilAlim={getRecommandationAlim(phase).details.join('. ')}
-            likes={prefs?.food_likes ?? []}
-            dislikes={prefs?.food_dislikes ?? []}
-            allergies={prefs?.food_allergies ?? []}
-            tempsCuisine={prefs?.cook_time_minutes ?? 30}
-          />
-        )}
-
-        {/* Checklist hebdomadaire + batch cooking */}
-        <ChecklistHebdo
-          weekStart={weekStart}
-          checklistInitiale={checklist}
-          batchDoneInitial={batchDone}
-        />
+        </Tabs>
 
       </main>
     </>

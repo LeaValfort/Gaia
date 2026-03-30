@@ -15,17 +15,32 @@ interface CorpsRequete {
   dislikes: string[]
   allergies: string[]
   tempsCuisine: number
+  typeRepas?: string
+  macros?: { kcal: number; proteines: number; glucides: number; lipides: number }
+}
+
+const LABELS_REPAS: Record<string, string> = {
+  'petit-dej': 'petit-déjeuner',
+  'dejeuner': 'déjeuner',
+  'collation': 'collation',
+  'diner': 'dîner',
 }
 
 function construirePrompt(params: CorpsRequete): string {
   const likes = params.likes.length > 0 ? params.likes.join(', ') : 'pas de préférence particulière'
   const dislikes = params.dislikes.length > 0 ? params.dislikes.join(', ') : 'aucun'
   const allergies = params.allergies.length > 0 ? params.allergies.join(', ') : 'aucune'
+  const typeRepasLabel = params.typeRepas ? LABELS_REPAS[params.typeRepas] ?? params.typeRepas : 'repas (type non précisé)'
+  const macrosInfo = params.macros
+    ? `Macros cibles du jour : ${params.macros.kcal} kcal · ${params.macros.proteines}g protéines · ${params.macros.glucides}g glucides · ${params.macros.lipides}g lipides`
+    : ''
 
   return `Tu es une nutritionniste spécialisée en alimentation anti-inflammatoire et cycle menstruel.
 
 Phase actuelle : ${params.phase}
+Type de repas demandé : ${typeRepasLabel}
 Conseil pour cette phase : ${params.conseilAlim}
+${macrosInfo}
 
 Profil alimentaire :
 - J'aime : ${likes}
@@ -33,9 +48,9 @@ Profil alimentaire :
 - Allergies / intolérances : ${allergies}
 - Temps de cuisine disponible : ${params.tempsCuisine} minutes maximum
 
-Propose exactement 3 idées de repas adaptées à ma phase et mon profil.
+Propose exactement 3 idées de ${typeRepasLabel} adaptées à ma phase et mon profil.
 ÉVITE absolument les allergies et ce que je n'aime pas.
-Tiens compte de mes préférences.
+Les suggestions doivent correspondre au type de repas demandé (${typeRepasLabel}).
 
 Réponds UNIQUEMENT avec un tableau JSON valide, sans texte avant ni après :
 [

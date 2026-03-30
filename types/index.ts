@@ -104,6 +104,41 @@ export interface SwimLog {
 }
 
 // ------------------------------------------------------------
+// Alimentation — types enrichis
+// ------------------------------------------------------------
+
+/** Type de repas pour les suggestions et recettes */
+export type TypeRepas = 'petit-dej' | 'dejeuner' | 'collation' | 'diner'
+
+/** Type de journée pour les macros */
+export type TypeJournee = 'sport' | 'yoga' | 'repos' | 'regles'
+
+/** Une recette sauvegardée */
+export interface Recipe {
+  id: string
+  user_id: string
+  nom: string
+  ingredients: string[]
+  temps_min: number | null
+  phase: Phase | null
+  type_repas: TypeRepas | null
+  raison: string | null
+  created_at: string
+}
+
+/** Un article de la liste de courses */
+export interface ShoppingItem {
+  id: string
+  user_id: string
+  week_start: string
+  nom: string
+  quantite: string | null
+  categorie: string | null
+  fait: boolean
+  created_at: string
+}
+
+// ------------------------------------------------------------
 // Autres activités sportives (escalade, vélo, course...)
 // ------------------------------------------------------------
 

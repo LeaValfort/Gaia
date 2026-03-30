@@ -1,44 +1,50 @@
 'use client'
 
 import { useState } from 'react'
-import { Sparkles, Clock, ChevronDown, ChevronUp } from 'lucide-react'
+import { Sparkles, RefreshCw } from 'lucide-react'
 import { Button } from '@/components/ui/button'
-import type { SuggestionPlat } from '@/app/api/suggestions/route'
-import type { Phase } from '@/types'
-import { getInfosPhase } from '@/lib/cycle'
+import { SuggestionCard } from './SuggestionCard'
+import { MACROS_JOURNEE, LABELS_JOURNEE } from '@/lib/nutrition'
+import type { Phase, TypeRepas, TypeJournee } from '@/types'
+
+const FILTRES_REPAS: { id: TypeRepas; label: string }[] = [
+  { id: 'petit-dej', label: '☀️ Petit-déj' },
+  { id: 'dejeuner',  label: '🍽️ Déjeuner' },
+  { id: 'collation', label: '🍎 Collation' },
+  { id: 'diner',     label: '🌙 Dîner' },
+]
+
+const TYPES_JOURNEE: TypeJournee[] = ['sport', 'yoga', 'repos', 'regles']
+
+interface SuggestionPlat { nom: string; ingredients: string[]; temps: number; raison: string }
 
 interface SuggestionsPlatsProps {
-  phase: Phase
+  phase: Phase | null
   conseilAlim: string
-  likes: string[]
-  dislikes: string[]
-  allergies: string[]
+  likes: string[]; dislikes: string[]; allergies: string[]
   tempsCuisine: number
 }
 
-export function SuggestionsPlats({
-  phase, conseilAlim, likes, dislikes, allergies, tempsCuisine,
-}: SuggestionsPlatsProps) {
+export function SuggestionsPlats({ phase, conseilAlim, likes, dislikes, allergies, tempsCuisine }: SuggestionsPlatsProps) {
   const [suggestions, setSuggestions] = useState<SuggestionPlat[]>([])
   const [chargement, setChargement] = useState(false)
   const [erreur, setErreur] = useState<string | null>(null)
-  const [ouvert, setOuvert] = useState<number | null>(null)
-
-  const infos = getInfosPhase(phase)
+  const [typeRepas, setTypeRepas] = useState<TypeRepas>('dejeuner')
+  const [typeJournee, setTypeJournee] = useState<TypeJournee>(phase === 'menstruation' ? 'regles' : 'repos')
 
   async function generer() {
     setChargement(true)
     setErreur(null)
     try {
+      const macros = MACROS_JOURNEE[typeJournee]
       const reponse = await fetch('/api/suggestions', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ phase, conseilAlim, likes, dislikes, allergies, tempsCuisine }),
+        body: JSON.stringify({ phase, conseilAlim, likes, dislikes, allergies, tempsCuisine, typeRepas, macros }),
       })
       if (!reponse.ok) throw new Error('Erreur serveur')
       const { suggestions: data } = await reponse.json()
       setSuggestions(data)
-      setOuvert(null)
     } catch {
       setErreur('La génération a échoué. Réessaie dans quelques instants.')
     } finally {
@@ -47,95 +53,63 @@ export function SuggestionsPlats({
   }
 
   return (
-    <div className="rounded-2xl border border-neutral-200 dark:border-neutral-800 bg-white dark:bg-neutral-900 p-5 flex flex-col gap-4">
-      <div className="flex items-center justify-between flex-wrap gap-3">
-        <div>
-          <h2 className="font-semibold text-neutral-900 dark:text-neutral-50 flex items-center gap-2">
-            <Sparkles size={16} className={infos.couleurTexte} />
-            Suggestions de plats IA
-          </h2>
-          <p className="text-xs text-neutral-400 mt-0.5">
-            Générées par Claude · ~0,003€ par génération
-          </p>
+    <div className="flex flex-col gap-5">
+
+      {/* Filtres type de repas */}
+      <div className="flex flex-col gap-2">
+        <p className="text-xs font-medium text-neutral-500 dark:text-neutral-400">Type de repas</p>
+        <div className="flex flex-wrap gap-2">
+          {FILTRES_REPAS.map(({ id, label }) => (
+            <button key={id} onClick={() => setTypeRepas(id)}
+              className={`px-3 py-1.5 rounded-full text-xs font-medium border transition-colors ${typeRepas === id ? 'bg-violet-600 text-white border-violet-600' : 'border-neutral-200 dark:border-neutral-700 text-neutral-600 dark:text-neutral-400 hover:border-violet-400'}`}>
+              {label}
+            </button>
+          ))}
         </div>
-        <Button onClick={generer} disabled={chargement} size="sm" className="flex items-center gap-2">
-          <Sparkles size={14} />
-          {chargement ? 'Génération...' : suggestions.length > 0 ? 'Régénérer' : 'Générer 3 suggestions'}
-        </Button>
       </div>
 
-      {erreur && (
-        <p className="text-sm text-red-500 dark:text-red-400">{erreur}</p>
-      )}
+      {/* Filtre type de journée (pour les macros) */}
+      <div className="flex flex-col gap-2">
+        <p className="text-xs font-medium text-neutral-500 dark:text-neutral-400">Type de journée (macros)</p>
+        <div className="flex flex-wrap gap-2">
+          {TYPES_JOURNEE.map((type) => (
+            <button key={type} onClick={() => setTypeJournee(type)}
+              className={`px-3 py-1 rounded-full text-xs border transition-colors ${typeJournee === type ? 'bg-neutral-800 text-white border-neutral-800 dark:bg-neutral-200 dark:text-neutral-900 dark:border-neutral-200' : 'border-neutral-200 dark:border-neutral-700 text-neutral-600 dark:text-neutral-400'}`}>
+              {LABELS_JOURNEE[type]}
+            </button>
+          ))}
+        </div>
+      </div>
 
+      {/* Bouton générer */}
+      <Button onClick={generer} disabled={chargement} className="flex items-center gap-2 self-start">
+        {suggestions.length > 0 ? <RefreshCw size={14} /> : <Sparkles size={14} />}
+        {chargement ? 'Génération en cours...' : suggestions.length > 0 ? 'Régénérer' : 'Générer 3 suggestions'}
+      </Button>
+
+      {erreur && <p className="text-sm text-red-500 dark:text-red-400">{erreur}</p>}
+
+      {/* Skeleton loader */}
       {chargement && (
         <div className="flex flex-col gap-2">
           {[1, 2, 3].map((i) => (
-            <div key={i} className="h-16 rounded-xl bg-neutral-100 dark:bg-neutral-800 animate-pulse" />
+            <div key={i} className="h-14 rounded-xl bg-neutral-100 dark:bg-neutral-800 animate-pulse" />
           ))}
         </div>
       )}
 
+      {/* Cartes de suggestions */}
       {!chargement && suggestions.length > 0 && (
         <div className="flex flex-col gap-2">
-          {suggestions.map((suggestion, i) => (
-            <div
-              key={i}
-              className={`rounded-xl border transition-all cursor-pointer
-                ${ouvert === i
-                  ? 'border-neutral-300 dark:border-neutral-600 bg-neutral-50 dark:bg-neutral-800'
-                  : 'border-neutral-200 dark:border-neutral-700 hover:border-neutral-300 dark:hover:border-neutral-600'
-                }`}
-            >
-              {/* En-tête cliquable */}
-              <button
-                onClick={() => setOuvert(ouvert === i ? null : i)}
-                className="w-full flex items-center justify-between gap-3 p-4 text-left"
-              >
-                <div className="flex items-center gap-3 min-w-0">
-                  <span className="text-lg shrink-0">
-                    {i === 0 ? '🥗' : i === 1 ? '🍳' : '🍲'}
-                  </span>
-                  <span className="font-medium text-sm text-neutral-900 dark:text-neutral-50 truncate">
-                    {suggestion.nom}
-                  </span>
-                </div>
-                <div className="flex items-center gap-2 shrink-0">
-                  <span className="flex items-center gap-1 text-xs text-neutral-400">
-                    <Clock size={12} />
-                    {suggestion.temps} min
-                  </span>
-                  {ouvert === i ? <ChevronUp size={14} className="text-neutral-400" /> : <ChevronDown size={14} className="text-neutral-400" />}
-                </div>
-              </button>
-
-              {/* Détails */}
-              {ouvert === i && (
-                <div className="px-4 pb-4 flex flex-col gap-3">
-                  <div>
-                    <p className="text-xs font-semibold text-neutral-400 uppercase tracking-wide mb-1.5">Ingrédients</p>
-                    <div className="flex flex-wrap gap-1.5">
-                      {suggestion.ingredients.map((ing, j) => (
-                        <span key={j} className="text-xs px-2 py-0.5 rounded-full bg-neutral-100 dark:bg-neutral-700 text-neutral-600 dark:text-neutral-300">
-                          {ing}
-                        </span>
-                      ))}
-                    </div>
-                  </div>
-                  <div>
-                    <p className="text-xs font-semibold text-neutral-400 uppercase tracking-wide mb-1">Pourquoi ce plat ?</p>
-                    <p className="text-sm text-neutral-600 dark:text-neutral-300 italic">{suggestion.raison}</p>
-                  </div>
-                </div>
-              )}
-            </div>
+          {suggestions.map((s, i) => (
+            <SuggestionCard key={i} suggestion={s} index={i} phase={phase} typeRepas={typeRepas} />
           ))}
         </div>
       )}
 
       {!chargement && suggestions.length === 0 && (
-        <p className="text-sm text-neutral-400 text-center py-4">
-          Clique sur "Générer" pour obtenir des suggestions adaptées à ta phase et tes préférences.
+        <p className="text-sm text-neutral-400 text-center py-6">
+          Choisis un type de repas puis clique sur &ldquo;Générer&rdquo; pour obtenir des idées adaptées à ta phase.
         </p>
       )}
     </div>

@@ -191,6 +191,41 @@ CREATE POLICY "Exercises lisibles" ON exercises
 -- ADD COLUMN IF NOT EXISTS = sûr à relancer plusieurs fois.
 -- ============================================================
 -- ============================================================
+-- TABLE : recipes (recettes sauvegardées depuis les suggestions IA)
+-- ============================================================
+CREATE TABLE IF NOT EXISTS recipes (
+  id         uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+  user_id    uuid REFERENCES auth.users NOT NULL,
+  nom        text NOT NULL,
+  ingredients text[] NOT NULL DEFAULT '{}',
+  temps_min  integer,
+  phase      text,
+  type_repas text,
+  raison     text,
+  created_at timestamptz DEFAULT now()
+);
+ALTER TABLE recipes ENABLE ROW LEVEL SECURITY;
+CREATE POLICY "Recettes personnelles" ON recipes
+  FOR ALL USING (auth.uid() = user_id);
+
+-- ============================================================
+-- TABLE : shopping_items (liste de courses par semaine)
+-- ============================================================
+CREATE TABLE IF NOT EXISTS shopping_items (
+  id         uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+  user_id    uuid REFERENCES auth.users NOT NULL,
+  week_start date NOT NULL,
+  nom        text NOT NULL,
+  quantite   text,
+  categorie  text,
+  fait       boolean DEFAULT false,
+  created_at timestamptz DEFAULT now()
+);
+ALTER TABLE shopping_items ENABLE ROW LEVEL SECURITY;
+CREATE POLICY "Courses personnelles" ON shopping_items
+  FOR ALL USING (auth.uid() = user_id);
+
+-- ============================================================
 -- TABLE : activity_logs (autres sports : escalade, vélo, course...)
 -- ============================================================
 CREATE TABLE IF NOT EXISTS activity_logs (
