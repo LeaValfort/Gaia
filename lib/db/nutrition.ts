@@ -1,23 +1,24 @@
-'use server'
+// Appels Supabase pour la table nutrition_logs.
+// Ces fonctions reçoivent le client Supabase en paramètre
+// pour pouvoir être appelées depuis un composant client.
 
-import { creerClientServeur } from '@/lib/supabase-server'
-import { creerChecklistVide } from '@/lib/nutrition'
+import type { SupabaseClient } from '@supabase/supabase-js'
 import type { NutritionLog } from '@/types'
 
 /**
  * Récupère le log nutritionnel de la semaine donnée.
- * Si aucun log n'existe, retourne une structure vide (sans ID).
+ * Retourne null si aucun log n'existe encore.
  */
-export async function getNutritionLogSemaine(weekStart: string): Promise<NutritionLog | null> {
+export async function getNutritionLogSemaine(
+  supabase: SupabaseClient,
+  userId: string,
+  weekStart: string
+): Promise<NutritionLog | null> {
   try {
-    const supabase = await creerClientServeur()
-    const { data: { user } } = await supabase.auth.getUser()
-    if (!user) return null
-
     const { data, error } = await supabase
       .from('nutrition_logs')
       .select('*')
-      .eq('user_id', user.id)
+      .eq('user_id', userId)
       .eq('week_start', weekStart)
       .single()
 
@@ -31,28 +32,21 @@ export async function getNutritionLogSemaine(weekStart: string): Promise<Nutriti
 
 /**
  * Crée ou met à jour le log nutritionnel de la semaine.
+ * Utilise upsert sur la contrainte unique (user_id, week_start).
  */
-export async function upsertNutritionLog(params: {
-  weekStart: string
-  checklist: Record<string, boolean>
-  batchDone: boolean
-  notes?: string | null
-}): Promise<void> {
+export async function upsertNutritionLog(
+  supabase: SupabaseClient,
+  userId: string,
+  weekStart: string,
+  checklist: Record<string, boolean>,
+  batchDone: boolean,
+  notes: string | null
+): Promise<void> {
   try {
-    const supabase = await creerClientServeur()
-    const { data: { user } } = await supabase.auth.getUser()
-    if (!user) throw new Error('Non connectée')
-
     const { error } = await supabase
       .from('nutrition_logs')
       .upsert(
-        {
-          user_id: user.id,
-          week_start: params.weekStart,
-          checklist: params.checklist,
-          batch_done: params.batchDone,
-          notes: params.notes ?? null,
-        },
+        { user_id: userId, week_start: weekStart, checklist, batch_done: batchDone, notes },
         { onConflict: 'user_id,week_start' }
       )
 
@@ -61,18 +55,4 @@ export async function upsertNutritionLog(params: {
     console.error('Erreur upsertNutritionLog:', erreur)
     throw erreur
   }
-}
-
-/**
- * Bascule un item de la checklist et sauvegarde immédiatement.
- */
-export async function toggleItemChecklist(
-  weekStart: string,
-  itemId: string,
-  valeur: boolean,
-  checklistActuelle: Record<string, boolean>,
-  batchDone: boolean
-): Promise<void> {
-  const nouvelleChecklist = { ...checklistActuelle, [itemId]: valeur }
-  await upsertNutritionLog({ weekStart, checklist: nouvelleChecklist, batchDone })
 }
