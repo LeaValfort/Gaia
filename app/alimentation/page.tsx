@@ -7,6 +7,7 @@ import { Header } from '@/components/shared/Header'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { ChecklistHebdo } from '@/components/alimentation/ChecklistHebdo'
 import { SemaineRepas } from '@/components/alimentation/SemaineRepas'
+import { SuggestionsPlats } from '@/components/alimentation/SuggestionsPlats'
 import type { Phase } from '@/types'
 
 export default async function PageAlimentation() {
@@ -62,9 +63,14 @@ export default async function PageAlimentation() {
             </TabsContent>
 
             <TabsContent value="suggestions">
-              <div className="text-center text-muted-foreground py-12">
-                Bientôt disponible ✨
-              </div>
+              <SuggestionsPlats
+                phase={phase}
+                conseilAlim=""
+                likes={prefs?.food_likes ?? []}
+                dislikes={prefs?.food_dislikes ?? []}
+                allergies={prefs?.food_allergies ?? []}
+                tempsCuisine={prefs?.cook_time_minutes ?? 30}
+              />
             </TabsContent>
 
             <TabsContent value="recettes">
