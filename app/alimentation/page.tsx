@@ -1,9 +1,13 @@
 import { redirect } from 'next/navigation'
 import { creerClientServeur } from '@/lib/supabase-server'
 import { getLundiSemaine } from '@/lib/nutrition'
+import { getCycleDay, getPhaseForDay } from '@/lib/cycle'
+import { getPreferencesUtilisateur } from '@/lib/db/cycle'
 import { Header } from '@/components/shared/Header'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { ChecklistHebdo } from '@/components/alimentation/ChecklistHebdo'
+import { SemaineRepas } from '@/components/alimentation/SemaineRepas'
+import type { Phase } from '@/types'
 
 export default async function PageAlimentation() {
   const supabase = await creerClientServeur()
@@ -11,6 +15,21 @@ export default async function PageAlimentation() {
   if (!user) redirect('/login')
 
   const weekStart = getLundiSemaine(new Date())
+
+  // Calcul de la phase du cycle
+  const prefs = await getPreferencesUtilisateur()
+  let phase: Phase | null = null
+  if (prefs?.last_cycle_start) {
+    const jourDuCycle = getCycleDay(
+      new Date(prefs.last_cycle_start),
+      new Date(),
+      prefs.cycle_length
+    )
+    phase = getPhaseForDay(jourDuCycle, prefs.cycle_length)
+  }
+
+  // 0 = lundi, 6 = dimanche (getDay : 0=dim, 1=lun, ..., 6=sam → décalage +6 %7)
+  const jourIndex = (new Date().getDay() + 6) % 7
 
   return (
     <>
@@ -39,9 +58,7 @@ export default async function PageAlimentation() {
             </TabsContent>
 
             <TabsContent value="semaine">
-              <div className="text-center text-muted-foreground py-12">
-                Bientôt disponible ✨
-              </div>
+              <SemaineRepas phase={phase} jourIndex={jourIndex} />
             </TabsContent>
 
             <TabsContent value="suggestions">

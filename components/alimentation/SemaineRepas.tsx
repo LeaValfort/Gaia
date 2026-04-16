@@ -14,10 +14,9 @@ const PHASE_NOM: Record<Phase, string> = {
 interface SemaineRepasProps {
   phase: Phase | null
   jourIndex: number   // 0 = lundi, 6 = dimanche
-  batchDone: boolean
 }
 
-export function SemaineRepas({ phase, jourIndex, batchDone }: SemaineRepasProps) {
+export function SemaineRepas({ phase, jourIndex }: SemaineRepasProps) {
   const phaseCourante = phase ?? 'folliculaire'
   const plan = PLAN_REPAS[phaseCourante]
   const styles = PHASE_STYLES[phaseCourante]
@@ -100,9 +99,7 @@ export function SemaineRepas({ phase, jourIndex, batchDone }: SemaineRepasProps)
         <p className="text-sm font-semibold text-amber-800 dark:text-amber-300">🍳 Batch cooking dimanche</p>
         <p className="text-xs text-amber-700 dark:text-amber-400">
           Prépare à l&apos;avance pour la semaine : <strong>Overnight oats</strong> (5 pots) et <strong>Egg muffins</strong> (6 portions).
-          {batchDone
-            ? ' ✅ Fait cette semaine !'
-            : ' → Coche les cases dans l\'onglet Checklist.'}
+          Coche-les dans l&apos;onglet <strong>Checklist</strong> quand c&apos;est fait.
         </p>
       </div>
 
