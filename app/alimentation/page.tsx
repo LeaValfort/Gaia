@@ -1,15 +1,14 @@
 import { redirect } from 'next/navigation'
 import { creerClientServeur } from '@/lib/supabase-server'
-import { getLundiSemaine } from '@/lib/nutrition'
+import { getLundiSemaine, getTypeJournee, calculerMacrosJour } from '@/lib/nutrition'
 import { getCycleDay, getPhaseForDay } from '@/lib/cycle'
 import { getPreferencesUtilisateur } from '@/lib/db/cycle'
 import { Header } from '@/components/shared/Header'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
+import { MacrosCard } from '@/components/alimentation/MacrosCard'
 import { ChecklistHebdo } from '@/components/alimentation/ChecklistHebdo'
-import { SemaineRepas } from '@/components/alimentation/SemaineRepas'
-import { SuggestionsPlats } from '@/components/alimentation/SuggestionsPlats'
-import { RecettesCourses } from '@/components/alimentation/RecettesCourses'
-import { getRecettes, getShoppingItems } from '@/lib/db/recipes'
+import { SuggestionsRecettes } from '@/components/alimentation/SuggestionsRecettes'
+import { ListeCourses } from '@/components/alimentation/ListeCourses'
 import type { Phase } from '@/types'
 
 export default async function PageAlimentation() {
@@ -17,75 +16,61 @@ export default async function PageAlimentation() {
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) redirect('/login')
 
-  const weekStart = getLundiSemaine(new Date())
+  const today      = new Date()
+  const weekStart  = getLundiSemaine(today)
+  const typeJournee = getTypeJournee(today)
 
-  // Données recettes + courses et phase du cycle en parallèle
-  const [prefs, recettes, articles] = await Promise.all([
-    getPreferencesUtilisateur(),
-    getRecettes(),
-    getShoppingItems(weekStart),
-  ])
-  let phase: Phase | null = null
+  const prefs = await getPreferencesUtilisateur()
+  let phase: Phase = 'folliculaire'
   if (prefs?.last_cycle_start) {
-    const jourDuCycle = getCycleDay(
-      new Date(prefs.last_cycle_start),
-      new Date(),
-      prefs.cycle_length
-    )
+    const jourDuCycle = getCycleDay(new Date(prefs.last_cycle_start), today, prefs.cycle_length)
     phase = getPhaseForDay(jourDuCycle, prefs.cycle_length)
   }
 
-  // 0 = lundi, 6 = dimanche (getDay : 0=dim, 1=lun, ..., 6=sam → décalage +6 %7)
-  const jourIndex = (new Date().getDay() + 6) % 7
+  const macros = calculerMacrosJour(phase, typeJournee)
 
   return (
     <>
       <Header />
-      <main className="max-w-2xl mx-auto px-4 py-6 flex flex-col gap-6">
+      <main className="max-w-2xl mx-auto px-4 py-6 flex flex-col gap-5">
 
         <div>
           <h1 className="text-2xl font-bold text-neutral-900 dark:text-neutral-50">Alimentation</h1>
-          <p className="text-sm text-neutral-500 dark:text-neutral-400 mt-1">
-            Semaine du {weekStart}
-          </p>
+          <p className="text-sm text-neutral-500 dark:text-neutral-400 mt-1">Semaine du {weekStart}</p>
         </div>
+
+        {/* Encart macros — toujours visible */}
+        <MacrosCard phase={phase} typeJournee={macros.typeJournee} date={today.toISOString().slice(0, 10)} />
 
         <Tabs defaultValue="checklist">
           <TabsList className="w-full grid grid-cols-4 text-xs">
-            <TabsTrigger value="checklist">Checklist</TabsTrigger>
-            <TabsTrigger value="semaine">Plan semaine</TabsTrigger>
-            <TabsTrigger value="suggestions">Suggestions IA</TabsTrigger>
-            <TabsTrigger value="recettes">Recettes</TabsTrigger>
+            <TabsTrigger value="checklist">✅ Checklist</TabsTrigger>
+            <TabsTrigger value="suggestions">🍽️ Suggestions</TabsTrigger>
+            <TabsTrigger value="courses">🛒 Courses</TabsTrigger>
+            <TabsTrigger value="recettes">📖 Recettes</TabsTrigger>
           </TabsList>
 
-          <div className="mt-6">
+          <div className="mt-5">
 
             <TabsContent value="checklist">
               <ChecklistHebdo userId={user.id} weekStart={weekStart} />
             </TabsContent>
 
-            <TabsContent value="semaine">
-              <SemaineRepas phase={phase} jourIndex={jourIndex} />
+            <TabsContent value="suggestions">
+              <SuggestionsRecettes
+                phase={phase}
+                typeJournee={macros.typeJournee}
+                allergies={prefs?.food_allergies ?? []}
+                tempsMax={prefs?.cook_time_minutes ?? 30}
+              />
             </TabsContent>
 
-            <TabsContent value="suggestions">
-              <SuggestionsPlats
-                phase={phase}
-                conseilAlim=""
-                likes={prefs?.food_likes ?? []}
-                dislikes={prefs?.food_dislikes ?? []}
-                allergies={prefs?.food_allergies ?? []}
-                tempsCuisine={prefs?.cook_time_minutes ?? 30}
-              />
+            <TabsContent value="courses">
+              <ListeCourses userId={user.id} weekStart={weekStart} />
             </TabsContent>
 
             <TabsContent value="recettes">
-              <RecettesCourses
-                recettesInitiales={recettes}
-                articlesInitiaux={articles}
-                weekStart={weekStart}
-                phase={phase}
-              />
+              <p className="text-center text-muted-foreground py-12">Bientôt disponible ✨</p>
             </TabsContent>
 
           </div>

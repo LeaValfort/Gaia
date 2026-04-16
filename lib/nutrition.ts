@@ -2,8 +2,9 @@
 // Les données statiques de la checklist vivent dans lib/data/nutrition.ts.
 
 import { startOfWeek, format } from 'date-fns'
-import type { Phase, TypeJournee } from '@/types'
+import type { Phase, TypeJournee, MacrosCiblesJour } from '@/types'
 import type { ItemChecklist } from '@/lib/data/nutrition'
+import { MACROS_PAR_JOURNEE } from '@/lib/data/nutrition'
 
 // ------------------------------------------------------------
 // Macros par type de journée
@@ -81,4 +82,29 @@ export function getMessageScore(pourcentage: number): string {
   if (pourcentage <= 60) return 'Bonne semaine !'
   if (pourcentage <= 90) return 'Très bien ! 🌿'
   return 'Semaine parfaite 🌟'
+}
+
+// ------------------------------------------------------------
+// Type de journée selon le planning hebdomadaire
+// ------------------------------------------------------------
+
+const PLANNING_SEMAINE: Record<number, TypeJournee> = {
+  0: 'repos', 1: 'sport', 2: 'yoga', 3: 'sport', 4: 'yoga', 5: 'sport', 6: 'repos',
+}
+
+/** Retourne le type de journée pour une date selon le planning. */
+export function getTypeJournee(date: Date): TypeJournee {
+  return PLANNING_SEMAINE[date.getDay()]
+}
+
+/**
+ * Calcule les macros cibles du jour selon la phase et le type de journée.
+ * Si phase = menstruation, le type est forcé sur 'regles'.
+ */
+export function calculerMacrosJour(phase: Phase, typeJournee: TypeJournee): MacrosCiblesJour {
+  const typeEffectif: TypeJournee = phase === 'menstruation' ? 'regles' : typeJournee
+  const macros = MACROS_PAR_JOURNEE[typeEffectif]
+  const labelType: Record<TypeJournee, string> = { sport: 'Jour de sport', yoga: 'Séance yoga', repos: 'Jour de repos', regles: 'Phase de règles' }
+  const labelPhase: Record<Phase, string> = { menstruation: 'règles', folliculaire: 'folliculaire', ovulation: 'ovulatoire', luteale: 'lutéale' }
+  return { ...macros, typeJournee: typeEffectif, phase, message: `${labelType[typeEffectif]} — phase ${labelPhase[phase]}` }
 }

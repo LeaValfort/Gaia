@@ -60,3 +60,48 @@ export const ORDRE_CATEGORIES: ItemChecklist['categorie'][] = [
 export function creerChecklistVide(): Record<string, boolean> {
   return Object.fromEntries(ITEMS_CHECKLIST.map((item) => [item.id, false]))
 }
+
+// ------------------------------------------------------------
+// Macros par type de journée (objectif recomposition corporelle)
+// ------------------------------------------------------------
+
+import type { TypeJournee, Rayon } from '@/types'
+
+export const MACROS_PAR_JOURNEE: Record<TypeJournee, { calories: number; proteines: number; glucides: number; lipides: number }> = {
+  sport:  { calories: 1750, proteines: 130, glucides: 195, lipides: 60 },
+  yoga:   { calories: 1650, proteines: 120, glucides: 175, lipides: 58 },
+  repos:  { calories: 1600, proteines: 120, glucides: 160, lipides: 55 },
+  regles: { calories: 1700, proteines: 120, glucides: 180, lipides: 58 },
+}
+
+// ------------------------------------------------------------
+// Configuration des enseignes de magasin
+// ------------------------------------------------------------
+
+export interface EnseigneConfig {
+  id: string
+  label: string
+  emoji: string
+  couleur: string   // classe Tailwind bg-
+}
+
+export const ENSEIGNES_DEFAUT: EnseigneConfig[] = [
+  { id: 'biocoop',         label: 'Biocoop',        emoji: '🌿', couleur: 'bg-green-100 dark:bg-green-900/40' },
+  { id: 'grand_frais',     label: 'Grand Frais',    emoji: '🐟', couleur: 'bg-blue-100 dark:bg-blue-900/40' },
+  { id: 'boucherie',       label: 'Boucherie',      emoji: '🥩', couleur: 'bg-red-100 dark:bg-red-900/40' },
+  { id: 'grande_surface',  label: 'Grande surface', emoji: '🛒', couleur: 'bg-yellow-100 dark:bg-yellow-900/40' },
+]
+
+// ------------------------------------------------------------
+// Rayons de magasin
+// ------------------------------------------------------------
+
+export const RAYONS_PAR_LABEL: Record<Rayon, string> = {
+  fruits_legumes:   '🥦 Fruits & Légumes',
+  poissons_viandes: '🐟 Poissons & Viandes',
+  cremerie:         '🧀 Crèmerie',
+  epicerie_seche:   '🫙 Épicerie sèche',
+  surgeles:         '❄️ Surgelés',
+  hygiene_maison:   '🧴 Hygiène & Maison',
+  autre:            '📦 Autre',
+}

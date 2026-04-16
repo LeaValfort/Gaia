@@ -226,6 +226,14 @@ CREATE POLICY "Courses personnelles" ON shopping_items
   FOR ALL USING (auth.uid() = user_id);
 
 -- ============================================================
+-- MIGRATION shopping_items : enseigne, rayon, source
+-- ============================================================
+ALTER TABLE shopping_items ADD COLUMN IF NOT EXISTS enseigne text;
+ALTER TABLE shopping_items ADD COLUMN IF NOT EXISTS rayon    text;
+ALTER TABLE shopping_items ADD COLUMN IF NOT EXISTS source   text DEFAULT 'manuel';
+-- source : 'manuel' | 'spoonacular'
+
+-- ============================================================
 -- TABLE : activity_logs (autres sports : escalade, vélo, course...)
 -- ============================================================
 CREATE TABLE IF NOT EXISTS activity_logs (

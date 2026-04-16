@@ -113,6 +113,51 @@ export type TypeRepas = 'petit-dej' | 'dejeuner' | 'collation' | 'diner'
 /** Type de journée pour les macros */
 export type TypeJournee = 'sport' | 'yoga' | 'repos' | 'regles'
 
+/** Enseigne de magasin (valeurs prédéfinies + libres) */
+export type Enseigne = 'biocoop' | 'grand_frais' | 'boucherie' | 'grande_surface' | (string & {})
+
+/** Rayon en magasin */
+export type Rayon =
+  | 'fruits_legumes'
+  | 'poissons_viandes'
+  | 'cremerie'
+  | 'epicerie_seche'
+  | 'surgeles'
+  | 'hygiene_maison'
+  | 'autre'
+
+/** Article de liste de courses enrichi (avec enseigne + rayon) */
+export interface ShoppingItemComplet extends ShoppingItem {
+  enseigne: Enseigne | null
+  rayon: Rayon | null
+  source: 'manuel' | 'spoonacular'
+}
+
+/** Macros cibles calculées pour un jour donné */
+export interface MacrosCiblesJour {
+  calories: number
+  proteines: number
+  glucides: number
+  lipides: number
+  typeJournee: TypeJournee
+  phase: Phase
+  message: string
+}
+
+/** Recette retournée par l'API Spoonacular */
+export interface RecetteSpoonacular {
+  id: number
+  titre: string
+  image: string
+  tempsMin: number
+  calories: number
+  proteines: number
+  glucides: number
+  lipides: number
+  ingredients: string[]
+  urlOriginale: string
+}
+
 /** Une recette sauvegardée */
 export interface Recipe {
   id: string
