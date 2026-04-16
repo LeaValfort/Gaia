@@ -8,6 +8,8 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { ChecklistHebdo } from '@/components/alimentation/ChecklistHebdo'
 import { SemaineRepas } from '@/components/alimentation/SemaineRepas'
 import { SuggestionsPlats } from '@/components/alimentation/SuggestionsPlats'
+import { RecettesCourses } from '@/components/alimentation/RecettesCourses'
+import { getRecettes, getShoppingItems } from '@/lib/db/recipes'
 import type { Phase } from '@/types'
 
 export default async function PageAlimentation() {
@@ -17,8 +19,12 @@ export default async function PageAlimentation() {
 
   const weekStart = getLundiSemaine(new Date())
 
-  // Calcul de la phase du cycle
-  const prefs = await getPreferencesUtilisateur()
+  // Données recettes + courses et phase du cycle en parallèle
+  const [prefs, recettes, articles] = await Promise.all([
+    getPreferencesUtilisateur(),
+    getRecettes(),
+    getShoppingItems(weekStart),
+  ])
   let phase: Phase | null = null
   if (prefs?.last_cycle_start) {
     const jourDuCycle = getCycleDay(
@@ -74,9 +80,12 @@ export default async function PageAlimentation() {
             </TabsContent>
 
             <TabsContent value="recettes">
-              <div className="text-center text-muted-foreground py-12">
-                Bientôt disponible ✨
-              </div>
+              <RecettesCourses
+                recettesInitiales={recettes}
+                articlesInitiaux={articles}
+                weekStart={weekStart}
+                phase={phase}
+              />
             </TabsContent>
 
           </div>
