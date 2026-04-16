@@ -9,6 +9,7 @@ import { MacrosCard } from '@/components/alimentation/MacrosCard'
 import { ChecklistHebdo } from '@/components/alimentation/ChecklistHebdo'
 import { SuggestionsRecettes } from '@/components/alimentation/SuggestionsRecettes'
 import { ListeCourses } from '@/components/alimentation/ListeCourses'
+import { RecettesSauvegardees } from '@/components/alimentation/RecettesSauvegardees'
 import type { Phase } from '@/types'
 
 export default async function PageAlimentation() {
@@ -70,7 +71,7 @@ export default async function PageAlimentation() {
             </TabsContent>
 
             <TabsContent value="recettes">
-              <p className="text-center text-muted-foreground py-12">Bientôt disponible ✨</p>
+              <RecettesSauvegardees userId={user.id} phase={phase} />
             </TabsContent>
 
           </div>

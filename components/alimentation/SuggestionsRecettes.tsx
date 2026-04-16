@@ -6,7 +6,10 @@ import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import { Skeleton } from '@/components/ui/skeleton'
 import { supabase } from '@/lib/supabase'
-import { saveRecette, addShoppingItem } from '@/lib/db/nutrition'
+import { saveRecette } from '@/lib/db/nutrition'
+import { addShoppingItem } from '@/lib/db/courses'
+import { getLundiSemaine } from '@/lib/nutrition'
+import { devinerAssignation } from '@/lib/data/courses'
 import type { Phase, TypeJournee, RecetteSpoonacular } from '@/types'
 
 interface SuggestionsRecettesProps {
@@ -25,16 +28,22 @@ function RecetteCard({ recette, userId, weekStart }: {
 
   async function handleSave() {
     await saveRecette(supabase, userId, {
-      nom: recette.titre, ingredients: recette.ingredients,
-      temps_min: recette.tempsMin, phase: null, type_repas: null, raison: null,
+      nom: recette.titre,
+      ingredients: recette.ingredients.map((i) => `${i.quantite ?? ''} ${i.nom}`.trim()),
+      temps_min: recette.tempsMin,
+      phase: null,
+      type_repas: null,
+      raison: null,
+      spoonacular_id: recette.id,
     })
     setSaved(true)
   }
 
   async function handleAddCourses() {
-    await Promise.all(recette.ingredients.map((nom) =>
-      addShoppingItem(supabase, userId, { week_start: weekStart, nom, quantite: null, categorie: null, enseigne: null, rayon: null, source: 'spoonacular', fait: false })
-    ))
+    await Promise.all(recette.ingredients.map((ing) => {
+      const { rayon, enseigne } = devinerAssignation(ing.nom)
+      return addShoppingItem(supabase, userId, { week_start: weekStart, nom: ing.nom, quantite: ing.quantite, enseigne, rayon, source: 'spoonacular' })
+    }))
     setAdded(true)
   }
 
@@ -58,7 +67,7 @@ function RecetteCard({ recette, userId, weekStart }: {
           <Button size="sm" variant="outline" onClick={handleAddCourses} disabled={added} className="text-xs h-7 px-2">
             {added ? <><Check size={11} className="mr-1" />Ajoutés</> : <><ShoppingCart size={11} className="mr-1" />Courses</>}
           </Button>
-          <a href={recette.urlOriginale} target="_blank" rel="noopener noreferrer">
+          <a href={`/alimentation/recette/${recette.id}`} target="_blank" rel="noopener noreferrer">
             <Button size="sm" variant="ghost" className="text-xs h-7 px-2">
               <ExternalLink size={11} className="mr-1" />Voir
             </Button>
@@ -74,7 +83,7 @@ export function SuggestionsRecettes({ phase, typeJournee, allergies, tempsMax }:
   const [chargement, setChargement] = useState(false)
   const [erreur, setErreur] = useState<string | null>(null)
   const [userId, setUserId] = useState('')
-  const weekStart = new Date().toISOString().slice(0, 10)
+  const weekStart = getLundiSemaine(new Date())
 
   useEffect(() => {
     supabase.auth.getUser().then(({ data }) => { if (data.user) setUserId(data.user.id) })

@@ -144,6 +144,41 @@ export interface MacrosCiblesJour {
   message: string
 }
 
+/** Un ingrédient avec quantité précise (page détail recette) */
+export interface IngredientDetail {
+  nom: string
+  quantite: string  // ex: "200 g", "2 cuillères à soupe"
+}
+
+/** Une étape de préparation (page détail recette) */
+export interface EtapeRecette {
+  numero: number
+  instruction: string
+}
+
+/** Détail complet d'une recette Spoonacular */
+export interface RecetteDetail {
+  id: number
+  titre: string
+  image: string
+  tempsMin: number
+  portions: number
+  calories: number
+  proteines: number
+  glucides: number
+  lipides: number
+  ingredients: IngredientDetail[]
+  etapes: EtapeRecette[]
+  urlOriginale: string
+  regimes: string[]  // ex: ["gluten free", "dairy free"]
+}
+
+/** Un ingrédient dans la liste de la carte recette (suggestions) */
+export interface IngredientCarte {
+  nom: string
+  quantite: string | null  // quantité en métrique, null si inconnue
+}
+
 /** Recette retournée par l'API Spoonacular */
 export interface RecetteSpoonacular {
   id: number
@@ -154,7 +189,7 @@ export interface RecetteSpoonacular {
   proteines: number
   glucides: number
   lipides: number
-  ingredients: string[]
+  ingredients: IngredientCarte[]
   urlOriginale: string
 }
 
@@ -168,6 +203,7 @@ export interface Recipe {
   phase: Phase | null
   type_repas: TypeRepas | null
   raison: string | null
+  spoonacular_id: number | null
   created_at: string
 }
 

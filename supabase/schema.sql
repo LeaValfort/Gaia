@@ -226,6 +226,11 @@ CREATE POLICY "Courses personnelles" ON shopping_items
   FOR ALL USING (auth.uid() = user_id);
 
 -- ============================================================
+-- MIGRATION recipes : spoonacular_id
+-- ============================================================
+ALTER TABLE recipes ADD COLUMN IF NOT EXISTS spoonacular_id integer;
+
+-- ============================================================
 -- MIGRATION shopping_items : enseigne, rayon, source
 -- ============================================================
 ALTER TABLE shopping_items ADD COLUMN IF NOT EXISTS enseigne text;
