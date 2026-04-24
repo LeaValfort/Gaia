@@ -4,7 +4,6 @@
 import { startOfWeek, format } from 'date-fns'
 import type { Phase, TypeJournee, MacrosCiblesJour } from '@/types'
 import type { ItemChecklist } from '@/lib/data/nutrition'
-import { MACROS_PAR_JOURNEE } from '@/lib/data/nutrition'
 
 // ------------------------------------------------------------
 // Macros par type de journée
@@ -35,7 +34,7 @@ export const ALIMENTS_STARS: Record<Phase, string[]> = {
 }
 
 export const PHASE_STYLES: Record<Phase, { pill: string; border: string; bg: string }> = {
-  menstruation: { pill: 'bg-teal-100 text-teal-800 dark:bg-teal-900/30 dark:text-teal-300',     border: 'border-teal-300 dark:border-teal-700',   bg: 'bg-teal-50 dark:bg-teal-900/20' },
+  menstruation: { pill: 'bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-300',         border: 'border-red-300 dark:border-red-700',     bg: 'bg-red-50 dark:bg-red-900/20' },
   folliculaire: { pill: 'bg-amber-100 text-amber-800 dark:bg-amber-900/30 dark:text-amber-300', border: 'border-amber-300 dark:border-amber-700', bg: 'bg-amber-50 dark:bg-amber-900/20' },
   ovulation:    { pill: 'bg-orange-100 text-orange-800 dark:bg-orange-900/30 dark:text-orange-300', border: 'border-orange-300 dark:border-orange-700', bg: 'bg-orange-50 dark:bg-orange-900/20' },
   luteale:      { pill: 'bg-purple-100 text-purple-800 dark:bg-purple-900/30 dark:text-purple-300', border: 'border-purple-300 dark:border-purple-700', bg: 'bg-purple-50 dark:bg-purple-900/20' },
@@ -98,13 +97,160 @@ export function getTypeJournee(date: Date): TypeJournee {
 }
 
 /**
+ * Type de journée utilisé pour les cibles macros (plan, jour, récap).
+ * En suivi cycle : les jours de menstruation utilisent les objectifs « règles ».
+ */
+export function getTypeJourneeEffectifMacros(
+  phase: Phase,
+  typeJournee: TypeJournee,
+  sansSuiviCycle?: boolean
+): TypeJournee {
+  if (sansSuiviCycle) return typeJournee
+  return phase === 'menstruation' ? 'regles' : typeJournee
+}
+
+function macrosNumeriquesDepuisTypeEffectif(typeEffectif: TypeJournee): Pick<
+  MacrosCiblesJour,
+  'calories' | 'proteines' | 'glucides' | 'lipides'
+> {
+  const m = MACROS_JOURNEE[typeEffectif]
+  return {
+    calories: m.kcal,
+    proteines: m.proteines,
+    glucides: m.glucides,
+    lipides: m.lipides,
+  }
+}
+
+/**
  * Calcule les macros cibles du jour selon la phase et le type de journée.
- * Si phase = menstruation, le type est forcé sur 'regles'.
+ * Même table `MACROS_JOURNEE` que le plan hebdo et le récap repas.
  */
 export function calculerMacrosJour(phase: Phase, typeJournee: TypeJournee): MacrosCiblesJour {
-  const typeEffectif: TypeJournee = phase === 'menstruation' ? 'regles' : typeJournee
-  const macros = MACROS_PAR_JOURNEE[typeEffectif]
+  const typeEffectif = getTypeJourneeEffectifMacros(phase, typeJournee, false)
+  const macros = macrosNumeriquesDepuisTypeEffectif(typeEffectif)
   const labelType: Record<TypeJournee, string> = { sport: 'Jour de sport', yoga: 'Séance yoga', repos: 'Jour de repos', regles: 'Phase de règles' }
   const labelPhase: Record<Phase, string> = { menstruation: 'règles', folliculaire: 'folliculaire', ovulation: 'ovulatoire', luteale: 'lutéale' }
   return { ...macros, typeJournee: typeEffectif, phase, message: `${labelType[typeEffectif]} — phase ${labelPhase[phase]}` }
+}
+
+/** Macros du jour sans suivi de cycle (type de journée uniquement, anti-inflammatoire général). */
+export function calculerMacrosJourSansCycle(typeJournee: TypeJournee): MacrosCiblesJour {
+  const macros = macrosNumeriquesDepuisTypeEffectif(typeJournee)
+  const labelType: Record<TypeJournee, string> = {
+    sport: 'Jour de sport',
+    yoga: 'Séance yoga',
+    repos: 'Jour de repos',
+    regles: 'Jour réconfort',
+  }
+  return {
+    ...macros,
+    typeJournee,
+    phase: 'folliculaire',
+    message: `${labelType[typeJournee]} — objectifs anti-inflammatoires généraux`,
+  }
+}
+
+// ------------------------------------------------------------
+// Ingrédients (texte ou ancien JSON stringifié en base)
+// ------------------------------------------------------------
+
+/** Retire les morceaux de JSON / guillemets collés par erreur (ex. `c. à s."}`). */
+export function nettoyerSuffixeQuantite(q: string): string {
+  return q
+    .replace(/"\s*,?\s*"?\s*quantite.*$/i, '')
+    .replace(/"\s*\}\s*$/g, '')
+    .replace(/,\s*"?\s*\}\s*$/g, '')
+    .replace(/"+$/g, '')
+    .trim()
+}
+
+/** Retire une fusion « … 20 × … » collée par erreur dans le nom (fin ou milieu du libellé). */
+function nettoyerFusionFuiteDansNom(nom: string): string {
+  let s = nom.trim()
+  s = s.replace(/\s+\d+\s*×\s+(?=[a-zàâäéèêëïîôùûüçœæ])/giu, ' ')
+  s = s.replace(/\s+\d+\s*×\s*.+$/u, '').trim()
+  s = s.replace(/["\s,}]+\s*$/u, '').trim()
+  return s.replace(/\s+/g, ' ').trim()
+}
+
+/** Extrait nom / quantité même si le JSON est tronqué ou mal formé. */
+function extraireChampsJsonIngredient(t: string): { nom: string; quantite: string | null } | null {
+  if (!/"nom"\s*:/i.test(t)) return null
+  const nomM = t.match(/"nom"\s*:\s*"((?:[^"\\]|\\.)*)"/i)
+  const nom = nomM?.[1]?.replace(/\\"/g, '"') || null
+  if (!nom) return null
+  const qStrM = t.match(/"quantite"\s*:\s*"((?:[^"\\]|\\.)*)"/i)
+  const qNumM = t.match(/"quantite"\s*:\s*(\d+(?:[.,]\d+)?)(?=\s*[,}])/i)
+  let quantite: string | null = qStrM?.[1]?.replace(/\\"/g, '"') ?? null
+  if (quantite == null && qNumM) quantite = qNumM[1].replace(',', '.')
+  if (quantite) quantite = nettoyerSuffixeQuantite(quantite)
+  return { nom: nettoyerFusionFuiteDansNom(nom), quantite }
+}
+
+/** Détecte les lignes du type {"nom":"basil","quantite":"2 c. à s."} */
+export function parseIngredientLine(ligne: string): {
+  nom: string
+  quantite: string | null
+  source: 'json' | 'texte'
+} {
+  const t = ligne.trim().replace(/^\uFEFF/, '')
+
+  // Toujours tenter l’extraction regex si une clé "nom" est présente (JSON cassé, texte mélangé, etc.)
+  if (/"nom"\s*:/i.test(t)) {
+    const ext = extraireChampsJsonIngredient(t)
+    if (ext && ext.nom.length > 0) {
+      return { nom: ext.nom, quantite: ext.quantite, source: 'json' }
+    }
+    try {
+      const debut = t.indexOf('{')
+      const fin = t.lastIndexOf('}')
+      const slice = debut >= 0 && fin > debut ? t.slice(debut, fin + 1) : t
+      const o = JSON.parse(slice) as { nom?: string; quantite?: string | number | null }
+      const nom = typeof o.nom === 'string' ? o.nom : null
+      if (nom) {
+        const q =
+          o.quantite != null && String(o.quantite).trim() !== ''
+            ? nettoyerSuffixeQuantite(String(o.quantite).trim())
+            : null
+        return { nom: nettoyerFusionFuiteDansNom(nom), quantite: q, source: 'json' }
+      }
+    } catch {
+      /* ignore */
+    }
+  }
+
+  const sansFuite = nettoyerFusionFuiteDansNom(t)
+  return { nom: sansFuite, quantite: null, source: 'texte' }
+}
+
+/** Affichage sur une ligne (recettes, listes). */
+export function formaterLigneIngredient(ligne: string): string {
+  const { nom, quantite, source } = parseIngredientLine(ligne)
+  if (source === 'json' && quantite) return `${quantite} ${nom}`.trim()
+  if (source === 'json') return nom
+  return ligne.trim()
+}
+
+/** Nom / quantité pour articles de courses (corrige les anciens JSON dans `nom`). */
+export function normaliserAffichageArticleCourses(
+  nom: string,
+  quantite: string | null
+): { nom: string; quantite: string | null } {
+  const p = parseIngredientLine(nom)
+  let qCol = quantite?.trim() ? nettoyerSuffixeQuantite(quantite.trim()) : null
+  if (qCol && /"nom"\s*:/i.test(qCol)) {
+    const pq = parseIngredientLine(qCol)
+    if (pq.source === 'json') {
+      qCol = pq.quantite ?? pq.nom
+    }
+  }
+  if (p.source === 'json') {
+    return {
+      nom: p.nom,
+      quantite: p.quantite ?? (qCol && !qCol.startsWith('{') ? qCol : null),
+    }
+  }
+  const nomOut = nettoyerFusionFuiteDansNom(p.nom)
+  return { nom: nomOut, quantite: qCol || null }
 }

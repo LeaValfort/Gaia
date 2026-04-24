@@ -5,12 +5,13 @@ import { Clock, Trash2, BookOpen } from 'lucide-react'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import type { Recipe } from '@/types'
+import { formaterLigneIngredient } from '@/lib/nutrition'
 
 // Couleurs des badges par phase
 const PHASE_STYLES: Record<string, string> = {
-  menstruation: 'bg-teal-100 text-teal-800 dark:bg-teal-900/40 dark:text-teal-300',
-  folliculaire:  'bg-amber-100 text-amber-800 dark:bg-amber-900/40 dark:text-amber-300',
-  ovulation:    'bg-red-100 text-red-800 dark:bg-red-900/40 dark:text-red-300',
+  menstruation: 'bg-red-100 text-red-800 dark:bg-red-900/40 dark:text-red-300',
+  folliculaire: 'bg-amber-100 text-amber-800 dark:bg-amber-900/40 dark:text-amber-300',
+  ovulation:    'bg-rose-100 text-rose-800 dark:bg-rose-900/40 dark:text-rose-300',
   luteale:      'bg-purple-100 text-purple-800 dark:bg-purple-900/40 dark:text-purple-300',
 }
 
@@ -85,7 +86,7 @@ export function CarteRecette({ recette, onDelete }: CarteRecetteProps) {
       {recette.ingredients.length > 0 && (
         <ul className="flex flex-col gap-0.5">
           {ingredientsAffiches.map((ing, i) => (
-            <li key={i} className="text-xs text-neutral-600 dark:text-neutral-400 truncate">• {ing}</li>
+            <li key={i} className="text-xs text-neutral-600 dark:text-neutral-400 truncate">• {formaterLigneIngredient(ing)}</li>
           ))}
           {resteIngredients > 0 && (
             <li className="text-xs text-neutral-400 dark:text-neutral-500">et {resteIngredients} autre{resteIngredients > 1 ? 's' : ''}...</li>

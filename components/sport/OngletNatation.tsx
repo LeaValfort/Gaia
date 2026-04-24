@@ -2,132 +2,135 @@
 
 import { useState } from 'react'
 import { useRouter } from 'next/navigation'
-import { ChevronRight, Pencil } from 'lucide-react'
+import { Pencil } from 'lucide-react'
+import { toast } from 'sonner'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Textarea } from '@/components/ui/textarea'
-import { RessentiBoutons } from './RessentiBoutons'
 import { loggerSeanceNatation } from '@/lib/db/workouts'
 import { modifierSeanceNatation } from '@/lib/db/workoutsModifier'
-import { NIVEAUX_DETAIL, getNiveauDetail } from '@/lib/data/swimming'
-import { SWIM_LEVEL_MIN, SWIM_LEVEL_MAX, ECHAUFFEMENT_NATATION } from '@/types'
-import type { WorkoutNatationComplet } from '@/types'
-import { format } from 'date-fns'
+import { getNiveauDetail } from '@/lib/data/swimming'
+import { SWIM_LEVEL_MAX, SWIM_LEVEL_MIN, type Phase, type WorkoutNatationComplet } from '@/types'
+import { cn } from '@/lib/utils'
 
-interface OngletNatationProps { seanceExistante?: WorkoutNatationComplet | null }
+const RESS = ['😴', '😕', '😊', '⚡', '🚀'] as const
 
-export function OngletNatation({ seanceExistante }: OngletNatationProps) {
+export function OngletNatation({
+  phase: _p,
+  userId: _u,
+  date,
+  seanceExistante,
+}: {
+  phase: Phase | null
+  userId: string
+  date: string
+  seanceExistante?: WorkoutNatationComplet | null
+}) {
   const router = useRouter()
-  const estEnEdition = !!seanceExistante
-
-  const [niveau, setNiveau] = useState(seanceExistante?.swim.level ?? 1)
-  const [crawl, setCrawl] = useState(seanceExistante?.swim.crawl_m != null ? String(seanceExistante.swim.crawl_m) : '')
-  const [brasse, setBrasse] = useState(seanceExistante?.swim.breaststroke_m != null ? String(seanceExistante.swim.breaststroke_m) : '')
+  const edit = !!seanceExistante
+  const [niv, setNiv] = useState(seanceExistante?.swim.level ?? 1)
+  const [distReelle, setDistReelle] = useState(
+    seanceExistante?.swim.total_distance_m != null ? String(seanceExistante.swim.total_distance_m) : ''
+  )
   const [notes, setNotes] = useState(seanceExistante?.notes ?? '')
-  const [ressenti, setRessenti] = useState(seanceExistante?.feeling ?? 0)
-  const [chargement, setChargement] = useState(false)
-  const [sauvegarde, setSauvegarde] = useState(false)
+  const [res, setRes] = useState(seanceExistante?.feeling ?? 0)
+  const [ch, setCh] = useState(false)
+  const info = getNiveauDetail(niv)
+  const dist = parseInt(distReelle, 10)
+  const totalM = Number.isFinite(dist) && dist > 0 ? dist : info.distanceTotale
+  const rCrawl = info.distanceTotale > 0 ? info.crawlM / info.distanceTotale : 0.7
+  const crawlM = Math.round(totalM * rCrawl)
+  const breaststrokeM = Math.max(0, totalM - crawlM)
 
-  const niveauInfo = getNiveauDetail(niveau)
-  const totalM = (parseInt(crawl) || 0) + (parseInt(brasse) || 0)
-
-  async function sauvegarder() {
-    setChargement(true)
+  async function save() {
+    setCh(true)
     try {
-      const natData = {
-        level: niveau, totalDistance: totalM || niveauInfo.distanceTotale,
-        crawlM: parseInt(crawl) || niveauInfo.crawlM,
-        breaststrokeM: parseInt(brasse) || niveauInfo.brasseM,
-        blockStructure: niveauInfo.structure,
+      const nat = {
+        level: niv,
+        totalDistance: totalM,
+        crawlM,
+        breaststrokeM,
+        blockStructure: info.structure,
       }
-      if (estEnEdition && seanceExistante) {
-        await modifierSeanceNatation(seanceExistante.id, { feeling: ressenti || null, notes: notes || null, ...natData })
+      if (edit && seanceExistante) {
+        await modifierSeanceNatation(seanceExistante.id, { ...nat, feeling: res || null, notes: notes || null })
       } else {
-        await loggerSeanceNatation({ date: format(new Date(), 'yyyy-MM-dd'), feeling: ressenti || null, notes: notes || null, natation: natData })
+        await loggerSeanceNatation({ date, feeling: res || null, notes: notes || null, natation: nat })
       }
-      setSauvegarde(true)
-      if (!estEnEdition) { setCrawl(''); setBrasse(''); setNotes(''); setRessenti(0) }
-      setTimeout(() => setSauvegarde(false), 3000)
+      toast.success('Séance enregistrée ! 🏊')
       router.refresh()
-    } finally { setChargement(false) }
+    } finally {
+      setCh(false)
+    }
   }
 
   return (
-    <div className="flex flex-col gap-5">
-      {estEnEdition && (
-        <div className="flex items-center gap-2 rounded-xl bg-violet-50 dark:bg-violet-900/20 border border-violet-200 dark:border-violet-700 px-4 py-2.5 text-sm text-violet-700 dark:text-violet-300">
-          <Pencil size={14} /> Séance du jour déjà enregistrée — formulaire pré-rempli pour modification
+    <div className="flex flex-col gap-4 rounded-xl border border-emerald-200/80 bg-[#ECFDF5]/80 p-4 dark:border-emerald-900/50 dark:bg-emerald-950/20">
+      {edit ? (
+        <div className="flex items-center gap-2 text-sm text-[#065F46] dark:text-emerald-200">
+          <Pencil className="size-4" /> Modification
         </div>
-      )}
-
+      ) : null}
+      <p className="text-xs font-semibold uppercase text-[#059669] dark:text-emerald-300">Niveau actuel</p>
+      <div className="flex flex-wrap gap-2">
+        {Array.from({ length: SWIM_LEVEL_MAX - SWIM_LEVEL_MIN + 1 }, (_, i) => i + SWIM_LEVEL_MIN).map((n) => (
+          <button
+            key={n}
+            type="button"
+            onClick={() => setNiv(n)}
+            className={cn(
+              'min-w-[2.5rem] rounded-lg px-3 py-2 text-sm font-semibold transition-colors',
+              niv === n ? 'bg-[#059669] text-white shadow' : 'bg-white/90 text-neutral-800 dark:bg-neutral-800 dark:text-neutral-100'
+            )}
+          >
+            {n}
+          </button>
+        ))}
+      </div>
+      <div className="rounded-lg border border-emerald-200/60 bg-white/60 p-3 text-sm dark:border-emerald-800 dark:bg-emerald-950/30">
+        <p className="font-medium text-neutral-900 dark:text-neutral-50">{getNiveauDetail(niv).description}</p>
+        <p className="mt-1 font-mono text-[#059669] dark:text-emerald-300">
+          {info.structure} = {info.distanceTotale} m
+        </p>
+      </div>
       <div>
-        <p className="text-xs font-semibold text-neutral-400 uppercase tracking-wide mb-2">Niveau actuel</p>
-        <div className="flex flex-col gap-2">
-          {Array.from({ length: SWIM_LEVEL_MAX - SWIM_LEVEL_MIN + 1 }, (_, i) => i + SWIM_LEVEL_MIN).map((n) => (
-            <button key={n} onClick={() => setNiveau(n)}
-              className={`flex items-start gap-3 px-4 py-3 rounded-xl text-left transition-all
-                ${niveau === n ? 'bg-neutral-900 dark:bg-white text-white dark:text-neutral-900' : 'bg-neutral-100 dark:bg-neutral-800 text-neutral-600 dark:text-neutral-400'}`}>
-              <span className={`text-xs font-bold shrink-0 mt-0.5 w-16 ${niveau === n ? 'text-white/70 dark:text-neutral-900/60' : 'text-neutral-400'}`}>Niv. {n}</span>
-              <div className="flex-1 min-w-0">
-                <span className="font-semibold text-sm block">{NIVEAUX_DETAIL[n - 1].nom}</span>
-                <span className={`text-xs block mt-0.5 ${niveau === n ? 'opacity-80' : 'opacity-60'}`}>{NIVEAUX_DETAIL[n - 1].description}</span>
-              </div>
+        <p className="text-xs text-neutral-500">Distance réelle nagée (m)</p>
+        <Input
+          type="number"
+          min={0}
+          value={distReelle}
+          onChange={(e) => setDistReelle(e.target.value)}
+          className="border-emerald-200 dark:border-emerald-800"
+          placeholder={`ex. ${info.distanceTotale}`}
+        />
+      </div>
+      <Textarea value={notes} onChange={(e) => setNotes(e.target.value)} rows={2} className="border-emerald-200 text-sm dark:border-emerald-800" placeholder="Notes (optionnel)" />
+      <div>
+        <p className="mb-1 text-xs font-semibold text-[#059669] dark:text-emerald-200">Ressenti</p>
+        <div className="flex flex-wrap justify-center gap-1">
+          {[1, 2, 3, 4, 5].map((i) => (
+            <button
+              key={i}
+              type="button"
+              onClick={() => setRes(i === res ? 0 : i)}
+              className={cn(
+                'rounded-full border-2 p-2 text-lg',
+                i === res ? 'border-[#059669] bg-emerald-100 dark:bg-emerald-900/50' : 'border-transparent'
+              )}
+            >
+              {RESS[i - 1]}
             </button>
           ))}
         </div>
       </div>
-
-      <div className="rounded-xl border border-neutral-200 dark:border-neutral-700 bg-neutral-50 dark:bg-neutral-800/50 p-4 flex flex-col gap-3">
-        <p className="text-xs font-semibold text-neutral-400 uppercase tracking-wide">Structure de la séance</p>
-        <div className="flex items-start gap-2.5">
-          <span className="text-[11px] font-bold uppercase tracking-wide text-neutral-400 w-16 shrink-0 mt-0.5">Éch.</span>
-          <span className="text-sm text-neutral-600 dark:text-neutral-300">{ECHAUFFEMENT_NATATION} <span className="font-semibold">= 150 m</span></span>
-        </div>
-        <div className="flex items-start gap-2.5">
-          <span className="text-[11px] font-bold uppercase tracking-wide text-neutral-400 w-16 shrink-0 mt-0.5">Drill</span>
-          <span className="text-sm text-neutral-600 dark:text-neutral-300">{niveauInfo.exerciceTechnique} <span className="font-semibold">= 100 m</span></span>
-        </div>
-        <div className="flex items-start gap-2.5">
-          <span className="text-[11px] font-bold uppercase tracking-wide text-neutral-400 w-16 shrink-0 mt-0.5">Set</span>
-          <span className="text-lg font-mono font-bold text-neutral-900 dark:text-neutral-50">{niveauInfo.structure}</span>
-        </div>
-        <div className="flex flex-wrap gap-3 text-sm text-neutral-500 dark:text-neutral-400 mt-1">
-          <span>🏊 Crawl : {niveauInfo.crawlM} m</span>
-          <span>🤽 Brasse : {niveauInfo.brasseM} m</span>
-          <span>📏 Total : {niveauInfo.distanceTotale} m</span>
-        </div>
-        <div className="flex items-start gap-2 text-xs text-neutral-500 dark:text-neutral-400">
-          <ChevronRight size={13} className="shrink-0 mt-0.5" />
-          <span><span className="font-medium">Critère niveau suivant :</span> {niveauInfo.critere}</span>
-        </div>
+      <div className="rounded-xl border border-[#059669]/30 bg-[#ECFDF5] px-4 py-3 text-sm text-[#065F46] dark:border-emerald-800 dark:bg-emerald-950/40 dark:text-emerald-100">
+        <p className="font-semibold">Bilan</p>
+        <p>
+          Niveau {niv} · {info.distanceTotale} m prévus · Nage libre + Brasse
+        </p>
       </div>
-
-      <div className="grid sm:grid-cols-3 gap-3">
-        <div className="flex flex-col gap-1.5">
-          <p className="text-xs font-semibold text-neutral-400 uppercase tracking-wide">Crawl (m)</p>
-          <Input type="number" min={0} placeholder={String(niveauInfo.crawlM)} value={crawl} onChange={(e) => setCrawl(e.target.value)} />
-        </div>
-        <div className="flex flex-col gap-1.5">
-          <p className="text-xs font-semibold text-neutral-400 uppercase tracking-wide">Brasse (m)</p>
-          <Input type="number" min={0} placeholder={String(niveauInfo.brasseM)} value={brasse} onChange={(e) => setBrasse(e.target.value)} />
-        </div>
-        <div className="flex flex-col gap-1.5">
-          <p className="text-xs font-semibold text-neutral-400 uppercase tracking-wide">Total</p>
-          <div className="h-10 px-3 flex items-center rounded-md border border-neutral-200 dark:border-neutral-700 bg-neutral-50 dark:bg-neutral-800 text-sm font-semibold">
-            {totalM > 0 ? `${totalM} m` : `${niveauInfo.distanceTotale} m (réf.)`}
-          </div>
-        </div>
-      </div>
-
-      <div className="flex flex-col gap-1.5">
-        <p className="text-xs font-semibold text-neutral-400 uppercase tracking-wide">Notes</p>
-        <Textarea placeholder="Observations, difficultés, ressentis..." value={notes} onChange={(e) => setNotes(e.target.value)} className="resize-none text-sm" rows={2} />
-      </div>
-
-      <RessentiBoutons valeur={ressenti} onChange={setRessenti} />
-
-      <Button onClick={sauvegarder} disabled={chargement} className="w-full sm:w-auto sm:self-start">
-        {chargement ? 'Sauvegarde...' : sauvegarde ? '✓ Séance enregistrée !' : estEnEdition ? 'Modifier la séance' : 'Enregistrer la séance'}
+      <Button onClick={() => void save()} disabled={ch} className="w-full bg-[#059669] hover:bg-emerald-700">
+        {ch ? '…' : 'Enregistrer'}
       </Button>
     </div>
   )

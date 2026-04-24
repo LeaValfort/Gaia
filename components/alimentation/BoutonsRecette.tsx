@@ -33,6 +33,10 @@ export function BoutonsRecette({ recette, userId }: BoutonsRecetteProps) {
         type_repas: null,
         raison: null,
         spoonacular_id: recette.id,
+        calories:  recette.calories  || null,
+        proteines: recette.proteines || null,
+        glucides:  recette.glucides  || null,
+        lipides:   recette.lipides   || null,
       })
       setSauvegardee(true)
     } catch {

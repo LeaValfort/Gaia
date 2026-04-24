@@ -10,6 +10,8 @@ interface PillsSelectorProps {
   selected: string[]
   onChange: (selected: string[]) => void
   multiSelect?: boolean
+  /** Masque le titre au-dessus des pills (ex. titre déjà sur l’en-tête repliable) */
+  masquerLabel?: boolean
 }
 
 export function PillsSelector({
@@ -18,6 +20,7 @@ export function PillsSelector({
   selected,
   onChange,
   multiSelect = true,
+  masquerLabel = false,
 }: PillsSelectorProps) {
   function toggleOption(option: string) {
     if (multiSelect) {
@@ -34,9 +37,11 @@ export function PillsSelector({
 
   return (
     <div>
-      <p className="text-xs font-semibold text-neutral-500 dark:text-neutral-400 uppercase tracking-wide mb-2">
-        {label}
-      </p>
+      {!masquerLabel ? (
+        <p className="text-xs font-semibold text-neutral-500 dark:text-neutral-400 uppercase tracking-wide mb-2">
+          {label}
+        </p>
+      ) : null}
       <div className="flex flex-wrap gap-2">
         {options.map((option) => {
           const estSelectionne = selected.includes(option)

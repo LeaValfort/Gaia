@@ -7,6 +7,23 @@ import type { PostureYoga } from '@/types'
 
 type StatutTimer = 'idle' | 'en_cours' | 'pause' | 'termine'
 
+function bipDoux() {
+  try {
+    const ctx = new AudioContext()
+    const o = ctx.createOscillator()
+    const g = ctx.createGain()
+    o.type = 'sine'
+    o.frequency.value = 440
+    g.gain.value = 0.06
+    o.connect(g)
+    g.connect(ctx.destination)
+    o.start()
+    o.stop(ctx.currentTime + 0.15)
+  } catch {
+    /* Web Audio indisponible */
+  }
+}
+
 interface TimerYogaProps {
   postures: PostureYoga[]
   onTermine?: () => void
@@ -32,6 +49,7 @@ export function TimerYoga({ postures, onTermine }: TimerYogaProps) {
       if (tempsRestant - 1 <= 0) {
         setCoches((prev) => new Set([...prev, index]))
         if (index < postures.length - 1) {
+          bipDoux()
           setIndex(index + 1)
           setTempsRestant(postures[index + 1].dureeSec)
         } else {

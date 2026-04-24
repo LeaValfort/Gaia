@@ -1,16 +1,18 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useCallback } from 'react'
 import { BookOpen } from 'lucide-react'
 import { Skeleton } from '@/components/ui/skeleton'
 import { supabase } from '@/lib/supabase'
 import { getRecettes, deleteRecette } from '@/lib/db/recettes'
 import { CarteRecette } from './CarteRecette'
+import { FormRecettePersoRapide } from '@/components/alimentation/FormRecettePersoRapide'
 import type { Phase, TypeRepas, Recipe } from '@/types'
 
 interface RecettesSauvegardeeProps {
   userId: string
   phase: Phase
+  masquerFiltrePhase?: boolean
 }
 
 const FILTRES_PHASE: { value: Phase | 'toutes'; label: string }[] = [
@@ -29,28 +31,38 @@ const FILTRES_REPAS: { value: TypeRepas | 'tous'; label: string }[] = [
   { value: 'diner',     label: 'Dîner' },
 ]
 
-export function RecettesSauvegardees({ userId, phase }: RecettesSauvegardeeProps) {
+export function RecettesSauvegardees({ userId, phase, masquerFiltrePhase }: RecettesSauvegardeeProps) {
   const [recettes, setRecettes]       = useState<Recipe[]>([])
   const [chargement, setChargement]   = useState(true)
   const [erreur, setErreur]           = useState<string | null>(null)
   const [filtrePhase, setFiltrePhase] = useState<Phase | 'toutes'>(phase)
   const [filtreRepas, setFiltreRepas] = useState<TypeRepas | 'tous'>('tous')
 
-  useEffect(() => {
-    async function charger() {
-      setChargement(true)
-      setErreur(null)
+  const charger = useCallback(
+    async (opts?: { silent?: boolean }) => {
+      if (!opts?.silent) {
+        setChargement(true)
+        setErreur(null)
+      }
       try {
         const data = await getRecettes(supabase, userId)
         setRecettes(data)
       } catch {
-        setErreur('Impossible de charger les recettes.')
+        if (!opts?.silent) setErreur('Impossible de charger les recettes.')
       } finally {
-        setChargement(false)
+        if (!opts?.silent) setChargement(false)
       }
-    }
-    charger()
-  }, [userId])
+    },
+    [userId]
+  )
+
+  useEffect(() => {
+    void charger()
+  }, [charger])
+
+  useEffect(() => {
+    if (masquerFiltrePhase) setFiltrePhase('toutes')
+  }, [masquerFiltrePhase])
 
   async function handleDelete(id: string) {
     setRecettes((prev) => prev.filter((r) => r.id !== id))
@@ -76,20 +88,43 @@ export function RecettesSauvegardees({ userId, phase }: RecettesSauvegardeeProps
 
   if (erreur) return <p className="text-sm text-red-500 dark:text-red-400 py-4">{erreur}</p>
 
+  const phasePourForm = filtrePhase === 'toutes' ? null : filtrePhase
+
   return (
     <div className="flex flex-col gap-4">
 
-      {/* Filtre phase */}
-      <div className="flex gap-1.5 overflow-x-auto pb-1 scrollbar-none">
-        {FILTRES_PHASE.map((f) => (
-          <button key={f.value} onClick={() => setFiltrePhase(f.value)}
-            className={`px-3 py-1 rounded-full text-xs font-medium whitespace-nowrap border transition-colors shrink-0 ${filtrePhase === f.value ? 'bg-violet-600 text-white border-violet-600' : 'border-neutral-200 dark:border-neutral-700 text-neutral-600 dark:text-neutral-400'}`}>
-            {f.label}
-          </button>
-        ))}
+      <div className="rounded-xl border border-neutral-200 dark:border-neutral-700 bg-neutral-50/80 dark:bg-neutral-900/40 p-3 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+        <div>
+          <p className="text-sm font-medium text-neutral-900 dark:text-neutral-100">Ajouter une recette à la main</p>
+          <p className="text-xs text-neutral-500 dark:text-neutral-400 mt-0.5 max-w-md">
+            Ingrédients, étapes et macros pour <span className="font-medium">1 portion</span> (tu peux copier depuis Yazio).
+            {!masquerFiltrePhase && (
+              <> La phase du filtre ci-dessous est proposée par défaut dans le formulaire.</>
+            )}
+          </p>
+        </div>
+        <FormRecettePersoRapide
+          userId={userId}
+          phaseInitiale={phasePourForm}
+          onCree={() => void charger({ silent: true })}
+        />
       </div>
 
-      {/* Filtre type repas */}
+      {!masquerFiltrePhase ? (
+        <div className="flex gap-1.5 overflow-x-auto pb-1 scrollbar-none">
+          {FILTRES_PHASE.map((f) => (
+            <button
+              key={f.value}
+              type="button"
+              onClick={() => setFiltrePhase(f.value)}
+              className={`px-3 py-1 rounded-full text-xs font-medium whitespace-nowrap border transition-colors shrink-0 ${filtrePhase === f.value ? 'bg-violet-600 text-white border-violet-600' : 'border-neutral-200 dark:border-neutral-700 text-neutral-600 dark:text-neutral-400'}`}
+            >
+              {f.label}
+            </button>
+          ))}
+        </div>
+      ) : null}
+
       <div className="flex gap-1.5 overflow-x-auto pb-1 scrollbar-none">
         {FILTRES_REPAS.map((f) => (
           <button key={f.value} onClick={() => setFiltreRepas(f.value)}
@@ -99,7 +134,6 @@ export function RecettesSauvegardees({ userId, phase }: RecettesSauvegardeeProps
         ))}
       </div>
 
-      {/* Grille recettes */}
       {recettesFiltrees.length === 0 ? (
         <div className="flex flex-col items-center gap-3 py-12 text-center">
           <BookOpen size={32} className="text-neutral-300 dark:text-neutral-600" />
@@ -110,7 +144,7 @@ export function RecettesSauvegardees({ userId, phase }: RecettesSauvegardeeProps
           </p>
           {recettes.length === 0 && (
             <p className="text-xs text-neutral-400 dark:text-neutral-500 max-w-xs">
-              Va dans l&apos;onglet <span className="font-medium">Suggestions</span> pour découvrir des recettes et les sauvegarder ✨
+              Utilise le bouton <span className="font-medium">Ajouter une recette</span> ci-dessus, ou l&apos;onglet <span className="font-medium">Suggestions</span> pour en découvrir d&apos;autres.
             </p>
           )}
         </div>

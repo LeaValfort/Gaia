@@ -1,6 +1,7 @@
 // Données statiques pour l'onglet Courses
 // EnseigneConfig et ENSEIGNES_DEFAUT sont dans lib/data/nutrition.ts
-export { EnseigneConfig, ENSEIGNES_DEFAUT } from '@/lib/data/nutrition'
+export type { EnseigneConfig } from '@/lib/data/nutrition'
+export { ENSEIGNES_DEFAUT } from '@/lib/data/nutrition'
 
 import type { Rayon } from '@/types'
 

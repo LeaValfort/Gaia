@@ -1,16 +1,19 @@
 'use client'
 
 import { useState, useEffect } from 'react'
-import { Plus, ShoppingCart } from 'lucide-react'
+import { format, parseISO } from 'date-fns'
+import { fr } from 'date-fns/locale'
+import { Plus, ShoppingCart, Trash2 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { Skeleton } from '@/components/ui/skeleton'
 import { supabase } from '@/lib/supabase'
-import { getShoppingItems, toggleShoppingItem, deleteShoppingItem } from '@/lib/db/courses'
+import { getShoppingItems, toggleShoppingItem, deleteShoppingItem, deleteAllShoppingItemsForWeek } from '@/lib/db/courses'
 import { ENSEIGNES_DEFAUT, getSemainesDisponibles } from '@/lib/data/courses'
+import { grouperArticlesCourses } from '@/lib/courses-consolidation'
 import { CarteEnseigne } from './CarteEnseigne'
 import { FormulaireArticle } from './FormulaireArticle'
-import type { ShoppingItemComplet, Enseigne } from '@/types'
+import type { ShoppingItemComplet } from '@/types'
 
 interface ListeCoursesProps { userId: string; weekStart: string }
 
@@ -21,6 +24,7 @@ export function ListeCourses({ userId, weekStart: weekStartInitial }: ListeCours
   const [chargement, setChargement] = useState(true)
   const [enseigneActive, setEnseigneActive] = useState<string | null>(null)
   const [formulaireOuvert, setFormulaireOuvert] = useState(false)
+  const [vidage, setVidage] = useState(false)
 
   useEffect(() => {
     setChargement(true)
@@ -31,23 +35,37 @@ export function ListeCourses({ userId, weekStart: weekStartInitial }: ListeCours
   }, [userId, semaine])
 
   function nbRestants(enseigneId: string) {
-    return articles.filter((a) => (a.enseigne ?? 'grande_surface') === enseigneId && !a.fait).length
+    const subset = articles.filter((a) => (a.enseigne ?? 'grande_surface') === enseigneId && !a.fait)
+    return grouperArticlesCourses(subset).length
   }
 
-  async function handleToggle(id: string, fait: boolean) {
-    setArticles((prev) => prev.map((a) => a.id === id ? { ...a, fait: !fait } : a))
-    await toggleShoppingItem(supabase, id, !fait)
+  async function handleToggleMany(ids: string[], nouvelEtatFait: boolean) {
+    setArticles((prev) => prev.map((a) => (ids.includes(a.id) ? { ...a, fait: nouvelEtatFait } : a)))
+    await Promise.all(ids.map((id) => toggleShoppingItem(supabase, id, nouvelEtatFait)))
   }
 
-  async function handleDelete(id: string) {
-    setArticles((prev) => prev.filter((a) => a.id !== id))
-    await deleteShoppingItem(supabase, id)
+  async function handleDeleteMany(ids: string[]) {
+    setArticles((prev) => prev.filter((a) => !ids.includes(a.id)))
+    await Promise.all(ids.map((id) => deleteShoppingItem(supabase, id)))
   }
 
   async function handleToutCocher(enseigneId: string) {
     const ids = articles.filter((a) => (a.enseigne ?? 'grande_surface') === enseigneId && !a.fait).map((a) => a.id)
-    setArticles((prev) => prev.map((a) => ids.includes(a.id) ? { ...a, fait: true } : a))
+    setArticles((prev) => prev.map((a) => (ids.includes(a.id) ? { ...a, fait: true } : a)))
     await Promise.all(ids.map((id) => toggleShoppingItem(supabase, id, true)))
+  }
+
+  async function handleViderSemaine() {
+    if (articles.length === 0) return
+    const ok = window.confirm(
+      'Supprimer tous les articles de la liste pour cette semaine ? Cette action est irréversible.'
+    )
+    if (!ok) return
+    setVidage(true)
+    await deleteAllShoppingItemsForWeek(supabase, userId, semaine)
+    setArticles([])
+    setEnseigneActive(null)
+    setVidage(false)
   }
 
   const enseigneSelectionnee = ENSEIGNES_DEFAUT.find((e) => e.id === enseigneActive) ?? null
@@ -56,13 +74,15 @@ export function ListeCourses({ userId, weekStart: weekStartInitial }: ListeCours
     <div className="flex flex-col gap-5">
 
       {/* Sélecteur de semaine */}
-      <Select value={semaine} onValueChange={setSemaine}>
+      <Select value={semaine} onValueChange={(v) => { if (v) setSemaine(v) }}>
         <SelectTrigger className="w-full sm:w-72 text-sm">
           <SelectValue />
         </SelectTrigger>
         <SelectContent>
           {semaines.map((s) => (
-            <SelectItem key={s.value} value={s.value}>{s.label}</SelectItem>
+            <SelectItem key={s.value} value={s.value}>
+              {format(parseISO(`${s.value}T12:00:00`), 'd MMMM yyyy', { locale: fr })}
+            </SelectItem>
           ))}
         </SelectContent>
       </Select>
@@ -93,18 +113,30 @@ export function ListeCourses({ userId, weekStart: weekStartInitial }: ListeCours
             })}
           </div>
 
-          {/* Bouton ajouter */}
-          <Button variant="outline" size="sm" onClick={() => setFormulaireOuvert(true)} className="self-start gap-1.5 text-xs">
-            <Plus size={13} /> Ajouter un article
-          </Button>
+          <div className="flex flex-wrap gap-2 items-center">
+            <Button variant="outline" size="sm" onClick={() => setFormulaireOuvert(true)} className="gap-1.5 text-xs">
+              <Plus size={13} /> Ajouter un article
+            </Button>
+            {articles.length > 0 && (
+              <Button
+                variant="outline"
+                size="sm"
+                disabled={vidage}
+                onClick={handleViderSemaine}
+                className="gap-1.5 text-xs text-red-600 border-red-200 hover:bg-red-50 dark:text-red-400 dark:border-red-900/50 dark:hover:bg-red-950/30"
+              >
+                <Trash2 size={13} /> {vidage ? 'Vidage…' : 'Vider les courses'}
+              </Button>
+            )}
+          </div>
 
           {/* Carte enseigne sélectionnée */}
           {enseigneSelectionnee ? (
             <CarteEnseigne
               enseigne={enseigneSelectionnee}
               articles={articles.filter((a) => (a.enseigne ?? 'grande_surface') === enseigneSelectionnee.id)}
-              onToggle={handleToggle}
-              onDelete={handleDelete}
+              onToggleMany={handleToggleMany}
+              onDeleteMany={handleDeleteMany}
               onToutCocher={() => handleToutCocher(enseigneSelectionnee.id)}
             />
           ) : (

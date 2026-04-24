@@ -3,7 +3,7 @@
 // Toutes les listes de choix centralisées ici.
 // ============================================================
 
-import type { ExtendedLogData } from '@/types'
+import type { DailyLog, ExtendedLogData } from '@/types'
 
 export const EMOTIONS = [
   'Joyeuse', 'Énergisée', 'Calme', 'Fatiguée', 'Stressée', 'Triste',
@@ -66,4 +66,18 @@ export function extendedLogFromExisting(log: {
     flow_intensity: log.flow_intensity ?? null,
     free_note:     log.free_note     ?? '',
   }
+}
+
+/** Journal enrichi + reprise des émotions depuis l’ancien champ texte `mood` si besoin. */
+export function extendedFromDailyLog(log: DailyLog): ExtendedLogData {
+  const base = extendedLogFromExisting(log)
+  if (base.emotions.length) return base
+  const mood = log.mood?.trim()
+  if (!mood) return base
+  const matched: string[] = []
+  for (const part of mood.split(',').map((s) => s.trim()).filter(Boolean)) {
+    const hit = EMOTIONS.find((e) => e.toLowerCase() === part.toLowerCase())
+    if (hit && !matched.includes(hit)) matched.push(hit)
+  }
+  return matched.length ? { ...base, emotions: matched } : base
 }

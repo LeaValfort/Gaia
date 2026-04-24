@@ -1,5 +1,7 @@
 // Données statiques de la checklist anti-inflammatoire
 
+import type { Rayon } from '@/types'
+
 export interface ItemChecklist {
   id: string
   label: string
@@ -59,19 +61,6 @@ export const ORDRE_CATEGORIES: ItemChecklist['categorie'][] = [
 // Crée un état checklist vide (tous les items à false)
 export function creerChecklistVide(): Record<string, boolean> {
   return Object.fromEntries(ITEMS_CHECKLIST.map((item) => [item.id, false]))
-}
-
-// ------------------------------------------------------------
-// Macros par type de journée (objectif recomposition corporelle)
-// ------------------------------------------------------------
-
-import type { TypeJournee, Rayon } from '@/types'
-
-export const MACROS_PAR_JOURNEE: Record<TypeJournee, { calories: number; proteines: number; glucides: number; lipides: number }> = {
-  sport:  { calories: 1750, proteines: 130, glucides: 195, lipides: 60 },
-  yoga:   { calories: 1650, proteines: 120, glucides: 175, lipides: 58 },
-  repos:  { calories: 1600, proteines: 120, glucides: 160, lipides: 55 },
-  regles: { calories: 1700, proteines: 120, glucides: 180, lipides: 58 },
 }
 
 // ------------------------------------------------------------

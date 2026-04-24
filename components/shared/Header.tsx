@@ -3,10 +3,13 @@
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
 import { useTheme } from 'next-themes'
+import { useEffect, useState } from 'react'
 import { supabase } from '@/lib/supabase'
 import { useRouter } from 'next/navigation'
-import { Home, Heart, Dumbbell, Leaf, TrendingUp, Settings, Sun, Moon } from 'lucide-react'
+import { Home, Heart, HeartHandshake, Dumbbell, Leaf, TrendingUp, Settings, Sun, Moon } from 'lucide-react'
 import { Button } from '@/components/ui/button'
+import type { ModeUtilisateur } from '@/types'
+import { DEFAULT_MODE_UTILISATEUR } from '@/types'
 
 const LIENS_NAV = [
   { href: '/',              label: "Aujourd'hui", icone: Home },
@@ -14,6 +17,7 @@ const LIENS_NAV = [
   { href: '/sport',         label: 'Sport',        icone: Dumbbell },
   { href: '/alimentation',  label: 'Alimentation', icone: Leaf },
   { href: '/progression',   label: 'Progression',  icone: TrendingUp },
+  { href: '/proches',       label: 'Proches',      icone: HeartHandshake },
   { href: '/parametres',    label: 'Paramètres',   icone: Settings },
 ]
 
@@ -21,6 +25,33 @@ export function Header() {
   const pathname = usePathname()
   const router = useRouter()
   const { theme, setTheme } = useTheme()
+  const [mode, setMode] = useState<ModeUtilisateur>(DEFAULT_MODE_UTILISATEUR)
+
+  useEffect(() => {
+    let annule = false
+    async function chargerMode() {
+      const { data: { user } } = await supabase.auth.getUser()
+      if (!user || annule) return
+      const { data } = await supabase
+        .from('user_preferences')
+        .select('mode_utilisateur')
+        .eq('user_id', user.id)
+        .maybeSingle()
+      if (annule || !data) return
+      const m = data.mode_utilisateur
+      if (m === 'sans_cycle' || m === 'cycle') setMode(m)
+    }
+    void chargerMode()
+    const onPrefs = () => { void chargerMode() }
+    window.addEventListener('gaia-prefs-updated', onPrefs)
+    return () => {
+      annule = true
+      window.removeEventListener('gaia-prefs-updated', onPrefs)
+    }
+  }, [pathname])
+
+  const liensNav =
+    mode === 'sans_cycle' ? LIENS_NAV.filter((l) => l.href !== '/cycle') : LIENS_NAV
 
   async function seDeconnecter() {
     await supabase.auth.signOut()
@@ -29,7 +60,7 @@ export function Header() {
 
   return (
     <header className="sticky top-0 z-50 border-b border-neutral-200 dark:border-neutral-800 bg-white/80 dark:bg-neutral-950/80 backdrop-blur-sm">
-      <div className="max-w-3xl mx-auto px-4 h-14 flex items-center justify-between gap-4">
+      <div className="max-w-7xl mx-auto px-6 h-14 flex items-center justify-between gap-4">
 
         {/* Logo */}
         <Link href="/" className="font-bold text-lg tracking-tight text-neutral-900 dark:text-neutral-50 shrink-0">
@@ -38,7 +69,7 @@ export function Header() {
 
         {/* Navigation — masquée sur mobile */}
         <nav className="hidden md:flex items-center gap-1">
-          {LIENS_NAV.map(({ href, label, icone: Icone }) => {
+          {liensNav.map(({ href, label, icone: Icone }) => {
             const actif = pathname === href
             return (
               <Link
@@ -76,7 +107,7 @@ export function Header() {
 
       {/* Navigation mobile — barre du bas */}
       <nav className="md:hidden flex border-t border-neutral-200 dark:border-neutral-800">
-        {LIENS_NAV.map(({ href, label, icone: Icone }) => {
+        {liensNav.map(({ href, label, icone: Icone }) => {
           const actif = pathname === href
           return (
             <Link

@@ -6,6 +6,43 @@ import type { Todo } from '@/types'
 /**
  * Récupère les todos du jour pour l'utilisatrice connectée.
  */
+export async function getTodosPourPlage(dateDebut: string, dateFin: string): Promise<Todo[]> {
+  try {
+    const supabase = await creerClientServeur()
+    const { data: { user } } = await supabase.auth.getUser()
+    if (!user) return []
+
+    const { data, error } = await supabase
+      .from('todos')
+      .select('*')
+      .eq('user_id', user.id)
+      .gte('date', dateDebut)
+      .lte('date', dateFin)
+      .order('date', { ascending: true })
+      .order('created_at', { ascending: true })
+
+    if (error) throw error
+    return data ?? []
+  } catch (erreur) {
+    console.error('Erreur getTodosPourPlage:', erreur)
+    return []
+  }
+}
+
+/** Todos sur une plage de dates, regroupés par jour (calendrier cycle, etc.). */
+export async function getTodosGroupesPourPlage(
+  dateDebut: string,
+  dateFin: string
+): Promise<Record<string, Todo[]>> {
+  const liste = await getTodosPourPlage(dateDebut, dateFin)
+  const parDate: Record<string, Todo[]> = {}
+  for (const t of liste) {
+    if (!parDate[t.date]) parDate[t.date] = []
+    parDate[t.date].push(t)
+  }
+  return parDate
+}
+
 export async function getTodosParDate(date: string): Promise<Todo[]> {
   try {
     const supabase = await creerClientServeur()

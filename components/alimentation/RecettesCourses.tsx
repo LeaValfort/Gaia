@@ -4,7 +4,7 @@ import { useState, useTransition } from 'react'
 import { Trash2, Copy, ShoppingCart, Plus, Check, Clock } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
-import { PHASE_STYLES, LISTE_COURSES_PHASE } from '@/lib/nutrition'
+import { PHASE_STYLES, LISTE_COURSES_PHASE, formaterLigneIngredient } from '@/lib/nutrition'
 import { supprimerRecette } from '@/lib/db/recipes'
 import { addShoppingItem, toggleShoppingItem, supprimerShoppingItem, genererListeCourses } from '@/lib/db/recipes'
 import type { Recipe, ShoppingItem, Phase, TypeRepas } from '@/types'
@@ -129,8 +129,8 @@ export function RecettesCourses({ recettesInitiales, articlesInitiaux, weekStart
                     <span className="flex items-center gap-1 text-xs text-neutral-500"><Clock size={11} />{recette.temps_min} min</span>
                   )}
                   <div className="flex flex-wrap gap-1">
-                    {recette.ingredients.map((ing) => (
-                      <span key={ing} className="px-2 py-0.5 bg-neutral-100 dark:bg-neutral-800 rounded text-xs text-neutral-600 dark:text-neutral-300">{ing}</span>
+                    {recette.ingredients.map((ing, idx) => (
+                      <span key={idx} className="px-2 py-0.5 bg-neutral-100 dark:bg-neutral-800 rounded text-xs text-neutral-600 dark:text-neutral-300">{formaterLigneIngredient(ing)}</span>
                     ))}
                   </div>
                   {recette.raison && <p className="text-xs text-neutral-500 italic">{recette.raison}</p>}
@@ -149,7 +149,7 @@ export function RecettesCourses({ recettesInitiales, articlesInitiaux, weekStart
       {onglet === 'courses' && (
         <div className="flex flex-col gap-4">
           <div className="flex gap-2">
-            <Button variant="outline" size="sm" onClick={generer} disabled={isPending} className="flex items-center gap-1.5">
+            <Button size="sm" onClick={generer} disabled={isPending} className="alimentation-btn-primaire flex items-center gap-1.5">
               <ShoppingCart size={14} /> Générer depuis le plan
             </Button>
             <Button variant="outline" size="sm" onClick={copier} className="flex items-center gap-1.5">

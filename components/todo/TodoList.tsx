@@ -11,9 +11,12 @@ import type { Todo } from '@/types'
 interface TodoListProps {
   todosInitiaux: Todo[]
   date: string
+  /** Par défaut : « To-do du jour » */
+  titre?: string
+  messageVide?: string
 }
 
-export function TodoList({ todosInitiaux, date }: TodoListProps) {
+export function TodoList({ todosInitiaux, date, titre = 'To-do du jour', messageVide }: TodoListProps) {
   const router = useRouter()
   const [todos, setTodos] = useState<Todo[]>(todosInitiaux)
   const [nouveauTexte, setNouveauTexte] = useState('')
@@ -66,7 +69,7 @@ export function TodoList({ todosInitiaux, date }: TodoListProps) {
       {/* Liste des todos en attente */}
       {todosEnAttente.length === 0 && todosFaits.length === 0 && (
         <p className="text-sm text-neutral-400 dark:text-neutral-500 py-2">
-          Aucune tâche pour aujourd&apos;hui. Ajoutes-en une !
+          {messageVide ?? "Aucune tâche pour aujourd'hui. Ajoutes-en une !"}
         </p>
       )}
 

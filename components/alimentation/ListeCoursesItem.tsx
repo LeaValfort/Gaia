@@ -2,6 +2,7 @@
 
 import { Trash2, Check } from 'lucide-react'
 import type { ShoppingItemComplet } from '@/types'
+import { normaliserAffichageArticleCourses } from '@/lib/nutrition'
 
 interface ListeCoursesItemProps {
   article: ShoppingItemComplet
@@ -10,6 +11,7 @@ interface ListeCoursesItemProps {
 }
 
 export function ListeCoursesItem({ article, onToggle, onDelete }: ListeCoursesItemProps) {
+  const aff = normaliserAffichageArticleCourses(article.nom, article.quantite)
   return (
     <div
       className={`flex items-center gap-3 px-3 py-2 rounded-lg transition-colors group
@@ -29,10 +31,10 @@ export function ListeCoursesItem({ article, onToggle, onDelete }: ListeCoursesIt
       {/* Nom + quantité */}
       <div className="flex-1 min-w-0">
         <span className={`text-sm ${article.fait ? 'line-through text-neutral-400' : 'text-neutral-700 dark:text-neutral-300'}`}>
-          {article.nom}
+          {aff.nom}
         </span>
-        {article.quantite && (
-          <span className="ml-1.5 text-xs text-neutral-400">{article.quantite}</span>
+        {aff.quantite && (
+          <span className="ml-1.5 text-xs text-neutral-400">{aff.quantite}</span>
         )}
       </div>
 

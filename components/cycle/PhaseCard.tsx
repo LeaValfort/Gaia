@@ -6,20 +6,33 @@ interface PhaseCardProps {
   phase: Phase
   jourDuCycle: number
   infos: InfosPhase
+  /** Fiabilité des prédictions (apprentissage sur l’historique). */
+  fiabiliteCycle?: 'haute' | 'moyenne' | 'faible' | null
 }
 
-export function PhaseCard({ phase, jourDuCycle, infos }: PhaseCardProps) {
+const LABEL_FIABILITE: Record<'haute' | 'moyenne' | 'faible', string> = {
+  haute: 'Prédictions fiables',
+  moyenne: 'Prédictions en cours d’affinage',
+  faible: 'Encore peu de données — les prédictions gagneront en précision',
+}
+
+export function PhaseCard({ phase, jourDuCycle, infos, fiabiliteCycle }: PhaseCardProps) {
   return (
     <div className={`rounded-2xl p-5 ${infos.couleurFond}`}>
 
       {/* Badge phase + numéro du jour */}
-      <div className="flex items-center gap-3 mb-4">
+      <div className="flex flex-wrap items-center gap-3 mb-4">
         <span className={`text-xs font-semibold px-2.5 py-1 rounded-full ${infos.couleurBadge}`}>
           {infos.label}
         </span>
         <span className={`text-sm font-medium ${infos.couleurTexte}`}>
           Jour {jourDuCycle} du cycle
         </span>
+        {fiabiliteCycle ? (
+          <span className="text-xs text-neutral-500 dark:text-neutral-400 border border-neutral-200 dark:border-neutral-600 rounded-full px-2 py-0.5">
+            {LABEL_FIABILITE[fiabiliteCycle]}
+          </span>
+        ) : null}
       </div>
 
       {/* Conseils */}

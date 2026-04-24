@@ -83,7 +83,7 @@ export function FormulaireArticle({ weekStart, userId, onAjoute, onFermer }: For
           <div className="grid grid-cols-2 gap-3">
             <div className="flex flex-col gap-1.5">
               <Label>Enseigne</Label>
-              <Select value={enseigne} onValueChange={setEnseigne}>
+              <Select value={enseigne} onValueChange={(v) => setEnseigne(v ?? ENSEIGNE_VIDE)}>
                 <SelectTrigger className="text-sm">
                   <SelectValue placeholder="Aucune" />
                 </SelectTrigger>
@@ -98,7 +98,7 @@ export function FormulaireArticle({ weekStart, userId, onAjoute, onFermer }: For
 
             <div className="flex flex-col gap-1.5">
               <Label>Rayon</Label>
-              <Select value={rayon} onValueChange={setRayon}>
+              <Select value={rayon} onValueChange={(v) => setRayon(v ?? RAYON_VIDE)}>
                 <SelectTrigger className="text-sm">
                   <SelectValue placeholder="Aucun" />
                 </SelectTrigger>
@@ -112,7 +112,7 @@ export function FormulaireArticle({ weekStart, userId, onAjoute, onFermer }: For
             </div>
           </div>
 
-          <Button onClick={handleSoumettre} disabled={!nom.trim() || chargement} className="w-full">
+          <Button onClick={handleSoumettre} disabled={!nom.trim() || chargement} className="alimentation-btn-primaire w-full">
             {chargement ? 'Ajout...' : 'Ajouter'}
           </Button>
         </div>

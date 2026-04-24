@@ -2,7 +2,6 @@
 // La clé API reste côté serveur (process.env.SPOONACULAR_API_KEY).
 
 import { NextRequest, NextResponse } from 'next/server'
-import { MACROS_PAR_JOURNEE } from '@/lib/data/nutrition'
 import { traduireUnite } from '@/lib/spoonacular'
 import type { TypeJournee, RecetteSpoonacular, IngredientCarte } from '@/types'
 
@@ -48,28 +47,30 @@ export async function GET(request: NextRequest) {
   const typeJournee = (searchParams.get('typeJournee') ?? 'repos') as TypeJournee
   const allergies   = searchParams.get('allergies') ?? ''
   const tempsMax    = parseInt(searchParams.get('tempsMax') ?? '30', 10)
+  const offset      = parseInt(searchParams.get('offset') ?? '0', 10)
+  const query       = searchParams.get('query') ?? ''
 
   const apiKey = process.env.SPOONACULAR_API_KEY
   if (!apiKey) return NextResponse.json({ erreur: 'Clé API manquante' }, { status: 500 })
 
-  const macros = MACROS_PAR_JOURNEE[typeJournee]
-  const minProtein = Math.round(macros.proteines * 0.25)
-
   const params = new URLSearchParams({
     apiKey,
-    number:              '6',
-    maxReadyTime:        String(tempsMax),
-    minProtein:          String(minProtein),
-    diet:                'whole30',
-    addRecipeNutrition:  'true',
-    fillIngredients:     'true',
+    number:             '6',
+    offset:             String(offset),
+    maxReadyTime:       String(tempsMax),
+    addRecipeNutrition: 'true',
+    fillIngredients:    'true',
+    sort:               'healthiness',
+    sortDirection:      'desc',
   })
+  if (query)     params.set('query', query)
   if (allergies) params.set('intolerances', allergies)
+  params.set('language', 'fr')
 
   try {
     const reponse = await fetch(
       `https://api.spoonacular.com/recipes/complexSearch?${params}`,
-      { next: { revalidate: 3600 } }
+      { cache: 'no-store' }
     )
 
     const json = await reponse.json()

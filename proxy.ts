@@ -41,8 +41,12 @@ export async function proxy(request: NextRequest) {
 
   const { pathname } = request.nextUrl
 
+  // Page proche publique (lien sans compte). `/proches` seul reste protégé.
+  const estLienProchePublic = pathname.startsWith('/proches/')
+
   // Redirige vers /login si non connectée (sauf pour /login et /auth/*)
-  const estPagePublique = pathname.startsWith('/login') || pathname.startsWith('/auth')
+  const estPagePublique =
+    pathname.startsWith('/login') || pathname.startsWith('/auth') || estLienProchePublic
   if (!user && !estPagePublique) {
     return NextResponse.redirect(new URL('/login', request.url))
   }

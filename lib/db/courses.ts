@@ -78,3 +78,21 @@ export async function deleteShoppingItem(
     console.error('Erreur deleteShoppingItem:', erreur)
   }
 }
+
+/** Supprime tous les articles de la liste de courses pour une semaine. */
+export async function deleteAllShoppingItemsForWeek(
+  supabase: SupabaseClient,
+  userId: string,
+  weekStart: string
+): Promise<void> {
+  try {
+    const { error } = await supabase
+      .from('shopping_items')
+      .delete()
+      .eq('user_id', userId)
+      .eq('week_start', weekStart)
+    if (error) throw error
+  } catch (erreur) {
+    console.error('Erreur deleteAllShoppingItemsForWeek:', erreur)
+  }
+}

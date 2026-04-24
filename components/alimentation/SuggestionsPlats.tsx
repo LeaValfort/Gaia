@@ -82,7 +82,7 @@ export function SuggestionsPlats({ phase, conseilAlim, likes, dislikes, allergie
       </div>
 
       {/* Bouton générer */}
-      <Button onClick={generer} disabled={chargement} className="flex items-center gap-2 self-start">
+      <Button onClick={generer} disabled={chargement} className="alimentation-btn-primaire flex items-center gap-2 self-start">
         {suggestions.length > 0 ? <RefreshCw size={14} /> : <Sparkles size={14} />}
         {chargement ? 'Génération en cours...' : suggestions.length > 0 ? 'Régénérer' : 'Générer 3 suggestions'}
       </Button>
