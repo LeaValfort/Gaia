@@ -10,6 +10,7 @@ import { SectionCycle } from '@/components/parametres/SectionCycle'
 import { SectionExport } from '@/components/parametres/SectionExport'
 import { SectionProches } from '@/components/parametres/SectionProches'
 import { SectionPlanningSport } from '@/components/parametres/SectionPlanningSport'
+import { SectionMacrosSeance } from '@/components/parametres/SectionMacrosSeance'
 import { updateUserPreferences } from '@/lib/db/parametres'
 import type { UserPreferences } from '@/types'
 
@@ -60,6 +61,7 @@ export function ParametresClient({
       <SectionProches />
       {prefs.mode_utilisateur === 'cycle' ? <SectionCycle prefs={prefs} onUpdate={onUpdate} /> : null}
       <SectionPlanningSport prefs={prefs} onUpdate={onUpdate} />
+      <SectionMacrosSeance userId={userId} />
       <SectionAlimentation prefs={prefs} onUpdate={onUpdate} />
       <SectionApp prefs={prefs} onUpdate={onUpdate} />
       <SectionExport userId={userId} />

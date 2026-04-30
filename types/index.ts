@@ -452,6 +452,10 @@ export interface WorkoutMuscuComplet {
   feeling: number | null
   notes: string | null
   sets: WorkoutSet[]
+  calories_cibles?: number | null
+  proteines_cibles?: number | null
+  glucides_cibles?: number | null
+  lipides_cibles?: number | null
 }
 
 export interface WorkoutNatationComplet {
@@ -466,6 +470,10 @@ export interface WorkoutNatationComplet {
     breaststroke_m: number | null
     block_structure: string | null
   }
+  calories_cibles?: number | null
+  proteines_cibles?: number | null
+  glucides_cibles?: number | null
+  lipides_cibles?: number | null
 }
 
 export interface WorkoutYogaComplet {
@@ -474,6 +482,10 @@ export interface WorkoutYogaComplet {
   duration_min: number | null
   feeling: number | null
   notes: string | null  // format : "[type] notes optionnel"
+  calories_cibles?: number | null
+  proteines_cibles?: number | null
+  glucides_cibles?: number | null
+  lipides_cibles?: number | null
 }
 
 // ------------------------------------------------------------
@@ -512,6 +524,9 @@ export interface Todo {
 
 export type ProcheStatus = 'pending' | 'active' | 'revoked'
 
+/** Lien affectif / statut du proche invité (stocké en base). */
+export type ProcheRelationType = 'partenaire' | 'ami' | 'famille'
+
 /** Connexion invitation / lien partagé */
 export interface ProcheConnection {
   id: string
@@ -519,6 +534,9 @@ export interface ProcheConnection {
   partner_id: string | null
   invite_code: string
   invite_email: string | null
+  /** E-mail saisi côté owner pour l’envoi Resend (optionnel) */
+  partner_email?: string | null
+  email_sent_at?: string | null
   status: ProcheStatus
   partner_name: string | null
   /** Prénom / pseudo propriétaire (dérivé du profil auth côté app ou RPC). */
@@ -535,8 +553,7 @@ export interface ProcheConnection {
   voir_symptomes: boolean
   created_at: string
   accepted_at: string | null
-  /** Optionnel (future colonne SQL) — affichage libido conseils. */
-  relation_type?: 'partenaire' | 'ami' | 'famille'
+  relation_type?: ProcheRelationType
 }
 
 /** Ce que le lien public expose (contrôlé par la propriétaire). */
@@ -673,6 +690,19 @@ export interface PlanningSport {
   vendredi: TypePlanningJour
   samedi: TypePlanningJour
   dimanche: TypePlanningJour
+}
+
+/** Cibles nutritionnelles par type d’activité (planning sport) */
+export interface MacrosSeance {
+  id: string
+  user_id: string
+  type_seance: TypePlanningJour
+  calories: number | null
+  proteines: number | null
+  glucides: number | null
+  lipides: number | null
+  notes: string | null
+  created_at: string
 }
 
 /** Clé `type_seance` dans `seances_custom` (muscu uniquement) */

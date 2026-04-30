@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation'
 import { toast } from 'sonner'
 import { Pencil } from 'lucide-react'
 import { BilanSeance } from '@/components/sport/BilanSeance'
+import { MacrosSeanceCard } from '@/components/sport/MacrosSeanceCard'
 import { BannerSuggestionGaia } from '@/components/sport/BannerSuggestionGaia'
 import { ExerciceItem } from '@/components/sport/ExerciceItem'
 import { ModaleEditSeance } from '@/components/sport/ModaleEditSeance'
@@ -129,6 +130,15 @@ export function OngletMuscu({
       </div>
       <MuscuRessentiEmojis ressenti={ressenti} onChange={setRessenti} phase={phase} />
       <BilanSeance exercices={aff} exercicesFaits={exercicesFaits} typeSeance={typeSeance} />
+      {userId && pPh ? (
+        <MacrosSeanceCard
+          typeSeance={typeMuscuVersPlanning(typeSeance)}
+          userId={userId}
+          phase={pPh}
+          workoutId={seanceExistante?.id}
+          seanceExistante={seanceExistante ?? null}
+        />
+      ) : null}
       <div className="flex flex-col gap-2 sm:flex-row">
         <Button type="button" variant="outline" onClick={() => { const n = aff.find((e) => !exercicesFaits.includes(e.nom)); if (n) document.getElementById(`exo-${n.nom.replace(/\s/g, '-')}`)?.scrollIntoView({ block: 'center' }) }}>
           ▶ Mode guidé

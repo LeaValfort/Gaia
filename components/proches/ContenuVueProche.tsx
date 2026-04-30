@@ -8,6 +8,7 @@ import { VueProcheHumeurPhaseMsg } from '@/components/proches/vue-proche/VueProc
 import { VueProcheLibido } from '@/components/proches/vue-proche/VueProcheLibido'
 import { VueProcheSymptomesPills } from '@/components/proches/vue-proche/VueProcheSymptomesPills'
 import { PHASES_DESIGN, PHASE_DESIGN_ACCUEIL_NEUTRE } from '@/lib/data/phases-design'
+import { cn } from '@/lib/utils'
 import type { ProcheConnection, ProchePartageData } from '@/types'
 
 export interface ContenuVueProcheProps {
@@ -15,9 +16,16 @@ export interface ContenuVueProcheProps {
   partageData: ProchePartageData
   /** `plein` = toute la colonne (aperçu page Proches). Défaut = largeur confort sur le lien public. */
   largeurContenu?: 'defaut' | 'plein'
+  /** Modale / embarqué : hauteur limitée, scroll interne */
+  compact?: boolean
 }
 
-export function ContenuVueProche({ connection, partageData, largeurContenu = 'defaut' }: ContenuVueProcheProps) {
+export function ContenuVueProche({
+  connection,
+  partageData,
+  largeurContenu = 'defaut',
+  compact = false,
+}: ContenuVueProcheProps) {
   const p = partageData
   const v = p.visibilite
   const design = p.phase != null ? PHASES_DESIGN[p.phase] : PHASE_DESIGN_ACCUEIL_NEUTRE
@@ -26,13 +34,23 @@ export function ContenuVueProche({ connection, partageData, largeurContenu = 'de
   const showPhase = v.phase && p.phase != null
 
   return (
-    <div className="min-h-svh flex flex-col bg-gradient-to-b from-violet-50 to-white dark:from-neutral-950 dark:to-neutral-900 text-neutral-900 dark:text-neutral-100">
+    <div
+      className={cn(
+        'flex flex-col bg-gradient-to-b from-violet-50 to-white dark:from-neutral-950 dark:to-neutral-900 text-neutral-900 dark:text-neutral-100',
+        compact ? 'min-h-0 max-h-[78vh] overflow-y-auto rounded-b-xl' : 'min-h-svh'
+      )}
+    >
       <header className="border-b border-neutral-200/80 dark:border-neutral-800 px-4 py-5">
         <h1 className="text-center text-2xl font-semibold text-neutral-900 dark:text-neutral-50">{prenomTitre}</h1>
         <p className="text-center text-sm text-neutral-500 dark:text-neutral-400 mt-1">Ce que tu peux savoir aujourd’hui</p>
       </header>
 
-      <main className="flex-1 w-full max-w-none px-4 sm:px-6 py-6 space-y-4 pb-16">
+      <main
+        className={cn(
+          'flex-1 w-full px-4 sm:px-6 py-6 space-y-4 pb-8',
+          largeurContenu === 'plein' ? 'max-w-none' : 'max-w-lg mx-auto'
+        )}
+      >
         <VueProcheHero partage={p} design={design} visible={showPhase} />
         <VueProcheGrilleStats partage={p} vis={v} symDetail={symDetail} />
         {showPhase && p.phase ? (

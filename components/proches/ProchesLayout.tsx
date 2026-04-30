@@ -1,11 +1,10 @@
 'use client'
 
+import type { ReactNode } from 'react'
 import { ChevronDown } from 'lucide-react'
 import { Nav } from '@/components/shared/Nav'
 import { SidebarProches } from '@/components/proches/SidebarProches'
-import { VueProche } from '@/components/proches/VueProche'
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible'
-import type { JournalAujourdhui } from '@/lib/proches-page-client'
 import type { Phase, ProcheConnection } from '@/types'
 import { cn } from '@/lib/utils'
 
@@ -18,9 +17,7 @@ export function ProchesLayout({
   onSelectProche,
   onInviter,
   onRefresh,
-  journal,
-  jourDuCycle,
-  prochaineCyclePredite,
+  vuePartageRecu,
 }: {
   phase: Phase | null
   sansCycle: boolean
@@ -30,25 +27,20 @@ export function ProchesLayout({
   onSelectProche: (id: string) => void
   onInviter: () => void
   onRefresh: () => void
-  journal: JournalAujourdhui
-  jourDuCycle: number
-  prochaineCyclePredite: string | null
+  vuePartageRecu?: ReactNode
 }) {
   const navPhase: Phase | null = sansCycle ? null : phase
-  const actif = connections.find((c) => c.id === procheActif) ?? null
-  const phaseVue: Phase = phase ?? 'folliculaire'
 
-  const droite = (
-    <VueProche
-      connection={actif}
-      connections={connections}
-      phase={phaseVue}
-      jourDuCycle={jourDuCycle}
-      journal={journal}
-      sansCycle={sansCycle}
-      prochaineCyclePredite={prochaineCyclePredite}
-      onSelectConnection={onSelectProche}
-    />
+  const colonnePartageRecu = (
+    <div className="min-w-0 rounded-2xl border border-gray-100 dark:border-gray-800 bg-white dark:bg-gray-900 p-5">
+      <h2 className="text-lg font-semibold text-gray-900 dark:text-gray-100 mb-1">Partagé avec moi</h2>
+      <p className="text-xs text-gray-500 dark:text-gray-400 mb-4">
+        Ici : ce que d’autres personnes choisissent de te montrer (pas l’aperçu de ce que tu partages).
+      </p>
+      {vuePartageRecu ?? (
+        <p className="text-sm text-neutral-500 dark:text-neutral-400 py-2">Chargement…</p>
+      )}
+    </div>
   )
 
   return (
@@ -58,20 +50,24 @@ export function ProchesLayout({
         <header className="rounded-2xl p-6 mb-6 bg-white dark:bg-gray-900 border border-gray-100 dark:border-gray-800">
           <h1 className="text-2xl font-semibold text-gray-900 dark:text-gray-100">👥 Proches</h1>
           <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">
-            Partage ce que tu choisis avec un proche — phase, énergie, humeur, conseils.
+            À gauche : invitations et réglages. À droite : uniquement les partages que tu reçois.
           </p>
         </header>
 
-        <div className="hidden md:grid md:grid-cols-[200px_1fr] gap-6 min-w-0">
-          <SidebarProches
-            connections={connections}
-            procheActif={procheActif}
-            onSelect={onSelectProche}
-            onInviter={onInviter}
-            onRefresh={onRefresh}
-            onRevoqueList={onRefresh}
-          />
-          <div className="min-w-0">{droite}</div>
+        <div className="hidden md:grid md:grid-cols-[minmax(240px,280px)_1fr] gap-6 min-w-0 items-start">
+          <div className="min-w-0 space-y-3">
+            <h2 className="text-lg font-semibold text-gray-900 dark:text-gray-100">Mes invitations</h2>
+            <SidebarProches
+              connections={connections}
+              procheActif={procheActif}
+              onSelect={onSelectProche}
+              onInviter={onInviter}
+              onRefresh={onRefresh}
+              onRevoqueList={onRefresh}
+              prenomOwner={prenom}
+            />
+          </div>
+          {colonnePartageRecu}
         </div>
 
         <div className="md:hidden flex flex-col gap-4">
@@ -82,7 +78,7 @@ export function ProchesLayout({
                 'text-neutral-800 dark:text-neutral-100'
               )}
             >
-              <span>Proches ({connections.length})</span>
+              <span>Mes invitations ({connections.length})</span>
               <ChevronDown className="h-4 w-4 shrink-0 opacity-60" />
             </CollapsibleTrigger>
             <CollapsibleContent>
@@ -94,11 +90,12 @@ export function ProchesLayout({
                   onInviter={onInviter}
                   onRefresh={onRefresh}
                   onRevoqueList={onRefresh}
+                  prenomOwner={prenom}
                 />
               </div>
             </CollapsibleContent>
           </Collapsible>
-          {droite}
+          {colonnePartageRecu}
         </div>
       </div>
     </div>

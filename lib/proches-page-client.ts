@@ -7,6 +7,26 @@ import type { Phase, ProcheConnection } from '@/types'
 
 const DEFAULT_CYCLE = 28
 
+export async function fetchProchesRecusClient(): Promise<ProcheConnection[]> {
+  const {
+    data: { user },
+  } = await supabase.auth.getUser()
+  if (!user) return []
+
+  const { data, error } = await supabase
+    .from('proches_connections')
+    .select('*')
+    .eq('partner_id', user.id)
+    .eq('status', 'active')
+    .order('created_at', { ascending: false })
+
+  if (error) {
+    console.error('fetchProchesRecusClient', error)
+    return []
+  }
+  return (data ?? []).map((r) => procheFromRow(r as Record<string, unknown>))
+}
+
 export async function fetchProchesConnectionsClient(): Promise<ProcheConnection[]> {
   const {
     data: { user },

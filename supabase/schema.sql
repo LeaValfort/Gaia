@@ -386,6 +386,20 @@ ALTER TABLE proches_connections ADD COLUMN IF NOT EXISTS voir_humeur boolean NOT
 ALTER TABLE proches_connections ADD COLUMN IF NOT EXISTS voir_conseils boolean NOT NULL DEFAULT true;
 ALTER TABLE proches_connections ADD COLUMN IF NOT EXISTS voir_libido boolean NOT NULL DEFAULT false;
 ALTER TABLE proches_connections ADD COLUMN IF NOT EXISTS voir_symptomes boolean NOT NULL DEFAULT false;
+ALTER TABLE proches_connections ADD COLUMN IF NOT EXISTS relation_type text NOT NULL DEFAULT 'partenaire';
+
+DO $$
+BEGIN
+  IF NOT EXISTS (
+    SELECT 1 FROM pg_constraint WHERE conname = 'proches_connections_relation_type_check'
+  ) THEN
+    ALTER TABLE proches_connections
+      ADD CONSTRAINT proches_connections_relation_type_check
+      CHECK (relation_type IN ('partenaire', 'ami', 'famille'));
+  END IF;
+EXCEPTION
+  WHEN duplicate_object THEN NULL;
+END $$;
 
 ALTER TABLE proches_connections ENABLE ROW LEVEL SECURITY;
 
@@ -588,11 +602,13 @@ GRANT EXECUTE ON FUNCTION public.fn_proches_public_view(text) TO anon, authentic
 DROP FUNCTION IF EXISTS public.fn_duo_create_invitation(text, text, text, text);
 DROP FUNCTION IF EXISTS public.fn_duo_create_invitation(text, text, text);
 DROP FUNCTION IF EXISTS public.fn_proches_create_invitation(text, text, text);
+DROP FUNCTION IF EXISTS public.fn_proches_create_invitation(text, text, text, text);
 
 CREATE OR REPLACE FUNCTION public.fn_proches_create_invitation(
   p_partner_name text,
   p_invite_email text,
-  p_invite_code text
+  p_invite_code text,
+  p_relation_type text DEFAULT 'partenaire'
 )
 RETURNS jsonb
 LANGUAGE plpgsql
@@ -602,6 +618,7 @@ AS $$
 DECLARE
   r             proches_connections%ROWTYPE;
   owner_label   text;
+  v_rel         text;
 BEGIN
   IF auth.uid() IS NULL THEN
     RETURN jsonb_build_object('ok', false, 'error', 'not_authenticated');
@@ -611,6 +628,11 @@ BEGIN
     RETURN jsonb_build_object('ok', false, 'error', 'partner_name_required');
   END IF;
 
+  v_rel := lower(trim(coalesce(p_relation_type, 'partenaire')));
+  IF v_rel NOT IN ('partenaire', 'ami', 'famille') THEN
+    v_rel := 'partenaire';
+  END IF;
+
   INSERT INTO proches_connections (
     owner_id,
     partner_id,
@@ -618,6 +640,7 @@ BEGIN
     invite_email,
     status,
     partner_name,
+    relation_type,
     notif_debut_regles,
     notif_energie_basse,
     notif_douleur_haute,
@@ -636,6 +659,7 @@ BEGIN
     NULLIF(trim(coalesce(p_invite_email, '')), ''),
     'pending',
     trim(p_partner_name),
+    v_rel,
     true,
     true,
     true,
@@ -669,6 +693,7 @@ BEGIN
     'status', r.status,
     'partner_name', r.partner_name,
     'owner_display_name', owner_label,
+    'relation_type', r.relation_type,
     'notif_debut_regles', r.notif_debut_regles,
     'notif_energie_basse', r.notif_energie_basse,
     'notif_douleur_haute', r.notif_douleur_haute,
@@ -688,5 +713,5 @@ EXCEPTION
 END;
 $$;
 
-REVOKE ALL ON FUNCTION public.fn_proches_create_invitation(text, text, text) FROM PUBLIC;
-GRANT EXECUTE ON FUNCTION public.fn_proches_create_invitation(text, text, text) TO authenticated;
+REVOKE ALL ON FUNCTION public.fn_proches_create_invitation(text, text, text, text) FROM PUBLIC;
+GRANT EXECUTE ON FUNCTION public.fn_proches_create_invitation(text, text, text, text) TO authenticated;

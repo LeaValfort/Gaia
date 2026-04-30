@@ -10,6 +10,7 @@ import { Textarea } from '@/components/ui/textarea'
 import { loggerSeanceNatation } from '@/lib/db/workouts'
 import { modifierSeanceNatation } from '@/lib/db/workoutsModifier'
 import { getNiveauDetail } from '@/lib/data/swimming'
+import { MacrosSeanceCard } from '@/components/sport/MacrosSeanceCard'
 import { SWIM_LEVEL_MAX, SWIM_LEVEL_MIN, type Phase, type WorkoutNatationComplet } from '@/types'
 import { cn } from '@/lib/utils'
 
@@ -129,6 +130,15 @@ export function OngletNatation({
           Niveau {niv} · {info.distanceTotale} m prévus · Nage libre + Brasse
         </p>
       </div>
+      {_u ? (
+        <MacrosSeanceCard
+          typeSeance="natation"
+          userId={_u}
+          phase={_p ?? 'folliculaire'}
+          workoutId={seanceExistante?.id}
+          seanceExistante={seanceExistante ?? null}
+        />
+      ) : null}
       <Button onClick={() => void save()} disabled={ch} className="w-full bg-[#059669] hover:bg-emerald-700">
         {ch ? '…' : 'Enregistrer'}
       </Button>

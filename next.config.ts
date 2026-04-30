@@ -9,7 +9,9 @@ const withPWAConfig = withPWA({
 })
 
 const nextConfig: NextConfig = {
-  /* config existante */
+  // next-pwa injecte une config webpack : Next 16 lance Turbopack par défaut en dev;
+  // une entrée vide indique que ce mélange est voulu (voir doc turbopack).
+  turbopack: {},
 }
 
 export default withPWAConfig(nextConfig)

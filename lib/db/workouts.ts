@@ -44,10 +44,46 @@ export async function getSeancesDuJour(date: string): Promise<{
   const natRaw = raw(rNat)
   const yogaRaw = raw(rYoga)
 
+  const ciblesM = (w: { calories_cibles?: number | null; proteines_cibles?: number | null; glucides_cibles?: number | null; lipides_cibles?: number | null }) => ({
+    calories_cibles: w.calories_cibles ?? null,
+    proteines_cibles: w.proteines_cibles ?? null,
+    glucides_cibles: w.glucides_cibles ?? null,
+    lipides_cibles: w.lipides_cibles ?? null,
+  })
+
   return {
-    muscu: muscuRaw ? { id: muscuRaw.id, date: muscuRaw.date, location: muscuRaw.location, feeling: muscuRaw.feeling, notes: muscuRaw.notes, sets: muscuRaw.workout_sets ?? [] } : null,
-    natation: natRaw && natRaw.swim_logs?.[0] ? { id: natRaw.id, date: natRaw.date, feeling: natRaw.feeling, notes: natRaw.notes, swim: natRaw.swim_logs[0] } : null,
-    yoga: yogaRaw ? { id: yogaRaw.id, date: yogaRaw.date, duration_min: yogaRaw.duration_min, feeling: yogaRaw.feeling, notes: yogaRaw.notes } : null,
+    muscu: muscuRaw
+      ? {
+          id: muscuRaw.id,
+          date: muscuRaw.date,
+          location: muscuRaw.location,
+          feeling: muscuRaw.feeling,
+          notes: muscuRaw.notes,
+          sets: muscuRaw.workout_sets ?? [],
+          ...ciblesM(muscuRaw),
+        }
+      : null,
+    natation:
+      natRaw && natRaw.swim_logs?.[0]
+        ? {
+            id: natRaw.id,
+            date: natRaw.date,
+            feeling: natRaw.feeling,
+            notes: natRaw.notes,
+            swim: natRaw.swim_logs[0],
+            ...ciblesM(natRaw),
+          }
+        : null,
+    yoga: yogaRaw
+      ? {
+          id: yogaRaw.id,
+          date: yogaRaw.date,
+          duration_min: yogaRaw.duration_min,
+          feeling: yogaRaw.feeling,
+          notes: yogaRaw.notes,
+          ...ciblesM(yogaRaw),
+        }
+      : null,
   }
 }
 

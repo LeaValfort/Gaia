@@ -24,10 +24,6 @@ export default async function PageProchePublic({ params }: PageProchePublicProps
   const { code: brut } = await params
   const code = decodeURIComponent(brut)
 
-  if (user) {
-    redirect(`/proches?code=${encodeURIComponent(code)}`)
-  }
-
   const { data: brutRpc, rpcError } = await getConnectionByCode(code)
   let { partage, meta, erreur } = interpreterReponseRpcProche(brutRpc)
   if (rpcError) {
@@ -46,12 +42,26 @@ export default async function PageProchePublic({ params }: PageProchePublicProps
     }
   }
 
+  let lienConnecte = false
+  if (user) {
+    const { data: connD } = await supabase.rpc('fn_proches_connect_partner', { p_code: code })
+    const j = connD as { ok?: boolean; error?: string; already?: boolean } | null
+    if (j && j.ok === false && j.error === 'own_link') {
+      redirect(`/proches?code=${encodeURIComponent(code)}`)
+    }
+    if (j && (j.ok === true || j.already === true)) {
+      lienConnecte = true
+    }
+  }
+
   return (
     <PublicProcheContenu
       erreur={erreur ?? null}
       partage={partage}
       meta={meta}
       inviteCode={code}
+      sessionUser={!!user}
+      lienConnecte={lienConnecte}
     />
   )
 }

@@ -8,6 +8,7 @@ import { Textarea } from '@/components/ui/textarea'
 import { Button } from '@/components/ui/button'
 import { TimerYoga } from '@/components/sport/TimerYoga'
 import { YogaPostureLigne } from '@/components/sport/yoga/YogaPostureLigne'
+import { MacrosSeanceCard } from '@/components/sport/MacrosSeanceCard'
 import { MuscuRessentiEmojis } from '@/components/sport/muscu/MuscuRessentiEmojis'
 import { getSeanceParPhase, getSeanceYoga } from '@/lib/data/yoga'
 import { loggerSeanceYoga } from '@/lib/db/workouts'
@@ -114,6 +115,15 @@ export function OngletYoga({
       )}
       <MuscuRessentiEmojis ressenti={res > 0 ? res : null} onChange={(n) => setRes(n ?? 0)} phase={phase} />
       <Textarea value={notes} onChange={(e) => setNotes(e.target.value)} rows={2} className="text-sm" placeholder="Notes" />
+      {_u ? (
+        <MacrosSeanceCard
+          typeSeance="yoga"
+          userId={_u}
+          phase={phase ?? 'folliculaire'}
+          workoutId={seanceExistante?.id}
+          seanceExistante={seanceExistante ?? null}
+        />
+      ) : null}
       <Button onClick={() => void save()} disabled={ch} className="w-full bg-[#7C3AED] hover:bg-violet-800">
         {ch ? '…' : 'Enregistrer'}
       </Button>

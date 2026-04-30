@@ -3,7 +3,7 @@
 import { genererCodeInvitation, prenomAffichageDepuisUser } from '@/lib/proches'
 import { procheFromRow } from '@/lib/proches-map'
 import { creerClientServeur } from '@/lib/supabase-server'
-import type { ProcheConnection } from '@/types'
+import type { ProcheConnection, ProcheRelationType } from '@/types'
 
 function messageErreurInvitationSupabase(error: {
   code?: string
@@ -32,6 +32,12 @@ function mapConnexionDepuisRpc(j: Record<string, unknown>): ProcheConnection {
   return procheFromRow({ ...j } as Record<string, unknown>)
 }
 
+function relationInvitationNorm(v: string | null | undefined): ProcheRelationType {
+  const x = (v ?? 'partenaire').trim().toLowerCase()
+  if (x === 'ami' || x === 'famille' || x === 'partenaire') return x
+  return 'partenaire'
+}
+
 export async function getProchesConnections(): Promise<ProcheConnection[]> {
   const supabase = await creerClientServeur()
   const {
@@ -55,7 +61,8 @@ export async function getProchesConnections(): Promise<ProcheConnection[]> {
 
 export async function creerInvitationProche(
   partnerName: string,
-  inviteEmail: string | null
+  inviteEmail: string | null,
+  relationType?: ProcheRelationType | null
 ): Promise<{ ok: true; connection: ProcheConnection } | { ok: false; message: string }> {
   const nom = partnerName.trim()
   if (nom.length < 1) return { ok: false, message: 'Indique le prénom du partenaire.' }
@@ -67,6 +74,7 @@ export async function creerInvitationProche(
   if (!user) return { ok: false, message: 'Connexion requise.' }
 
   const emailNorm = inviteEmail?.trim() || ''
+  const rel = relationInvitationNorm(relationType ?? undefined)
 
   for (let t = 0; t < 12; t++) {
     const code = genererCodeInvitation()
@@ -75,6 +83,7 @@ export async function creerInvitationProche(
       p_partner_name: nom,
       p_invite_email: emailNorm,
       p_invite_code: code,
+      p_relation_type: rel,
     })
 
     if (!rpc.error && rpc.data != null && typeof rpc.data === 'object') {
@@ -147,6 +156,7 @@ export async function creerInvitationProche(
         voir_conseils: true,
         voir_libido: false,
         voir_symptomes: false,
+        relation_type: rel,
       })
       .select('*')
       .single()
@@ -206,6 +216,7 @@ export async function supprimerConnexionProche(connectionId: string): Promise<bo
 }
 
 export type PatchProcheConnection = Partial<{
+  relation_type: ProcheRelationType
   notif_debut_regles: boolean
   notif_energie_basse: boolean
   notif_douleur_haute: boolean

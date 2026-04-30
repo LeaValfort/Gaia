@@ -1,11 +1,11 @@
-import type { ProcheConnection } from '@/types'
+import type { ProcheConnection, ProcheRelationType } from '@/types'
 
 function boolDef(v: unknown, def: boolean): boolean {
   if (typeof v === 'boolean') return v
   return def
 }
 
-function relationDepuisRow(row: Record<string, unknown>): 'partenaire' | 'ami' | 'famille' | undefined {
+function relationDepuisRow(row: Record<string, unknown>): ProcheRelationType | undefined {
   const r = row.relation_type
   if (r === 'partenaire' || r === 'ami' || r === 'famille') return r
   return undefined
@@ -19,6 +19,8 @@ export function procheFromRow(row: Record<string, unknown>, ownerName?: string |
     partner_id: (row.partner_id as string | null) ?? null,
     invite_code: row.invite_code as string,
     invite_email: (row.invite_email as string | null) ?? null,
+    partner_email: (row.partner_email as string | null) ?? null,
+    email_sent_at: (row.email_sent_at as string | null) ?? null,
     status: row.status as ProcheConnection['status'],
     partner_name: (row.partner_name as string | null) ?? null,
     owner_display_name: (row.owner_display_name as string | null | undefined) ?? ownerName ?? null,

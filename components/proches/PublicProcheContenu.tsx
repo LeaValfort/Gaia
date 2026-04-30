@@ -1,5 +1,6 @@
 import Link from 'next/link'
 import { ContenuVueProche } from '@/components/proches/ContenuVueProche'
+import { ProchePublicEncarts } from '@/components/proches/ProchePublicEncarts'
 import { procheDepuisLienPublic } from '@/lib/proches-partage-data'
 import { buttonVariants } from '@/components/ui/button'
 import { cn } from '@/lib/utils'
@@ -11,11 +12,15 @@ export function PublicProcheContenu({
   partage,
   meta,
   inviteCode,
+  sessionUser = false,
+  lienConnecte = false,
 }: {
   erreur: string | null
   partage: ProchePartageData | null
   meta: { partnerName: string | null; ownerName: string | null; status: ProcheStatus }
   inviteCode: string
+  sessionUser?: boolean
+  lienConnecte?: boolean
 }) {
   if (erreur || !partage) {
     return (
@@ -44,13 +49,16 @@ export function PublicProcheContenu({
   }
 
   return (
-    <ContenuVueProche
-      connection={procheDepuisLienPublic(
-        { partnerName: meta.partnerName, ownerName: meta.ownerName, status: meta.status },
-        inviteCode,
-        partage.visibilite
-      )}
-      partageData={partage}
-    />
+    <>
+      <ContenuVueProche
+        connection={procheDepuisLienPublic(
+          { partnerName: meta.partnerName, ownerName: meta.ownerName, status: meta.status },
+          inviteCode,
+          partage.visibilite
+        )}
+        partageData={partage}
+      />
+      <ProchePublicEncarts code={inviteCode} aSession={sessionUser} connecte={lienConnecte} />
+    </>
   )
 }

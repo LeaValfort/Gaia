@@ -3,7 +3,27 @@
 import { cn } from '@/lib/utils'
 import { Badge } from '@/components/ui/badge'
 import { PanneauDetailProche } from '@/components/proches/PanneauDetailProche'
-import type { ProcheConnection } from '@/types'
+import type { ProcheConnection, ProcheRelationType } from '@/types'
+
+const RELATION_LABEL: Record<ProcheRelationType, string> = {
+  partenaire: 'Partenaire',
+  ami: 'Ami·e',
+  famille: 'Famille',
+}
+
+const RELATION_EMOJI: Record<ProcheRelationType, string> = {
+  partenaire: '💑',
+  ami: '🤝',
+  famille: '🏠',
+}
+
+function relationAffichage(connection: ProcheConnection): { emoji: string; label: string } {
+  const r = connection.relation_type
+  if (r === 'partenaire' || r === 'ami' || r === 'famille') {
+    return { emoji: RELATION_EMOJI[r], label: RELATION_LABEL[r] }
+  }
+  return { emoji: '💑', label: 'Partenaire' }
+}
 
 export interface CarteProcheProps {
   connection: ProcheConnection
@@ -12,6 +32,7 @@ export interface CarteProcheProps {
   onUpdate: (updates: Partial<ProcheConnection>) => void
   onRevoquer: () => void
   onRefresh: () => void
+  prenomOwner?: string | null
 }
 
 const statutLabel: Record<ProcheConnection['status'], string> = {
@@ -27,8 +48,10 @@ export function CarteProche({
   onUpdate: _onUpdate,
   onRevoquer,
   onRefresh,
+  prenomOwner,
 }: CarteProcheProps) {
   void _onUpdate
+  const { emoji, label } = relationAffichage(connection)
   return (
     <div
       className={cn(
@@ -45,10 +68,10 @@ export function CarteProche({
       >
         <div className="min-w-0">
           <p className="line-clamp-1 text-sm font-medium text-neutral-900 dark:text-neutral-100">
-            <span aria-hidden>💑</span>{' '}
+            <span aria-hidden>{emoji}</span>{' '}
             {connection.partner_name ?? 'Proche'}
           </p>
-          <p className="text-[10px] text-neutral-500 dark:text-neutral-400">Partenaire</p>
+          <p className="text-[10px] text-neutral-500 dark:text-neutral-400">{label}</p>
         </div>
         <Badge
           variant={connection.status === 'active' ? 'default' : 'secondary'}
@@ -69,6 +92,7 @@ export function CarteProche({
             onRefresh={onRefresh}
             onRevoque={onRevoquer}
             embed
+            prenomOwner={prenomOwner}
           />
         </div>
       ) : null}

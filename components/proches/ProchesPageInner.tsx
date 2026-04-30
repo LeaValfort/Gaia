@@ -4,21 +4,9 @@ import { useCallback, useEffect, useState } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
 import { FormulaireInvitation } from '@/components/proches/FormulaireInvitation'
 import { ProchesLayout } from '@/components/proches/ProchesLayout'
-import {
-  fetchCycleContextProches,
-  fetchJournalAujourdhui,
-  fetchProchesConnectionsClient,
-} from '@/lib/proches-page-client'
-import type { JournalAujourdhui } from '@/lib/proches-page-client'
+import { VueProchesConnectes } from '@/components/proches/VueProchesConnectes'
+import { fetchCycleContextProches, fetchProchesConnectionsClient } from '@/lib/proches-page-client'
 import type { Phase, ProcheConnection } from '@/types'
-
-const journalVide: JournalAujourdhui = {
-  energie: null,
-  douleur: null,
-  humeur: null,
-  libido: null,
-  symptomes: null,
-}
 
 export function ProchesPageInner() {
   const router = useRouter()
@@ -30,9 +18,7 @@ export function ProchesPageInner() {
   const [phase, setPhase] = useState<Phase>('folliculaire')
   const [sansCycle, setSansCycle] = useState(false)
   const [prenom, setPrenom] = useState<string | null>(null)
-  const [jourDuCycle, setJourDuCycle] = useState(1)
-  const [journal, setJournal] = useState<JournalAujourdhui>(journalVide)
-  const [prochaineCyclePredite, setProchaineCyclePredite] = useState<string | null>(null)
+  const [userId, setUserId] = useState<string | null>(null)
   const load = useCallback(async () => {
     const ctx = await fetchCycleContextProches()
     if (!ctx) {
@@ -41,16 +27,11 @@ export function ProchesPageInner() {
       return
     }
     setPrenom(ctx.prenom)
+    setUserId(ctx.userId)
     setPhase(ctx.phase)
     setSansCycle(ctx.sansCycle)
-    setJourDuCycle(ctx.jourDuCycle)
-    setProchaineCyclePredite(ctx.prochaineCyclePredite)
-    const [conns, j] = await Promise.all([
-      fetchProchesConnectionsClient(),
-      fetchJournalAujourdhui(ctx.userId),
-    ])
+    const conns = await fetchProchesConnectionsClient()
     setConnections(conns)
-    setJournal(j)
     setLoading(false)
   }, [router])
 
@@ -92,8 +73,8 @@ export function ProchesPageInner() {
       <FormulaireInvitation
         open={modale}
         onOpenChange={setModale}
+        prenomOwner={prenom}
         onInvite={(c) => {
-          setModale(false)
           setProcheActif(c.id)
           void load()
         }}
@@ -107,9 +88,7 @@ export function ProchesPageInner() {
         onSelectProche={setProcheActif}
         onInviter={() => setModale(true)}
         onRefresh={() => void load()}
-        journal={journal}
-        jourDuCycle={jourDuCycle}
-        prochaineCyclePredite={prochaineCyclePredite}
+        vuePartageRecu={userId ? <VueProchesConnectes userId={userId} /> : null}
       />
     </>
   )

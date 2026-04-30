@@ -11,6 +11,7 @@ export interface SidebarProchesProps {
   onInviter: () => void
   onRefresh: () => void
   onRevoqueList: () => void
+  prenomOwner?: string | null
 }
 
 export function SidebarProches({
@@ -20,9 +21,10 @@ export function SidebarProches({
   onInviter,
   onRefresh,
   onRevoqueList,
+  prenomOwner,
 }: SidebarProchesProps) {
   return (
-    <aside className="w-full min-w-0 space-y-3 md:w-[200px]">
+    <aside className="w-full min-w-0 space-y-3">
       <button
         type="button"
         onClick={onInviter}
@@ -45,6 +47,7 @@ export function SidebarProches({
                 onUpdate={() => {}}
                 onRevoquer={onRevoqueList}
                 onRefresh={onRefresh}
+                prenomOwner={prenomOwner}
               />
             </li>
           ))}
