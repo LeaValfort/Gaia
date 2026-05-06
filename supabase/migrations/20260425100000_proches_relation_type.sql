@@ -1,4 +1,4 @@
--- Statut de relation sur les invitations proches + RPC à 4 paramètres.
+/* Proches: relation_type + fn_proches_create_invitation (4 args) */
 
 ALTER TABLE public.proches_connections
   ADD COLUMN IF NOT EXISTS relation_type text NOT NULL DEFAULT 'partenaire';

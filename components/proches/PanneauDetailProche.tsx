@@ -105,6 +105,7 @@ export function PanneauDetailProche({
     try {
       const res = await fetch('/api/proches/invite', {
         method: 'POST',
+        credentials: 'include',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           email: emailInvite.trim(),
@@ -113,10 +114,14 @@ export function PanneauDetailProche({
           prenomOwner: prenomOwner?.trim() || 'Moi',
         }),
       })
-      const j = (await res.json()) as { success?: boolean; error?: string }
+      const j = (await res.json()) as { success?: boolean; error?: string; detail?: string; warning?: string }
       if (!res.ok || !j.success) {
-        toast.error(j.error ?? "L'envoi a échoué")
+        const msg = [j.error, j.detail].filter((x): x is string => typeof x === 'string' && x.trim().length > 0).join(' — ')
+        toast.error(msg || "L'envoi a échoué")
         return
+      }
+      if (j.warning) {
+        toast.warning(j.warning)
       }
       toast.success(`E-mail envoyé à ${emailInvite.trim()}`)
       onRefresh()
