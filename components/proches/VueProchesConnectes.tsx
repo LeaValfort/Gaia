@@ -1,9 +1,10 @@
 'use client'
 
 import { useCallback, useEffect, useState } from 'react'
+import { ChevronDown } from 'lucide-react'
 import { ContenuVueProche } from '@/components/proches/ContenuVueProche'
 import { Button } from '@/components/ui/button'
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog'
+import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible'
 import { Input } from '@/components/ui/input'
 import { interpreterReponseRpcProche } from '@/lib/proches'
 import { fetchProchesRecusClient } from '@/lib/proches-page-client'
@@ -17,8 +18,10 @@ const CODE_INVITATION_REGEX = /^GAIA-[23456789ABCDEFGHJKLMNPQRSTUVWXYZ]{4}$/
 
 export function VueProchesConnectes({ userId: _userId }: { userId: string }) {
   const [list, setList] = useState<Ent[]>([])
-  const [sel, setSel] = useState<ProcheConnection | null>(null)
-  const [dataModal, setDataModal] = useState<ProchePartageData | null>(null)
+  const [openedId, setOpenedId] = useState<string | null>(null)
+  const [addCodeOpen, setAddCodeOpen] = useState(false)
+  const [details, setDetails] = useState<Record<string, ProchePartageData | null>>({})
+  const [loadingDetailId, setLoadingDetailId] = useState<string | null>(null)
   const [loading, setLoading] = useState(true)
   const [code, setCode] = useState('')
   const [envoiCode, setEnvoiCode] = useState(false)
@@ -81,39 +84,62 @@ export function VueProchesConnectes({ userId: _userId }: { userId: string }) {
     }
   }
 
-  async function open(c: ProcheConnection) {
-    setSel(c)
+  async function chargerDetail(c: ProcheConnection) {
+    if (details[c.id] !== undefined) return
+    setLoadingDetailId(c.id)
     const { data, error } = await supabase.rpc('fn_proches_public_view', { p_code: c.invite_code })
     if (error) {
-      setDataModal(null)
+      setDetails((prev) => ({ ...prev, [c.id]: null }))
+      setLoadingDetailId((prev) => (prev === c.id ? null : prev))
       return
     }
     const { partage } = interpreterReponseRpcProche(data)
-    setDataModal(partage)
+    setDetails((prev) => ({ ...prev, [c.id]: partage }))
+    setLoadingDetailId((prev) => (prev === c.id ? null : prev))
   }
 
   return (
     <div className="space-y-2">
-      <div className="rounded-xl border border-neutral-200 dark:border-neutral-700 bg-white/80 dark:bg-neutral-900/50 p-3 space-y-2">
-        <p className="text-xs text-neutral-600 dark:text-neutral-300">Entrer un code d&apos;invitation</p>
-        <div className="flex gap-2">
-          <Input
-            value={code}
-            onChange={(e) => setCode(e.target.value)}
-            placeholder="GAIA-4X7K"
-            className="h-8 text-xs"
+      <Collapsible
+        open={addCodeOpen}
+        onOpenChange={setAddCodeOpen}
+        className="rounded-xl border border-neutral-200 dark:border-neutral-700 bg-white/80 dark:bg-neutral-900/50 overflow-hidden"
+      >
+        <CollapsibleTrigger
+          className={cn(
+            'w-full p-3 text-left flex items-center justify-between gap-2',
+            'hover:bg-violet-50/60 dark:hover:bg-violet-950/20 transition-colors'
+          )}
+        >
+          <p className="text-sm font-medium text-neutral-800 dark:text-neutral-100">Ajouter un code</p>
+          <ChevronDown
+            className={cn(
+              'h-4 w-4 shrink-0 text-neutral-500 dark:text-neutral-300 transition-transform',
+              addCodeOpen && 'rotate-180'
+            )}
           />
-          <Button
-            type="button"
-            size="sm"
-            className="h-8 bg-violet-600 text-white hover:bg-violet-700"
-            disabled={envoiCode || !code.trim()}
-            onClick={() => void envoyerCode()}
-          >
-            {envoiCode ? 'Envoi…' : 'Rejoindre'}
-          </Button>
-        </div>
-      </div>
+        </CollapsibleTrigger>
+        <CollapsibleContent className="border-t border-neutral-200 dark:border-neutral-700 p-3 space-y-2">
+          <p className="text-xs text-neutral-600 dark:text-neutral-300">Entrer un code d&apos;invitation</p>
+          <div className="flex gap-2">
+            <Input
+              value={code}
+              onChange={(e) => setCode(e.target.value)}
+              placeholder="GAIA-4X7K"
+              className="h-8 text-xs"
+            />
+            <Button
+              type="button"
+              size="sm"
+              className="h-8 bg-violet-600 text-white hover:bg-violet-700"
+              disabled={envoiCode || !code.trim()}
+              onClick={() => void envoyerCode()}
+            >
+              {envoiCode ? 'Envoi…' : 'Rejoindre'}
+            </Button>
+          </div>
+        </CollapsibleContent>
+      </Collapsible>
       {loading ? (
         <p className="text-sm text-neutral-500 dark:text-neutral-400 py-2">Chargement…</p>
       ) : null}
@@ -124,43 +150,60 @@ export function VueProchesConnectes({ userId: _userId }: { userId: string }) {
         </p>
       ) : null}
       {!loading &&
-        list.map(({ c, resume }) => (
-        <button
-          key={c.id}
-          type="button"
-          onClick={() => void open(c)}
-          className={cn(
-            'w-full text-left rounded-xl border border-violet-200/80 dark:border-violet-900/50',
-            'bg-white/90 dark:bg-neutral-900/60 p-3 hover:border-violet-400 transition-colors'
-          )}
-        >
-          <p className="font-medium text-neutral-900 dark:text-neutral-100">
-            {c.owner_display_name?.trim() || 'Proche'}
-          </p>
-          {resume ? (
-            <p className="text-xs text-neutral-600 dark:text-neutral-300 mt-1">{resume}</p>
-          ) : null}
-        </button>
-        ))}
-      <Dialog open={!!sel} onOpenChange={(o) => !o && (setSel(null), setDataModal(null))}>
-        <DialogContent className="max-w-lg max-h-[90vh] overflow-y-auto p-0 gap-0 border-0 bg-transparent shadow-none">
-          <DialogHeader className="sr-only">
-            <DialogTitle>Vue partagée</DialogTitle>
-          </DialogHeader>
-          {sel && dataModal ? (
-            <div className="rounded-xl border border-neutral-200 dark:border-neutral-800 overflow-hidden bg-white dark:bg-neutral-950">
-              <ContenuVueProche
-                connection={sel}
-                partageData={dataModal}
-                largeurContenu="plein"
-                compact
-              />
-            </div>
-          ) : sel ? (
-            <p className="text-sm text-neutral-500 p-4 bg-white dark:bg-neutral-900 rounded-xl">Aucune donnée.</p>
-          ) : null}
-        </DialogContent>
-      </Dialog>
+        list.map(({ c, resume }) => {
+          const ouvert = openedId === c.id
+          const detail = details[c.id]
+          const detailEnChargement = loadingDetailId === c.id
+          return (
+            <Collapsible
+              key={c.id}
+              open={ouvert}
+              onOpenChange={(next) => {
+                if (!next) {
+                  setOpenedId(null)
+                  return
+                }
+                setOpenedId(c.id)
+                void chargerDetail(c)
+              }}
+              className={cn(
+                'rounded-xl border border-violet-200/80 dark:border-violet-900/50',
+                'bg-white/90 dark:bg-neutral-900/60 overflow-hidden'
+              )}
+            >
+              <CollapsibleTrigger
+                className={cn(
+                  'w-full text-left p-3 hover:bg-violet-50/60 dark:hover:bg-violet-950/20 transition-colors',
+                  'flex items-start justify-between gap-3'
+                )}
+              >
+                <div className="min-w-0">
+                  <p className="font-medium text-neutral-900 dark:text-neutral-100">
+                    {c.owner_display_name?.trim() || 'Proche'}
+                  </p>
+                  {resume ? (
+                    <p className="text-xs text-neutral-600 dark:text-neutral-300 mt-1">{resume}</p>
+                  ) : null}
+                </div>
+                <ChevronDown
+                  className={cn(
+                    'h-4 w-4 mt-0.5 shrink-0 text-neutral-500 dark:text-neutral-300 transition-transform',
+                    ouvert && 'rotate-180'
+                  )}
+                />
+              </CollapsibleTrigger>
+              <CollapsibleContent className="border-t border-violet-200/70 dark:border-violet-900/40">
+                {detailEnChargement ? (
+                  <p className="text-sm text-neutral-500 dark:text-neutral-400 p-4">Chargement…</p>
+                ) : detail ? (
+                  <ContenuVueProche connection={c} partageData={detail} largeurContenu="plein" compact />
+                ) : (
+                  <p className="text-sm text-neutral-500 dark:text-neutral-400 p-4">Aucune donnée.</p>
+                )}
+              </CollapsibleContent>
+            </Collapsible>
+          )
+        })}
     </div>
   )
 }
