@@ -3,6 +3,7 @@ import { creerClientServeur } from '@/lib/supabase-server'
 import { getUserPreferences, initUserPreferences } from '@/lib/db/parametres'
 import { Nav } from '@/components/shared/Nav'
 import { ParametresClient } from '@/components/parametres/ParametresClient'
+import { PageHeader } from '@/components/shared/PageHeader'
 
 export const dynamic = 'force-dynamic'
 
@@ -37,12 +38,11 @@ export default async function PageParametres({ searchParams }: PageParametresPro
         prenom={prenom}
       />
       <div className="max-w-7xl mx-auto px-6 py-6 pb-24">
-        <div className="rounded-2xl p-6 mb-6 bg-white dark:bg-gray-900 border border-gray-100 dark:border-gray-800">
-          <h1 className="text-2xl font-semibold text-gray-900 dark:text-gray-100">Paramètres</h1>
-          <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">
-            Tout est enregistré automatiquement à chaque modification.
-          </p>
-        </div>
+        <PageHeader
+          title="Paramètres"
+          subtitle="Tout est enregistré automatiquement à chaque modification."
+          className="mb-6"
+        />
         <ParametresClient
           prefsInitiales={prefs}
           userId={user.id}

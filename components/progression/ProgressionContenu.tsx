@@ -6,6 +6,7 @@ import { GraphiqueEnergie } from '@/components/progression/GraphiqueEnergie'
 import { GraphiqueMensurations } from '@/components/progression/GraphiqueMensurations'
 import { GraphiqueSport } from '@/components/progression/GraphiqueSport'
 import { ProgressionStatsCol, ProgressionStatsRow } from '@/components/progression/ProgressionStatsCards'
+import { PageHeader } from '@/components/shared/PageHeader'
 import type { PhaseDesign } from '@/lib/data/phases-design'
 import type { DailyLog, Mensuration, StatsResume, Workout } from '@/types'
 import { formaterDonneesSport } from '@/lib/progression'
@@ -32,7 +33,6 @@ export interface ProgressionContenuProps {
 
 export function ProgressionContenu({
   userId,
-  design,
   moisActuel,
   dailyLogs,
   workouts,
@@ -44,26 +44,16 @@ export function ProgressionContenu({
 
   return (
     <div className="space-y-6">
-      <div
-        className={`rounded-2xl p-6 border bg-gradient-to-br ${design.border} ${design.gradient}`}
-        style={{ borderColor: `${design.accent}33` }}
-      >
-        <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-          <div>
-            <h1 className="text-2xl font-semibold" style={{ color: design.texte }}>
-              Ma progression
-            </h1>
-            <p className="mt-1 text-sm capitalize" style={{ color: design.texteMuted }}>
-              {moisActuel}
-            </p>
-          </div>
+      <PageHeader
+        title="Ma progression"
+        subtitle={moisActuel}
+        phaseBadge={
           <FormulaireMensuration
             userId={userId}
-            triggerClassName="text-white border-0 shadow-sm hover:opacity-90"
-            triggerStyle={{ background: design.accent }}
+            triggerClassName="text-white border-0 shadow-sm hover:opacity-90 bg-violet-600 hover:bg-violet-700"
           />
-        </div>
-      </div>
+        }
+      />
 
       <div className="hidden lg:grid lg:grid-cols-[1fr_280px] gap-6">
         <div className="flex min-w-0 flex-col gap-6">

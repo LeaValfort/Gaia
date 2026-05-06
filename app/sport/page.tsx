@@ -4,8 +4,7 @@ import { useEffect, useState } from 'react'
 import { parseISO } from 'date-fns'
 import { supabase } from '@/lib/supabase'
 import { Nav } from '@/components/shared/Nav'
-import { PHASES_DESIGN, PHASE_DESIGN_ACCUEIL_NEUTRE } from '@/lib/data/phases-design'
-import { cn } from '@/lib/utils'
+import { PageHeader } from '@/components/shared/PageHeader'
 import { TabsSport } from '@/components/sport/TabsSport'
 import { PhaseBannerSport } from '@/components/sport/PhaseBannerSport'
 import { OngletPlanification } from '@/components/sport/OngletPlanification'
@@ -127,24 +126,22 @@ export default function SportPage() {
 
   if (!userId) return null
 
-  const dH =
-    navPhase == null || sansCycle ? PHASE_DESIGN_ACCUEIL_NEUTRE : PHASES_DESIGN[navPhase]
-
   return (
     <div className="min-h-screen bg-[#F8F7FF] dark:bg-gray-950">
       <Nav phase={navPhase} sansCycle={sansCycle} prenom={prenom} />
       <div className="mx-auto max-w-7xl px-6 py-6 pb-24">
-        <div
-          className={cn('rounded-2xl p-6 mb-6 border bg-gradient-to-br', dH.gradient, 'dark:border-gray-800/80')}
-          style={{ borderColor: `${dH.accent}33` }}
-        >
-          <h1 className="text-2xl font-semibold" style={{ color: dH.texte }}>
-            Sport
-          </h1>
-          <p className="text-sm mt-1" style={{ color: dH.texteMuted }}>
-            Musculation, natation, yoga : ton planning aligné sur ton cycle.
-          </p>
-        </div>
+        <PageHeader
+          title="Sport"
+          subtitle="Musculation, natation, yoga : ton planning aligné sur ton cycle."
+          className="mb-6"
+          phaseBadge={
+            navPhase ? (
+              <span className="inline-flex rounded-full bg-violet-600 px-2.5 py-1 text-xs font-medium text-white">
+                {navPhase} · J{jourDuCycle}
+              </span>
+            ) : undefined
+          }
+        />
         <div className="grid min-w-0 grid-cols-1 items-start gap-6 md:grid-cols-[1fr_280px]">
           <div className="flex min-w-0 flex-col gap-4">
             <TabsSport onglet={onglet} onChange={setOnglet} phase={navPhase} />

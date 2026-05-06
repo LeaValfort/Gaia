@@ -5,8 +5,7 @@ import { fr } from 'date-fns/locale'
 import { AlerteRetard } from '@/components/cycle/AlerteRetard'
 import { BoutonDebutRegles } from '@/components/cycle/BoutonDebutRegles'
 import { datePrevueProchainesReglesDepuisAncre } from '@/lib/cycle'
-import { PHASES_DESIGN } from '@/lib/data/phases-design'
-import type { Cycle, CycleStats, Phase } from '@/types'
+import type { Cycle, CycleStats } from '@/types'
 
 const LABEL_FIABILITE: Record<'haute' | 'moyenne' | 'faible', string> = {
   haute: 'Prédictions fiables',
@@ -15,8 +14,6 @@ const LABEL_FIABILITE: Record<'haute' | 'moyenne' | 'faible', string> = {
 }
 
 export interface SidebarCycleProps {
-  phase: Phase
-  jourDuCycle: number
   cycleLength: number
   /** Ancre d’affichage (identique au calendrier), pour prochain cycle + alerte retard. */
   effectiveStartISO: string
@@ -31,8 +28,6 @@ export interface SidebarCycleProps {
 const ID_TRIGGER_DEBUT_REGLES = 'gaia-sidebar-debut-regles'
 
 export function SidebarCycle({
-  phase,
-  jourDuCycle,
   cycleLength,
   effectiveStartISO,
   stats,
@@ -41,7 +36,6 @@ export function SidebarCycle({
   userId: _userId,
   onCycleDebute = undefined,
 }: SidebarCycleProps) {
-  const design = PHASES_DESIGN[phase]
   const fiabilite = stats?.fiabilite ?? 'faible'
   const datePrevue = datePrevueProchainesReglesDepuisAncre(
     effectiveStartISO,
@@ -55,23 +49,6 @@ export function SidebarCycle({
 
   return (
     <aside className="flex flex-col gap-5 lg:sticky lg:top-24">
-      <div
-        className={`rounded-2xl border p-5 bg-gradient-to-br ${design.gradient} ${design.border}`}
-      >
-        <p className="text-4xl mb-2" aria-hidden>
-          {design.emoji}
-        </p>
-        <p className="text-xs font-semibold uppercase tracking-wide opacity-80" style={{ color: design.texteMuted }}>
-          Phase actuelle
-        </p>
-        <h2 className="text-xl font-bold mt-1" style={{ color: design.texte }}>
-          {design.label}
-        </h2>
-        <p className="text-sm mt-2 font-medium" style={{ color: design.texteMuted }}>
-          Jour {jourDuCycle} sur {cycleLength}
-        </p>
-      </div>
-
       {retardJours != null ? (
         <AlerteRetard
           retardJours={retardJours}

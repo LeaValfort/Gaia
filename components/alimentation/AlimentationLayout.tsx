@@ -1,8 +1,8 @@
 'use client'
 
 import { useEffect, type CSSProperties, type ReactNode } from 'react'
-import { cn } from '@/lib/utils'
 import { MacrosCard } from '@/components/alimentation/MacrosCard'
+import { PageHeader } from '@/components/shared/PageHeader'
 import type { PhaseDesign } from '@/lib/data/phases-design'
 import type { TotauxConsommesJour } from '@/lib/recapManuel'
 import type { Phase, TypeJournee } from '@/types'
@@ -48,20 +48,7 @@ export function AlimentationLayout({
 
   return (
     <div className="alimentation-page w-full" style={vars}>
-      <header
-        className={cn('mb-6 rounded-2xl border bg-gradient-to-br p-6', design.border, design.gradient)}
-        style={{ borderColor: `${design.accent}33` }}
-      >
-        <h1
-          className="text-2xl font-semibold"
-          style={{ color: design.texte }}
-        >
-          Alimentation
-        </h1>
-        <p className="mt-1 text-sm" style={{ color: design.texteMuted }}>
-          {weekStartLabel}
-        </p>
-      </header>
+      <PageHeader title="Alimentation" subtitle={weekStartLabel} className="mb-6" />
 
       <div className="grid grid-cols-1 items-start gap-6 md:grid-cols-[1fr_280px]">
         <div className="order-2 min-w-0 flex flex-col gap-4 md:order-1">{children}</div>

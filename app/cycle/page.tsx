@@ -3,8 +3,7 @@ import { Settings } from 'lucide-react'
 import Link from 'next/link'
 import { redirect } from 'next/navigation'
 import { Nav } from '@/components/shared/Nav'
-import { PHASES_DESIGN, PHASE_DESIGN_ACCUEIL_NEUTRE } from '@/lib/data/phases-design'
-import { cn } from '@/lib/utils'
+import { PageHeader } from '@/components/shared/PageHeader'
 import { BoutonDebutRegles } from '@/components/cycle/BoutonDebutRegles'
 import { ConseilsPhase } from '@/components/cycle/ConseilsPhase'
 import { CycleCalendar } from '@/components/cycle/CycleCalendar'
@@ -80,24 +79,22 @@ export default async function PageCycle({ searchParams }: PageProps) {
     user?.email?.split('@')[0] ??
     'toi'
   const phaseNav = conseilAujourdhui?.phase ?? null
-  const dEnTete = phaseNav != null ? PHASES_DESIGN[phaseNav] : PHASE_DESIGN_ACCUEIL_NEUTRE
 
   return (
     <div className="min-h-screen bg-[#F8F7FF] dark:bg-gray-950">
       <Nav phase={phaseNav} prenom={prenom} />
       <div className="max-w-7xl mx-auto px-6 py-6 pb-24 flex flex-col gap-6">
-        <div
-          className={cn('rounded-2xl p-6 border bg-gradient-to-br', dEnTete.gradient, 'dark:border-gray-800/80')}
-          style={{ borderColor: `${dEnTete.accent}33` }}
-        >
-          <h1 className="text-2xl font-semibold" style={{ color: dEnTete.texte }}>
-            Mon cycle
-          </h1>
-          <p className="text-sm mt-1" style={{ color: dEnTete.texteMuted }}>
-            Calendrier des phases, prédictions en pointillés et suivi du retard. Clique sur un jour
-            pour ton journal.
-          </p>
-        </div>
+        <PageHeader
+          title="Mon cycle"
+          subtitle="Calendrier des phases, prédictions en pointillés et suivi du retard. Clique sur un jour pour ton journal."
+          phaseBadge={
+            phaseNav ? (
+              <span className="inline-flex rounded-full bg-violet-600 px-2.5 py-1 text-xs font-medium text-white">
+                {phaseNav}
+              </span>
+            ) : undefined
+          }
+        />
 
         {effectiveStart ? (
           <>
@@ -133,8 +130,6 @@ export default async function PageCycle({ searchParams }: PageProps) {
 
               {conseilAujourdhui ? (
                 <SidebarCycle
-                  phase={conseilAujourdhui.phase}
-                  jourDuCycle={conseilAujourdhui.jourDuCycle}
                   cycleLength={cycleLength}
                   effectiveStartISO={effectiveStart}
                   stats={stats}

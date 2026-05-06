@@ -4,6 +4,7 @@ import { useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { Button } from '@/components/ui/button'
 import { Slider } from '@/components/ui/slider'
+import { Textarea } from '@/components/ui/textarea'
 import { upsertDailyLog } from '@/lib/db/dailyLog'
 import { DailyLogSectionEtendue } from './DailyLogSectionEtendue'
 import { EXTENDED_LOG_INITIAL, extendedFromDailyLog } from '@/lib/data/journalOptions'
@@ -15,9 +16,16 @@ interface DailyLogFormProps {
   phase: Phase
   jourDuCycle: number
   logInitial: DailyLog | null
+  afficherDetailsEtendus?: boolean
 }
 
-export function DailyLogForm({ date, phase, jourDuCycle, logInitial }: DailyLogFormProps) {
+export function DailyLogForm({
+  date,
+  phase,
+  jourDuCycle,
+  logInitial,
+  afficherDetailsEtendus = true,
+}: DailyLogFormProps) {
   const router = useRouter()
   const [energie, setEnergie] = useState<number>(logInitial?.energy ?? 0)
   const [douleur, setDouleur] = useState<number>(logInitial?.pain ?? 0)
@@ -100,8 +108,22 @@ export function DailyLogForm({ date, phase, jourDuCycle, logInitial }: DailyLogF
         </div>
       </div>
 
-      {/* Sections enrichies — émotions, symptômes, libido, sommeil, appétit, flot, note */}
-      <DailyLogSectionEtendue data={extended} onChange={setExtended} phase={phase} />
+      {afficherDetailsEtendus ? (
+        <DailyLogSectionEtendue data={extended} onChange={setExtended} phase={phase} />
+      ) : (
+        <div>
+          <p className="mb-2 text-xs font-semibold uppercase tracking-wide text-neutral-500 dark:text-neutral-400">
+            Note libre
+          </p>
+          <Textarea
+            value={extended.free_note}
+            onChange={(e) => setExtended((prev) => ({ ...prev, free_note: e.target.value }))}
+            placeholder="Observations du jour..."
+            className="resize-none text-sm"
+            rows={3}
+          />
+        </div>
+      )}
 
       <Button onClick={sauvegarder} disabled={chargement} className="w-full sm:w-auto sm:self-end">
         {chargement ? 'Sauvegarde...' : sauvegarde ? '✓ Sauvegardé' : 'Sauvegarder'}

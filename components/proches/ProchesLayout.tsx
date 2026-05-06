@@ -3,6 +3,7 @@
 import type { ReactNode } from 'react'
 import { ChevronDown } from 'lucide-react'
 import { Nav } from '@/components/shared/Nav'
+import { PageHeader } from '@/components/shared/PageHeader'
 import { SidebarProches } from '@/components/proches/SidebarProches'
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible'
 import type { Phase, ProcheConnection } from '@/types'
@@ -47,12 +48,11 @@ export function ProchesLayout({
     <div className="min-h-screen bg-[#F8F7FF] dark:bg-gray-950">
       <Nav phase={navPhase} sansCycle={sansCycle} prenom={prenom} />
       <div className="mx-auto max-w-7xl px-6 py-6 pb-24">
-        <header className="rounded-2xl p-6 mb-6 bg-white dark:bg-gray-900 border border-gray-100 dark:border-gray-800">
-          <h1 className="text-2xl font-semibold text-gray-900 dark:text-gray-100">👥 Proches</h1>
-          <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">
-            À gauche : invitations et réglages. À droite : uniquement les partages que tu reçois.
-          </p>
-        </header>
+        <PageHeader
+          title="Proches"
+          subtitle="À gauche : invitations et réglages. À droite : uniquement les partages que tu reçois."
+          className="mb-6"
+        />
 
         <div className="hidden md:grid md:grid-cols-[minmax(240px,280px)_1fr] gap-6 min-w-0 items-start">
           <div className="min-w-0 space-y-3">

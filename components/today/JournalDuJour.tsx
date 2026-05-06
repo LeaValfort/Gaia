@@ -29,7 +29,13 @@ export function JournalDuJour({ phase, sansCycle, date, jourDuCycle, logInitial 
       <p className="text-[10px] font-medium uppercase tracking-widest text-gray-400 dark:text-gray-500 mb-3">
         Journal
       </p>
-      <DailyLogForm date={date} phase={phase} jourDuCycle={jourDuCycle} logInitial={logInitial} />
+      <DailyLogForm
+        date={date}
+        phase={phase}
+        jourDuCycle={jourDuCycle}
+        logInitial={logInitial}
+        afficherDetailsEtendus={false}
+      />
     </div>
   )
 }
