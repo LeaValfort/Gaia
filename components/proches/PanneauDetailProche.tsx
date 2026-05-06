@@ -14,8 +14,6 @@ import {
 } from '@/lib/db/proches'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
-import { Input } from '@/components/ui/input'
-import { Label } from '@/components/ui/label'
 import {
   Dialog,
   DialogContent,
@@ -42,14 +40,11 @@ export function PanneauDetailProche({
   onRefresh,
   onRevoque,
   embed,
-  prenomOwner,
 }: {
   connection: ProcheConnection
   onRefresh: () => void
   onRevoque: () => void
   embed?: boolean
-  /** Prénom de l’utilisatrice (objet e-mail Resend) */
-  prenomOwner?: string | null
 }) {
   const [revoqueOpen, setRevoqueOpen] = useState(false)
   const [copieOk, setCopieOk] = useState(false)
@@ -64,8 +59,6 @@ export function PanneauDetailProche({
   const [vc, setVc] = useState(connection.voir_conseils)
   const [vl, setVl] = useState(connection.voir_libido)
   const [vs, setVs] = useState(connection.voir_symptomes)
-  const [emailInvite, setEmailInvite] = useState('')
-  const [envoiMail, setEnvoiMail] = useState(false)
 
   useEffect(() => {
     setR1(connection.notif_debut_regles)
@@ -78,11 +71,6 @@ export function PanneauDetailProche({
     setVc(connection.voir_conseils)
     setVl(connection.voir_libido)
     setVs(connection.voir_symptomes)
-    setEmailInvite(
-      connection.invite_email?.trim() ||
-        connection.partner_email?.trim() ||
-        ''
-    )
   }, [connection])
 
   const lien = genererLienInvitation(connection.invite_code)
@@ -96,39 +84,6 @@ export function PanneauDetailProche({
       toast.success('Lien copié')
     } catch {
       toast.error('Copie impossible')
-    }
-  }
-
-  async function envoyerEmailInvite() {
-    if (connection.status !== 'pending' || !emailInvite.trim() || !connection.invite_code) return
-    setEnvoiMail(true)
-    try {
-      const res = await fetch('/api/proches/invite', {
-        method: 'POST',
-        credentials: 'include',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          email: emailInvite.trim(),
-          prenomProche: (connection.partner_name ?? '').trim(),
-          code: connection.invite_code,
-          prenomOwner: prenomOwner?.trim() || 'Moi',
-        }),
-      })
-      const j = (await res.json()) as { success?: boolean; error?: string; detail?: string; warning?: string }
-      if (!res.ok || !j.success) {
-        const msg = [j.error, j.detail].filter((x): x is string => typeof x === 'string' && x.trim().length > 0).join(' — ')
-        toast.error(msg || "L'envoi a échoué")
-        return
-      }
-      if (j.warning) {
-        toast.warning(j.warning)
-      }
-      toast.success(`E-mail envoyé à ${emailInvite.trim()}`)
-      onRefresh()
-    } catch {
-      toast.error('Erreur réseau')
-    } finally {
-      setEnvoiMail(false)
     }
   }
 
@@ -236,38 +191,6 @@ export function PanneauDetailProche({
           {copieOk ? <Check className="h-3.5 w-3.5 text-emerald-600" /> : <Copy className="h-3.5 w-3.5" />}
         </Button>
       </div>
-
-      {connection.status === 'pending' ? (
-        <div className="space-y-2 rounded-md border border-violet-200/80 bg-violet-50/50 dark:border-violet-800/50 dark:bg-violet-950/20 px-2 py-2">
-          <Label htmlFor={`email-invite-${connection.id}`} className="text-[11px] text-neutral-700 dark:text-neutral-300">
-            E-mail du proche (envoi du lien)
-          </Label>
-          <Input
-            id={`email-invite-${connection.id}`}
-            type="email"
-            value={emailInvite}
-            onChange={(e) => setEmailInvite(e.target.value)}
-            placeholder="adresse@exemple.com"
-            autoComplete="email"
-            className="h-8 text-xs"
-          />
-          <Button
-            type="button"
-            size="sm"
-            className="w-full h-8 text-xs bg-violet-600 text-white hover:bg-violet-700"
-            disabled={envoiMail || !emailInvite.trim()}
-            onClick={() => void envoyerEmailInvite()}
-          >
-            {envoiMail ? 'Envoi…' : '📧 Envoyer le lien par e-mail'}
-          </Button>
-          {connection.email_sent_at ? (
-            <p className="text-[10px] text-neutral-500 dark:text-neutral-400">
-              Dernier envoi :{' '}
-              {format(parseISO(connection.email_sent_at), "d MMM yyyy 'à' HH:mm", { locale: fr })}
-            </p>
-          ) : null}
-        </div>
-      ) : null}
 
       <ProchesInterrupteursPartage
         sync={sync}

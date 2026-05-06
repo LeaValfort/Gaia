@@ -48,7 +48,6 @@ export function CarteProche({
   onUpdate: _onUpdate,
   onRevoquer,
   onRefresh,
-  prenomOwner,
 }: CarteProcheProps) {
   void _onUpdate
   const { emoji, label } = relationAffichage(connection)
@@ -92,7 +91,6 @@ export function CarteProche({
             onRefresh={onRefresh}
             onRevoque={onRevoquer}
             embed
-            prenomOwner={prenomOwner}
           />
         </div>
       ) : null}

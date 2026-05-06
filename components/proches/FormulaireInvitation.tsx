@@ -28,8 +28,6 @@ const LABEL_RELATION: Record<ProcheRelationType, string> = {
 
 interface FormulaireInvitationProps {
   onInvite: (c: ProcheConnection) => void
-  /** Prénom de l’utilisatrice (e-mail invitation) */
-  prenomOwner?: string | null
   /** Mode contrôlé (ex. ouverture depuis la sidebar) */
   open?: boolean
   onOpenChange?: (open: boolean) => void
@@ -37,7 +35,6 @@ interface FormulaireInvitationProps {
 
 export function FormulaireInvitation({
   onInvite,
-  prenomOwner,
   open: openCtrl,
   onOpenChange,
 }: FormulaireInvitationProps) {
@@ -45,17 +42,14 @@ export function FormulaireInvitation({
   const ouvert = openCtrl !== undefined ? openCtrl : interne
   const setOuvert = onOpenChange ?? setInterne
   const [prenom, setPrenom] = useState('')
-  const [email, setEmail] = useState('')
   const [relationType, setRelationType] = useState<ProcheRelationType>('partenaire')
   const [lien, setLien] = useState<string | null>(null)
   const [code, setCode] = useState<string | null>(null)
   const [envoi, setEnvoi] = useState(false)
-  const [envoiMail, setEnvoiMail] = useState(false)
 
   useEffect(() => {
     if (ouvert) return
     setPrenom('')
-    setEmail('')
     setRelationType('partenaire')
     setLien(null)
     setCode(null)
@@ -65,7 +59,7 @@ export function FormulaireInvitation({
     setEnvoi(true)
     setLien(null)
     setCode(null)
-    const res = await creerInvitationProche(prenom, email.trim() || null, relationType)
+    const res = await creerInvitationProche(prenom, null, relationType)
     setEnvoi(false)
     if (!res.ok) {
       toast.error(res.message)
@@ -87,38 +81,6 @@ export function FormulaireInvitation({
     }
   }
 
-  async function envoyerEmail() {
-    if (!code || !email.trim()) return
-    setEnvoiMail(true)
-    try {
-      const res = await fetch('/api/proches/invite', {
-        method: 'POST',
-        credentials: 'include',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          email: email.trim(),
-          prenomProche: prenom.trim(),
-          code,
-          prenomOwner: prenomOwner?.trim() || 'Moi',
-        }),
-      })
-      const j = (await res.json()) as { success?: boolean; error?: string; detail?: string; warning?: string }
-      if (!res.ok || !j.success) {
-        const msg = [j.error, j.detail].filter((x): x is string => typeof x === 'string' && x.trim().length > 0).join(' — ')
-        toast.error(msg || "L'envoi a échoué")
-        return
-      }
-      if (j.warning) {
-        toast.warning(j.warning)
-      }
-      toast.success(`Email envoyé à ${email.trim()} ✓`)
-    } catch {
-      toast.error('Erreur réseau')
-    } finally {
-      setEnvoiMail(false)
-    }
-  }
-
   return (
     <Dialog open={ouvert} onOpenChange={setOuvert}>
       {openCtrl === undefined ? (
@@ -134,8 +96,8 @@ export function FormulaireInvitation({
         <DialogHeader>
           <DialogTitle>Invitation Proches</DialogTitle>
           <DialogDescription>
-            Prénom du proche obligatoire. Choisis son statut (partenaire, ami·e, famille). L’e-mail est
-            optionnel ; après génération du lien tu peux l’envoyer depuis cette fenêtre.
+            Prénom du proche obligatoire. Choisis son statut (partenaire, ami·e, famille), puis génère un lien à
+            partager toi-même par WhatsApp, SMS ou autre.
           </DialogDescription>
         </DialogHeader>
         <div className="flex flex-col gap-3 py-1">
@@ -164,19 +126,6 @@ export function FormulaireInvitation({
               placeholder="Ex : Alex"
             />
           </div>
-          {!lien ? (
-            <div className="space-y-1">
-              <Label htmlFor="proche-mail">E-mail (optionnel)</Label>
-              <Input
-                id="proche-mail"
-                type="email"
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-                placeholder="alex@exemple.com"
-                autoComplete="email"
-              />
-            </div>
-          ) : null}
           {lien ? (
             <div className="rounded-lg border border-neutral-200 dark:border-neutral-700 bg-neutral-50 dark:bg-neutral-900/50 p-3 space-y-3 text-sm">
               <p className="font-medium text-neutral-800 dark:text-neutral-100 flex items-center gap-1">
@@ -187,8 +136,7 @@ export function FormulaireInvitation({
               <p className="text-xs text-neutral-600 dark:text-neutral-400 leading-relaxed">
                 <strong className="text-neutral-800 dark:text-neutral-200">C’est enregistré.</strong> Ce proche est
                 déjà dans ta liste (invitation en attente), avec le statut « {LABEL_RELATION[relationType]} ». Tu peux
-                fermer avec <strong>Terminer</strong> : rien d’autre n’est obligatoire. Envoie l’e-mail ci-dessous
-                seulement si tu veux.
+                fermer avec <strong>Terminer</strong> : il ne te reste qu’à partager ce lien.
               </p>
               <div className="flex flex-wrap gap-2">
                 <Button type="button" size="sm" variant="outline" onClick={() => void copier(lien)}>
@@ -196,29 +144,6 @@ export function FormulaireInvitation({
                 </Button>
                 <Button type="button" size="sm" variant="outline" onClick={() => code && void copier(code)}>
                   <Copy size={14} className="mr-1" /> Copier le code
-                </Button>
-              </div>
-              <div className="pt-2 border-t border-neutral-200 dark:border-neutral-700 space-y-2">
-                <Label htmlFor="proche-mail-apres" className="text-neutral-800 dark:text-neutral-100">
-                  E-mail du proche (pour l’envoi)
-                </Label>
-                <Input
-                  id="proche-mail-apres"
-                  type="email"
-                  value={email}
-                  onChange={(e) => setEmail(e.target.value)}
-                  placeholder="adresse@exemple.com"
-                  autoComplete="email"
-                />
-                <Button
-                  type="button"
-                  size="sm"
-                  className="w-full sm:w-auto bg-violet-600 text-white hover:bg-violet-700"
-                  disabled={envoiMail || !email.trim() || !code}
-                  onClick={() => void envoyerEmail()}
-                  title={!email.trim() ? 'Renseigne un e-mail pour envoyer' : undefined}
-                >
-                  {envoiMail ? 'Envoi…' : '📧 Envoyer le lien par email'}
                 </Button>
               </div>
             </div>
@@ -231,7 +156,7 @@ export function FormulaireInvitation({
                 Annuler
               </Button>
               <Button type="button" disabled={envoi || !prenom.trim()} onClick={() => void generer()}>
-                {envoi ? 'Génération…' : 'Générer le lien et ajouter'}
+                {envoi ? 'Génération…' : 'Générer le lien'}
               </Button>
             </>
           ) : (

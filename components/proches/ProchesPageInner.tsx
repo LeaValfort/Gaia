@@ -73,7 +73,6 @@ export function ProchesPageInner() {
       <FormulaireInvitation
         open={modale}
         onOpenChange={setModale}
-        prenomOwner={prenom}
         onInvite={(c) => {
           setProcheActif(c.id)
           void load()
