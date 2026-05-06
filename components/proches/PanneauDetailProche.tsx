@@ -59,6 +59,7 @@ export function PanneauDetailProche({
   const [vc, setVc] = useState(connection.voir_conseils)
   const [vl, setVl] = useState(connection.voir_libido)
   const [vs, setVs] = useState(connection.voir_symptomes)
+  const [decisionLoading, setDecisionLoading] = useState<null | 'accept' | 'refuse'>(null)
 
   useEffect(() => {
     setR1(connection.notif_debut_regles)
@@ -128,6 +129,29 @@ export function PanneauDetailProche({
     } else toast.error('Suppression impossible')
   }
 
+  async function traiterDemande(decision: 'accept' | 'refuse') {
+    setDecisionLoading(decision)
+    try {
+      const res = await fetch('/api/proches/decision', {
+        method: 'POST',
+        credentials: 'include',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ connectionId: connection.id, decision }),
+      })
+      const j = (await res.json()) as { success?: boolean; error?: string }
+      if (!res.ok || !j.success) {
+        toast.error(j.error || 'Action impossible')
+        return
+      }
+      toast.success(decision === 'accept' ? 'Demande acceptée' : 'Demande refusée')
+      onRefresh()
+    } catch {
+      toast.error('Erreur réseau')
+    } finally {
+      setDecisionLoading(null)
+    }
+  }
+
   if (connection.status === 'revoked') {
     return (
       <div
@@ -176,7 +200,11 @@ export function PanneauDetailProche({
       ) : null}
 
       {connection.status === 'pending' ? (
-        <p className="text-xs text-amber-700 dark:text-amber-300">En attente — partage le lien ci-dessous.</p>
+        <p className="text-xs text-amber-700 dark:text-amber-300">
+          {connection.partner_id
+            ? 'Demande reçue — accepte ou refuse cet accès.'
+            : 'Invitation créée — partage le code ou le lien avec ta proche.'}
+        </p>
       ) : connection.accepted_at ? (
         <p className="text-xs text-neutral-500 dark:text-neutral-400">
           Depuis le {format(parseISO(connection.accepted_at), 'd MMM yyyy', { locale: fr })}
@@ -191,6 +219,30 @@ export function PanneauDetailProche({
           {copieOk ? <Check className="h-3.5 w-3.5 text-emerald-600" /> : <Copy className="h-3.5 w-3.5" />}
         </Button>
       </div>
+
+      {connection.status === 'pending' && connection.partner_id ? (
+        <div className="grid grid-cols-2 gap-2">
+          <Button
+            type="button"
+            size="sm"
+            className="bg-emerald-600 text-white hover:bg-emerald-700"
+            disabled={decisionLoading !== null}
+            onClick={() => void traiterDemande('accept')}
+          >
+            {decisionLoading === 'accept' ? 'Validation…' : 'Accepter'}
+          </Button>
+          <Button
+            type="button"
+            size="sm"
+            variant="outline"
+            className="border-red-200 text-red-600 hover:bg-red-50 dark:border-red-900 dark:hover:bg-red-950/40"
+            disabled={decisionLoading !== null}
+            onClick={() => void traiterDemande('refuse')}
+          >
+            {decisionLoading === 'refuse' ? 'Refus…' : 'Refuser'}
+          </Button>
+        </div>
+      ) : null}
 
       <ProchesInterrupteursPartage
         sync={sync}

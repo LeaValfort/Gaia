@@ -27,7 +27,7 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: 'Erreur serveur' }, { status: 500 })
   }
 
-  const j = data as { ok?: boolean; error?: string; already?: boolean } | null
+  const j = data as { ok?: boolean; error?: string; already?: boolean; requested?: boolean; status?: string } | null
   if (j?.ok === false) {
     if (j.error === 'own_link') {
       return NextResponse.json({ error: 'own_link' }, { status: 400 })
@@ -38,8 +38,16 @@ export async function POST(request: Request) {
     if (j.error === 'already_linked') {
       return NextResponse.json({ error: 'Déjà lié à un autre compte' }, { status: 409 })
     }
+    if (j.error === 'revoked') {
+      return NextResponse.json({ error: 'Invitation révoquée' }, { status: 410 })
+    }
     return NextResponse.json({ error: j.error ?? 'refus' }, { status: 400 })
   }
 
-  return NextResponse.json({ success: true, already: j?.already === true })
+  return NextResponse.json({
+    success: true,
+    already: j?.already === true,
+    requested: j?.requested === true,
+    status: typeof j?.status === 'string' ? j.status : null,
+  })
 }

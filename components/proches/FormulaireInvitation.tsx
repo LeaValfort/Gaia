@@ -89,7 +89,7 @@ export function FormulaireInvitation({
           className="inline-flex h-9 items-center justify-center gap-2 rounded-md bg-violet-600 px-4 text-sm font-medium text-white hover:bg-violet-700"
         >
           <UserPlus className="h-4 w-4" />
-          Inviter quelqu’un
+          Inviter une proche
         </DialogTrigger>
       ) : null}
       <DialogContent className="sm:max-w-md max-h-[90vh] overflow-y-auto">
