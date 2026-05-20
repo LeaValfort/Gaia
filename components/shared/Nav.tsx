@@ -10,7 +10,6 @@ import {
   Sun,
   Dumbbell,
   UtensilsCrossed,
-  MoreHorizontal,
   TrendingUp,
   HeartHandshake,
   Settings,
@@ -18,7 +17,6 @@ import {
 } from 'lucide-react'
 import { supabase } from '@/lib/supabase'
 import { Button } from '@/components/ui/button'
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog'
 import { designPhaseAffichage } from '@/lib/cycle'
 import type { ModeUtilisateur, Phase } from '@/types'
 import { DEFAULT_MODE_UTILISATEUR } from '@/types'
@@ -39,13 +37,8 @@ const LIENS_MOBILE_PRINCIPAL: { href: string; label: string; icone: LucideIcon }
   { href: '/cycle', label: 'Cycle', icone: Moon },
   { href: '/sport', label: 'Sport', icone: Dumbbell },
   { href: '/alimentation', label: 'Manger', icone: UtensilsCrossed },
-]
-
-const LIENS_PLUS = [
-  { href: '/progression', label: 'Progression', icone: TrendingUp },
-  { href: '/proches', label: 'Proches', icone: HeartHandshake },
   { href: '/parametres', label: 'Paramètres', icone: Settings },
-] as const
+]
 
 export interface NavProps {
   phase: Phase | null
@@ -58,7 +51,6 @@ export function Nav({ phase, sansCycle, prenom }: NavProps) {
   const router = useRouter()
   const { theme, setTheme } = useTheme()
   const [mode, setMode] = useState<ModeUtilisateur>(DEFAULT_MODE_UTILISATEUR)
-  const [plusOuvert, setPlusOuvert] = useState(false)
   const d = designPhaseAffichage(phase, { sansCycle })
 
   useEffect(() => {
@@ -161,34 +153,6 @@ export function Nav({ phase, sansCycle, prenom }: NavProps) {
             </Link>
           )
         })}
-        <button
-          type="button"
-          onClick={() => setPlusOuvert(true)}
-          className="flex flex-1 flex-col items-center justify-center gap-0.5 text-[10px] text-gray-500 dark:text-gray-400"
-        >
-          <MoreHorizontal size={22} />
-          Plus
-        </button>
-        <Dialog open={plusOuvert} onOpenChange={setPlusOuvert}>
-          <DialogContent className="max-w-sm rounded-2xl">
-            <DialogHeader>
-              <DialogTitle>Plus</DialogTitle>
-            </DialogHeader>
-            <div className="flex flex-col gap-1 py-2">
-              {LIENS_PLUS.map(({ href, label, icone: Ic }) => (
-                <Link
-                  key={href}
-                  href={href}
-                  onClick={() => setPlusOuvert(false)}
-                  className="flex items-center gap-2 rounded-lg px-3 py-2.5 text-sm hover:bg-gray-100 dark:hover:bg-gray-800"
-                >
-                  <Ic size={18} />
-                  {label}
-                </Link>
-              ))}
-            </div>
-          </DialogContent>
-        </Dialog>
       </nav>
     </>
   )
