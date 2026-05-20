@@ -12,8 +12,8 @@ import { SectionProches } from '@/components/parametres/SectionProches'
 import { SectionPlanningSport } from '@/components/parametres/SectionPlanningSport'
 import { SectionCalculateurMacros } from '@/components/parametres/SectionCalculateurMacros'
 import { SectionTachesRecurrentes } from '@/components/parametres/SectionTachesRecurrentes'
-import { updateUserPreferences } from '@/lib/db/parametres'
-import type { MacroProfile, RecurringTodo, SeanceProfil, UserPreferences } from '@/types'
+import { setMacrosMode, updateUserPreferences } from '@/lib/db/parametres'
+import type { MacroProfile, MacrosMode, RecurringTodo, SeanceProfil, UserPreferences } from '@/types'
 
 interface ParametresClientProps {
   prefsInitiales: UserPreferences
@@ -62,6 +62,25 @@ export function ParametresClient({
     [prefs, router]
   )
 
+  const onMacrosModeChange = useCallback(
+    async (mode: MacrosMode): Promise<boolean> => {
+      const prev = prefs.macros_mode ?? 'auto'
+      setPrefs((p) => ({ ...p, macros_mode: mode }))
+      const result = await setMacrosMode(mode)
+      if (!result.ok) {
+        setPrefs((p) => ({ ...p, macros_mode: prev }))
+        toast.error(
+          result.error ??
+            'Impossible d’enregistrer le mode. Vérifie la migration Supabase macros_mode.'
+        )
+        return false
+      }
+      toast.success('Mode macros enregistré')
+      return true
+    },
+    [prefs.macros_mode]
+  )
+
   return (
     <div className="flex flex-col gap-6">
       <SectionMode prefs={prefs} onUpdate={onUpdate} />
@@ -80,6 +99,7 @@ export function ParametresClient({
         prefs={prefs}
         seanceProfilsInitiales={seanceProfilsInitiales}
         onUpdate={onUpdate}
+        onMacrosModeChange={onMacrosModeChange}
       />
       <SectionTachesRecurrentes userId={userId} todosInitiales={recurringTodosInitiales} />
       <SectionApp prefs={prefs} onUpdate={onUpdate} />

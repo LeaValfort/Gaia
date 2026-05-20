@@ -81,6 +81,7 @@ interface SectionCalculateurMacrosProps {
   prefs: UserPreferences
   seanceProfilsInitiales: SeanceProfil[]
   onUpdate: (updates: Partial<Omit<UserPreferences, 'id' | 'user_id'>>) => Promise<boolean>
+  onMacrosModeChange: (mode: MacrosMode) => Promise<boolean>
 }
 
 function profilPourCalcul(
@@ -196,6 +197,7 @@ export function SectionCalculateurMacros({
   prefs,
   seanceProfilsInitiales,
   onUpdate,
+  onMacrosModeChange,
 }: SectionCalculateurMacrosProps) {
   const router = useRouter()
   const planning = useMemo(() => planningEffectif(prefs.planning_sport), [prefs.planning_sport])
@@ -211,6 +213,7 @@ export function SectionCalculateurMacros({
   const [pas, setPas] = useState('8000')
   const [objectif, setObjectif] = useState<Objectif | null>(null)
   const [chargement, setChargement] = useState(false)
+  const [chargementMode, setChargementMode] = useState(false)
   const [chargementCarte, setChargementCarte] = useState<TypePlanningJour | null>(null)
   const [erreur, setErreur] = useState<string | null>(null)
   const [lignesManuelles, setLignesManuelles] = useState<Partial<Record<TypePlanningJour, LigneManuelle>>>(
@@ -315,13 +318,16 @@ export function SectionCalculateurMacros({
   }, [mode, initLignesManuelles])
 
   async function changerMode(nouveau: MacrosMode) {
+    if (nouveau === mode || chargementMode) return
     setErreur(null)
+    const precedent = mode
     setMode(nouveau)
-    const ok = await onUpdate({ macros_mode: nouveau })
+    setChargementMode(true)
+    const ok = await onMacrosModeChange(nouveau)
     if (!ok) {
-      setMode(prefs.macros_mode ?? MACROS_MODE_AUTO)
-      setErreur('Impossible de changer le mode macros.')
+      setMode(precedent)
     }
+    setChargementMode(false)
   }
 
   function reinitialiser() {
@@ -412,7 +418,7 @@ export function SectionCalculateurMacros({
       }
 
       await saveMacroProfile(userId, data)
-      await onUpdate({ macros_mode: MACROS_MODE_AUTO })
+      await onMacrosModeChange(MACROS_MODE_AUTO)
 
       toast.success('Macros appliquées')
       router.refresh()
@@ -516,7 +522,7 @@ export function SectionCalculateurMacros({
               mode === MACROS_MODE_MANUEL &&
                 'bg-amber-600 text-white hover:bg-amber-700 dark:bg-amber-600'
             )}
-            disabled={chargement}
+            disabled={chargement || chargementMode}
             onClick={() => void changerMode(MACROS_MODE_MANUEL)}
           >
             Saisie manuelle

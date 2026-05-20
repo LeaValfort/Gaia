@@ -1,7 +1,7 @@
 'use server'
 
 import { creerClientServeur } from '@/lib/supabase-server'
-import type { UserPreferences } from '@/types'
+import type { MacrosMode, UserPreferences } from '@/types'
 import { PLANNING_DEFAUT } from '@/lib/planning-sport'
 import {
   DEFAULT_CYCLE_LENGTH,
@@ -9,14 +9,25 @@ import {
   DEFAULT_MODE_UTILISATEUR,
 } from '@/types'
 
+const MACROS_MODE_DEFAUT: MacrosMode = 'auto'
+
 function mapPrefs(row: Record<string, unknown>): UserPreferences {
   const r = row as unknown as UserPreferences
+  const macrosModeBrut = r.macros_mode
+  const macros_mode: MacrosMode =
+    macrosModeBrut === 'manuel' || macrosModeBrut === 'auto' ? macrosModeBrut : MACROS_MODE_DEFAUT
   return {
     ...r,
     mode_utilisateur:
       r.mode_utilisateur === 'sans_cycle' ? 'sans_cycle' : DEFAULT_MODE_UTILISATEUR,
     google_calendar_enabled: r.google_calendar_enabled !== false,
+    macros_mode,
   }
+}
+
+function estErreurColonneMacrosMode(message: string): boolean {
+  const m = message.toLowerCase()
+  return m.includes('macros_mode') || m.includes('schema cache')
 }
 
 /** Préférences de l’utilisatrice connectée (null si non connectée ou aucune ligne). */
@@ -79,6 +90,42 @@ export async function updateUserPreferences(
   }
 }
 
+/** Met à jour uniquement le mode macros (auto / manuel). */
+export async function setMacrosMode(
+  mode: MacrosMode
+): Promise<{ ok: boolean; error?: string }> {
+  try {
+    const supabase = await creerClientServeur()
+    const {
+      data: { user },
+    } = await supabase.auth.getUser()
+    if (!user) return { ok: false, error: 'Non connectée' }
+
+    const { error } = await supabase
+      .from('user_preferences')
+      .update({ macros_mode: mode })
+      .eq('user_id', user.id)
+
+    if (error) {
+      if (estErreurColonneMacrosMode(error.message)) {
+        const viaUpsert = await updateUserPreferences({ macros_mode: mode })
+        if (viaUpsert) return { ok: true }
+        return {
+          ok: false,
+          error:
+            'Colonne macros_mode absente en base. Exécute la migration supabase/migrations/20260520170000_macros_mode.sql.',
+        }
+      }
+      throw error
+    }
+    return { ok: true }
+  } catch (erreur) {
+    const msg = erreur instanceof Error ? erreur.message : 'Erreur inconnue'
+    console.error('Erreur setMacrosMode:', erreur)
+    return { ok: false, error: msg }
+  }
+}
+
 /** Crée une ligne par défaut si elle n’existe pas. */
 export async function initUserPreferences(): Promise<void> {
   try {
@@ -101,6 +148,7 @@ export async function initUserPreferences(): Promise<void> {
       theme: 'system',
       notifications: true,
       google_calendar_enabled: true,
+      macros_mode: MACROS_MODE_DEFAUT,
     })
 
     if (error) throw error
