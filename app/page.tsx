@@ -14,7 +14,6 @@ import { SeanceDuJour } from '@/components/today/SeanceDuJour'
 import { JournalDuJour } from '@/components/today/JournalDuJour'
 import { TodoDuJour } from '@/components/today/TodoDuJour'
 import { AgendaDuJour } from '@/components/today/AgendaDuJour'
-import { PageHeader } from '@/components/shared/PageHeader'
 import { DEFAULT_MODE_UTILISATEUR, type Phase } from '@/types'
 
 function premierParam(v: string | string[] | undefined): string | undefined {
@@ -86,18 +85,19 @@ export default async function PageAujourdhui({
     <div className="min-h-screen bg-[#F8F7FF] dark:bg-gray-950 page-accueil">
       <Nav phase={phaseHeader} sansCycle={sansSuivi} prenom={prenom} />
       <div className="max-w-4xl mx-auto px-6 py-6 pb-24">
-        <PageHeader
-          title="Aujourd'hui"
-          subtitle={dateAffichee}
-          className="mb-4"
-          phaseBadge={
-            phaseHeader && jourDuCycle != null ? (
-              <span className="inline-flex rounded-full bg-violet-600 px-2.5 py-1 text-xs font-medium text-white">
-                {phaseHeader} · J{jourDuCycle}
-              </span>
-            ) : undefined
-          }
-        />
+        <header className="mb-4 flex items-start justify-between gap-3">
+          <div className="min-w-0">
+            <h1 className="text-xl font-semibold text-gray-900 dark:text-gray-100">
+              Bonjour {prenom}
+            </h1>
+            <p className="mt-0.5 text-sm capitalize text-gray-500 dark:text-gray-400">{dateAffichee}</p>
+          </div>
+          {phaseHeader && jourDuCycle != null ? (
+            <span className="shrink-0 inline-flex rounded-full bg-amber-600 px-2.5 py-1 text-xs font-medium text-white">
+              {phaseHeader} · J{jourDuCycle}
+            </span>
+          ) : null}
+        </header>
 
         <div className="flex flex-col gap-4">
           <SeanceDuJour phase={phaseHeader} sansCycle={sansSuivi} />

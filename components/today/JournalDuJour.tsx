@@ -1,6 +1,7 @@
 'use client'
 
 import type { CSSProperties } from 'react'
+import Link from 'next/link'
 import { DailyLogForm } from '@/components/cycle/DailyLogForm'
 import { designPhaseAffichage } from '@/lib/cycle'
 import type { DailyLog, Phase } from '@/types'
@@ -36,6 +37,12 @@ export function JournalDuJour({ phase, sansCycle, date, jourDuCycle, logInitial 
         logInitial={logInitial}
         afficherDetailsEtendus={false}
       />
+      <Link
+        href="/progression"
+        className="mt-3 inline-block text-sm text-gray-500 transition-colors hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-300"
+      >
+        Voir ma progression →
+      </Link>
     </div>
   )
 }

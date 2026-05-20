@@ -32,8 +32,7 @@ export function SeanceDuJour({ phase, sansCycle }: SeanceDuJourProps) {
       </div>
       <Link
         href="/sport"
-        className="mt-4 inline-flex w-full items-center justify-center rounded-xl px-4 py-2.5 text-sm font-semibold text-white transition-opacity hover:opacity-90"
-        style={{ backgroundColor: d.accent }}
+        className="mt-4 inline-flex w-full items-center justify-center rounded-xl bg-amber-600 px-4 py-2.5 text-sm font-semibold text-white transition-colors hover:bg-amber-700 dark:bg-amber-600 dark:hover:bg-amber-700"
       >
         Commencer
       </Link>
