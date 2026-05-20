@@ -1,5 +1,7 @@
+import Link from 'next/link'
 import { format, parseISO } from 'date-fns'
 import { fr } from 'date-fns/locale'
+import { Heart } from 'lucide-react'
 import { redirect } from 'next/navigation'
 import { creerClientServeur } from '@/lib/supabase-server'
 import { getDonneesCyclePourAffichage } from '@/lib/db/cycles'
@@ -81,10 +83,28 @@ export default async function PageAujourdhui({
       <div className="max-w-4xl mx-auto px-6 py-6 pb-24">
         <header className="mb-4 flex items-start justify-between gap-3">
           <div className="min-w-0">
-            <h1 className="text-xl font-semibold text-gray-900 dark:text-gray-100">
-              Bonjour {prenom}
-            </h1>
-            <p className="mt-0.5 text-sm capitalize text-gray-500 dark:text-gray-400">{dateAffichee}</p>
+            <div className="flex items-center gap-2">
+              <h1 className="text-xl font-semibold text-gray-900 dark:text-gray-100">
+                Bonjour {prenom}
+              </h1>
+              <Link
+                href="/proches"
+                title="Proches"
+                aria-label="Proches"
+                className="shrink-0 text-neutral-500 transition-colors hover:text-amber-600 dark:text-neutral-400 dark:hover:text-amber-500"
+              >
+                <Heart className="size-5" strokeWidth={2} aria-hidden />
+              </Link>
+            </div>
+            <p className="mt-0.5 text-sm capitalize text-neutral-500 dark:text-neutral-400">
+              {dateAffichee}
+            </p>
+            <Link
+              href="/progression"
+              className="mt-1.5 inline-block text-sm text-muted-foreground transition-colors hover:text-primary dark:text-neutral-400 dark:hover:text-amber-500"
+            >
+              Voir ma progression →
+            </Link>
           </div>
           {phaseHeader && jourDuCycle != null ? (
             <span className="shrink-0 inline-flex rounded-full bg-amber-600 px-2.5 py-1 text-xs font-medium text-white">
