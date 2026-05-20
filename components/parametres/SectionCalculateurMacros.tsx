@@ -18,13 +18,21 @@ import type {
   NiveauActivite,
   Objectif,
   Phase,
-  UserPreferences,
 } from '@/types'
 import { cn } from '@/lib/utils'
 
 const ETAPES = ['Profil', 'Mode de vie', 'Objectif', 'Résultats'] as const
 const SOMMEIL_MIN = 4
 const SOMMEIL_MAX = 10
+const POIDS_MIN_KG = 30
+const POIDS_MAX_KG = 200
+
+const DELAI_MOIS_OPTIONS: { value: number; label: string }[] = [
+  { value: 1, label: '1 mois' },
+  { value: 2, label: '2 mois' },
+  { value: 3, label: '3 mois' },
+  { value: 6, label: '6 mois' },
+]
 
 const OPTIONS_ACTIVITE: {
   id: NiveauActivite
@@ -46,14 +54,13 @@ const OPTIONS_OBJECTIF: { id: Objectif; label: string; description: string }[] =
 interface SectionCalculateurMacrosProps {
   userId: string
   profilInitial: MacroProfile | null
-  onUpdatePreferences: (
-    updates: Partial<Omit<UserPreferences, 'id' | 'user_id'>>
-  ) => Promise<boolean>
 }
 
 function profilPourCalcul(
   userId: string,
   poids: number,
+  poidsCibleKg: number | null,
+  delaiMois: number | null,
   taille: number,
   age: number,
   objectif: Objectif,
@@ -65,6 +72,8 @@ function profilPourCalcul(
     id: '',
     user_id: userId,
     poids_kg: poids,
+    poids_cible_kg: poidsCibleKg,
+    delai_mois: delaiMois,
     taille_cm: taille,
     age,
     objectif,
@@ -120,11 +129,12 @@ function ColonneMacros({ titre, macros }: { titre: string; macros: MacrosJour })
 export function SectionCalculateurMacros({
   userId,
   profilInitial,
-  onUpdatePreferences,
 }: SectionCalculateurMacrosProps) {
   const router = useRouter()
   const [etape, setEtape] = useState(0)
   const [poids, setPoids] = useState('')
+  const [poidsCible, setPoidsCible] = useState('')
+  const [delaiMois, setDelaiMois] = useState<number | null>(null)
   const [taille, setTaille] = useState('')
   const [age, setAge] = useState('')
   const [activite, setActivite] = useState<NiveauActivite | null>(null)
@@ -137,6 +147,10 @@ export function SectionCalculateurMacros({
   useEffect(() => {
     if (!profilInitial) return
     setPoids(String(profilInitial.poids_kg))
+    setPoidsCible(
+      profilInitial.poids_cible_kg != null ? String(profilInitial.poids_cible_kg) : ''
+    )
+    setDelaiMois(profilInitial.delai_mois)
     setTaille(String(profilInitial.taille_cm))
     setAge(String(profilInitial.age))
     setActivite(profilInitial.activite)
@@ -147,16 +161,18 @@ export function SectionCalculateurMacros({
 
   const numeriques = useMemo(() => {
     const p = parseFloat(poids)
+    const pc = parseFloat(poidsCible)
     const t = parseFloat(taille)
     const a = parseInt(age, 10)
     const ps = parseInt(pas, 10)
     return {
       poids: Number.isFinite(p) ? p : 0,
+      poidsCible: Number.isFinite(pc) ? pc : 0,
       taille: Number.isFinite(t) ? t : 0,
       age: Number.isFinite(a) ? a : 0,
       pas: Number.isFinite(ps) ? ps : 0,
     }
-  }, [poids, taille, age, pas])
+  }, [poids, poidsCible, taille, age, pas])
 
   const resultats = useMemo(() => {
     if (!activite || !objectif) return null
@@ -165,6 +181,8 @@ export function SectionCalculateurMacros({
     const profil = profilPourCalcul(
       userId,
       numeriques.poids,
+      numeriques.poidsCible > 0 ? numeriques.poidsCible : null,
+      delaiMois,
       numeriques.taille,
       numeriques.age,
       objectif,
@@ -188,11 +206,13 @@ export function SectionCalculateurMacros({
       repos: calculerMacrosJour(profil, phaseRepos, 'repos'),
       regles: calculerMacrosJour(profil, phaseRegles, 'cycle'),
     }
-  }, [activite, objectif, numeriques, sommeil, userId])
+  }, [activite, delaiMois, objectif, numeriques, sommeil, userId])
 
   function reinitialiser() {
     setEtape(0)
     setPoids('')
+    setPoidsCible('')
+    setDelaiMois(null)
     setTaille('')
     setAge('')
     setActivite(null)
@@ -207,6 +227,14 @@ export function SectionCalculateurMacros({
     if (etape === 0) {
       if (numeriques.poids <= 0 || numeriques.taille <= 0 || numeriques.age <= 0) {
         setErreur('Renseigne un poids, une taille et un âge valides.')
+        return false
+      }
+      if (numeriques.poidsCible <= 0) {
+        setErreur('Indique un poids cible valide.')
+        return false
+      }
+      if (delaiMois == null) {
+        setErreur('Choisis un délai pour atteindre ton poids cible.')
         return false
       }
     }
@@ -248,6 +276,8 @@ export function SectionCalculateurMacros({
     try {
       const data: MacroProfileSaveData = {
         poids_kg: numeriques.poids,
+        poids_cible_kg: numeriques.poidsCible,
+        delai_mois: delaiMois,
         taille_cm: numeriques.taille,
         age: numeriques.age,
         objectif,
@@ -271,17 +301,6 @@ export function SectionCalculateurMacros({
       }
 
       await saveMacroProfile(userId, data)
-
-      const okPrefs = await onUpdatePreferences({
-        calories_defaut: resultats.sport.kcal,
-        proteines_defaut: resultats.sport.proteines,
-        glucides_defaut: resultats.sport.glucides,
-        lipides_defaut: resultats.sport.lipides,
-      })
-
-      if (!okPrefs) {
-        throw new Error('Profil macros enregistré, mais préférences non mises à jour.')
-      }
 
       toast.success('Macros appliquées')
       router.refresh()
@@ -329,19 +348,57 @@ export function SectionCalculateurMacros({
         ) : null}
 
         {etape === 0 ? (
-          <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
+          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
             <div className="space-y-2">
               <Label htmlFor="macro-poids">Poids actuel (kg)</Label>
               <Input
                 id="macro-poids"
                 type="number"
-                min={30}
-                max={200}
+                min={POIDS_MIN_KG}
+                max={POIDS_MAX_KG}
                 step={0.1}
                 value={poids}
                 onChange={(e) => setPoids(e.target.value)}
                 className="bg-white dark:bg-neutral-950"
               />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="macro-poids-cible">Poids cible (kg)</Label>
+              <Input
+                id="macro-poids-cible"
+                type="number"
+                min={POIDS_MIN_KG}
+                max={POIDS_MAX_KG}
+                step={0.1}
+                value={poidsCible}
+                onChange={(e) => setPoidsCible(e.target.value)}
+                className="bg-white dark:bg-neutral-950"
+              />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="macro-delai">Délai souhaité</Label>
+              <select
+                id="macro-delai"
+                value={delaiMois ?? ''}
+                onChange={(e) => {
+                  const v = parseInt(e.target.value, 10)
+                  setDelaiMois(Number.isFinite(v) ? v : null)
+                }}
+                className={cn(
+                  'flex h-9 w-full rounded-md border border-neutral-200 bg-white px-3 py-1 text-sm shadow-xs',
+                  'focus-visible:border-amber-600 focus-visible:ring-amber-600/30 focus-visible:ring-[3px] outline-none',
+                  'dark:border-neutral-800 dark:bg-neutral-950 dark:text-neutral-50'
+                )}
+              >
+                <option value="" disabled>
+                  Choisir…
+                </option>
+                {DELAI_MOIS_OPTIONS.map((opt) => (
+                  <option key={opt.value} value={opt.value}>
+                    {opt.label}
+                  </option>
+                ))}
+              </select>
             </div>
             <div className="space-y-2">
               <Label htmlFor="macro-taille">Taille (cm)</Label>
@@ -355,7 +412,7 @@ export function SectionCalculateurMacros({
                 className="bg-white dark:bg-neutral-950"
               />
             </div>
-            <div className="space-y-2">
+            <div className="space-y-2 sm:col-span-2 sm:max-w-[50%]">
               <Label htmlFor="macro-age">Âge</Label>
               <Input
                 id="macro-age"

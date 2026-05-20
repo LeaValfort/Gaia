@@ -843,6 +843,8 @@ export interface MacroProfile {
   id: string
   user_id: string
   poids_kg: number
+  poids_cible_kg: number | null
+  delai_mois: number | null
   taille_cm: number
   age: number
   objectif: Objectif

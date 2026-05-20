@@ -37,6 +37,25 @@ const AJUSTEMENT_PAS_MOYEN = 0
 const AJUSTEMENT_PAS_ELEVE = 100
 const AJUSTEMENT_PAS_TRES_ELEVE = 200
 
+// —— Objectif de poids (déficit / surplus) ——
+const KCAL_PAR_KG_POIDS = 7700
+const JOURS_PAR_MOIS = 30
+const DEFICIT_MAX_KCAL = 500
+const DEFICIT_MIN_KCAL = 100
+const SURPLUS_MAX_KCAL = 200
+const TOLERANCE_POIDS_MAINTIEN_KG = 0.05
+
+/** Déficit de repli si pas de poids cible renseigné (kcal à soustraire du TDEE). */
+const DEFICIT_FALLBACK_OBJECTIF: Record<Objectif, number> = {
+  perte_gras: 300,
+  recompo: 100,
+  maintien: 0,
+}
+
+// —— Ajustement par type de journée (vs jour de sport) ——
+const REDUCTION_KCAL_REPOS = 200
+const REDUCTION_KCAL_CYCLE = 100
+
 // —— Ajustement sommeil ——
 const SOMMEIL_HEURES_SANS_AJUST = 7
 const SOMMEIL_HEURES_6 = 6
@@ -46,29 +65,8 @@ const RATIO_GLUCIDES_BONUS_5H_ET_MOINS = 1.1
 const RATIO_GLUCIDES_NEUTRE = 1
 const REDUCTION_DEFICIT_SOMMEIL_COURT_KCAL = 50
 
-// —— Ajustement phase du cycle ——
+// —— Phase menstruation (jour de règles uniquement) ——
 const AJUSTEMENT_KCAL_MENSTRUATION = -100
-const AJUSTEMENT_KCAL_FOLLICULAIRE = 0
-const AJUSTEMENT_KCAL_OVULATION = 0
-const AJUSTEMENT_KCAL_LUTEALE = 150
-
-const AJUSTEMENT_PHASE: Record<Phase, number> = {
-  menstruation: AJUSTEMENT_KCAL_MENSTRUATION,
-  folliculaire: AJUSTEMENT_KCAL_FOLLICULAIRE,
-  ovulation: AJUSTEMENT_KCAL_OVULATION,
-  luteale: AJUSTEMENT_KCAL_LUTEALE,
-}
-
-// —— Ajustement objectif ——
-const AJUSTEMENT_KCAL_PERTE_GRAS = -300
-const AJUSTEMENT_KCAL_RECOMPO = -100
-const AJUSTEMENT_KCAL_MAINTIEN = 0
-
-const AJUSTEMENT_OBJECTIF: Record<Objectif, number> = {
-  perte_gras: AJUSTEMENT_KCAL_PERTE_GRAS,
-  recompo: AJUSTEMENT_KCAL_RECOMPO,
-  maintien: AJUSTEMENT_KCAL_MAINTIEN,
-}
 
 // —— Répartition macros ——
 const COEFF_PROTEINES_PAR_KG = 2
@@ -97,6 +95,64 @@ function ratioGlucidesSommeil(sommeilHeures: number): number {
 }
 
 /**
+ * Déficit calorique quotidien (kcal à soustraire du TDEE).
+ * Positif = déficit, négatif = surplus. Retourne un entier arrondi.
+ */
+export function calculerDeficitKcalParJour(
+  poidsActuel: number,
+  poidsCible: number | null,
+  delaiMois: number | null,
+  objectif: Objectif
+): number {
+  if (
+    poidsCible != null &&
+    delaiMois != null &&
+    delaiMois > 0 &&
+    poidsActuel > 0
+  ) {
+    if (poidsCible > poidsActuel) {
+      const surplusTotal = (poidsCible - poidsActuel) * KCAL_PAR_KG_POIDS
+      const surplusJour = surplusTotal / (delaiMois * JOURS_PAR_MOIS)
+      return -Math.min(SURPLUS_MAX_KCAL, Math.round(surplusJour))
+    }
+    if (Math.abs(poidsCible - poidsActuel) <= TOLERANCE_POIDS_MAINTIEN_KG) {
+      return 0
+    }
+    const deficitTotal = (poidsActuel - poidsCible) * KCAL_PAR_KG_POIDS
+    const brut = Math.round(deficitTotal / (delaiMois * JOURS_PAR_MOIS))
+    return Math.min(DEFICIT_MAX_KCAL, Math.max(DEFICIT_MIN_KCAL, brut))
+  }
+  return DEFICIT_FALLBACK_OBJECTIF[objectif]
+}
+
+/** Ajustement kcal selon sport / repos / règles (par rapport au jour de sport). */
+function ajustementTypeJournee(typeJournee: TypeJourneeMacros, phase: Phase): number {
+  switch (typeJournee) {
+    case 'sport':
+      return 0
+    case 'repos':
+      return -REDUCTION_KCAL_REPOS
+    case 'cycle':
+      return (
+        -REDUCTION_KCAL_CYCLE +
+        (phase === 'menstruation' ? AJUSTEMENT_KCAL_MENSTRUATION : 0)
+      )
+    default:
+      return 0
+  }
+}
+
+function repartirMacros(kcalTotal: number, poidsKg: number, sommeilHeures: number): MacrosJour {
+  const proteines = Math.round(poidsKg * COEFF_PROTEINES_PAR_KG)
+  const lipides = Math.round((kcalTotal * PART_KCAL_LIPIDES) / KCAL_PAR_GRAMME_LIPIDES)
+  const kcalRestantes =
+    kcalTotal - proteines * KCAL_PAR_GRAMME_PROTEINES - lipides * KCAL_PAR_GRAMME_LIPIDES
+  let glucides = Math.round(kcalRestantes / KCAL_PAR_GRAMME_GLUCIDES)
+  glucides = Math.round(glucides * ratioGlucidesSommeil(sommeilHeures))
+  return { kcal: Math.round(kcalTotal), proteines, glucides, lipides }
+}
+
+/**
  * Métabolisme de base — Mifflin-St Jeor (femme).
  * MB = (10 × poids) + (6.25 × taille) - (5 × âge) - 161
  */
@@ -117,32 +173,25 @@ export function calculerTDEE(mb: number, activite: NiveauActivite, pas: number):
 
 /**
  * Macros du jour selon le profil, la phase et le type de journée.
- * Pipeline : TDEE → phase → objectif → sommeil (kcal) → répartition → bonus glucides sommeil.
+ * Sport : TDEE − déficit · Repos : −200 kcal · Règles : −100 kcal + phase menstruation.
  */
 export function calculerMacrosJour(
   profil: MacroProfile,
   phase: Phase,
   typeJournee: TypeJourneeMacros
 ): MacrosJour {
-  void typeJournee
-
   const mb = calculerMB(profil.poids_kg, profil.taille_cm, profil.age)
-  let kcalTotal = calculerTDEE(mb, profil.activite, profil.pas_quotidiens)
-  kcalTotal += AJUSTEMENT_PHASE[phase]
-  kcalTotal += AJUSTEMENT_OBJECTIF[profil.objectif]
+  const tdee = calculerTDEE(mb, profil.activite, profil.pas_quotidiens)
+  const deficit = calculerDeficitKcalParJour(
+    profil.poids_kg,
+    profil.poids_cible_kg,
+    profil.delai_mois,
+    profil.objectif
+  )
+
+  let kcalTotal = tdee - deficit
+  kcalTotal += ajustementTypeJournee(typeJournee, phase)
   kcalTotal += ajustementSommeilKcal(profil.sommeil_heures)
 
-  const proteines = Math.round(profil.poids_kg * COEFF_PROTEINES_PAR_KG)
-  const lipides = Math.round((kcalTotal * PART_KCAL_LIPIDES) / KCAL_PAR_GRAMME_LIPIDES)
-  const kcalRestantes =
-    kcalTotal - proteines * KCAL_PAR_GRAMME_PROTEINES - lipides * KCAL_PAR_GRAMME_LIPIDES
-  let glucides = Math.round(kcalRestantes / KCAL_PAR_GRAMME_GLUCIDES)
-  glucides = Math.round(glucides * ratioGlucidesSommeil(profil.sommeil_heures))
-
-  return {
-    kcal: kcalTotal,
-    proteines,
-    glucides,
-    lipides,
-  }
+  return repartirMacros(kcalTotal, profil.poids_kg, profil.sommeil_heures)
 }

@@ -6,6 +6,8 @@ import type { MacroProfile, NiveauActivite, Objectif } from '@/types'
 /** Données enregistrables (création ou upsert complet). */
 export type MacroProfileSaveData = {
   poids_kg: number
+  poids_cible_kg: number | null
+  delai_mois: number | null
   taille_cm: number
   age: number
   objectif: Objectif

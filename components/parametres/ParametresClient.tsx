@@ -69,11 +69,7 @@ export function ParametresClient({
       <SectionPlanningSport prefs={prefs} onUpdate={onUpdate} />
       <SectionMacrosSeance userId={userId} />
       <SectionAlimentation prefs={prefs} onUpdate={onUpdate} />
-      <SectionCalculateurMacros
-        userId={userId}
-        profilInitial={macroProfilInitial}
-        onUpdatePreferences={onUpdate}
-      />
+      <SectionCalculateurMacros userId={userId} profilInitial={macroProfilInitial} />
       <SectionTachesRecurrentes userId={userId} todosInitiales={recurringTodosInitiales} />
       <SectionApp prefs={prefs} onUpdate={onUpdate} />
       <SectionExport userId={userId} />
