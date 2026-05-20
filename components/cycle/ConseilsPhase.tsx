@@ -1,62 +1,74 @@
+'use client'
+
 import { getConseilsPhase } from '@/lib/cycle'
+import { ONGLET_CONSEIL_ACTIF } from '@/lib/cycle-affichage'
 import { PHASES_DESIGN } from '@/lib/data/phases-design'
 import type { Phase } from '@/types'
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
+import { cn } from '@/lib/utils'
 
 interface ConseilsPhaseProps {
   phase: Phase
 }
 
-const CARTES = [
-  { cle: 'sport' as const, titre: 'Sport', emoji: '💪' },
-  { cle: 'nutrition' as const, titre: 'Nutrition', emoji: '🥗' },
-  { cle: 'sommeil' as const, titre: 'Sommeil', emoji: '😴' },
-  { cle: 'bienEtre' as const, titre: 'Bien-être', emoji: '🌿' },
+const ONGLETS: { value: string; label: string; texte: (c: ReturnType<typeof getConseilsPhase>) => string }[] = [
+  { value: 'sport', label: '💪 Sport', texte: (c) => c.sport },
+  { value: 'nutrition', label: '🥗 Nutrition', texte: (c) => c.nutrition },
+  { value: 'sommeil', label: '😴 Sommeil', texte: (c) => c.sommeil },
+  { value: 'bienEtre', label: '🌿 Bien-être', texte: (c) => c.bienEtre },
+  { value: 'astuce', label: '💡 Astuce', texte: (c) => c.anecdote },
 ]
 
 export function ConseilsPhase({ phase }: ConseilsPhaseProps) {
   const design = PHASES_DESIGN[phase]
-  const c = getConseilsPhase(phase)
+  const conseils = getConseilsPhase(phase)
+  const accentOnglet = ONGLET_CONSEIL_ACTIF[phase]
 
   return (
-    <section className="flex flex-col gap-4">
-      <h2 className="text-lg font-semibold text-neutral-900 dark:text-neutral-50">
-        Conseils pour ta phase {design.emoji} {design.label}
+    <section className="min-w-0">
+      <h2 className="mb-3 text-base font-semibold text-neutral-900 dark:text-neutral-50 sm:text-lg">
+        Conseils · {design.emoji} {design.label}
       </h2>
 
-      <div className="grid gap-3 sm:grid-cols-2">
-        {CARTES.map(({ cle, titre, emoji }) => (
-          <div
-            key={cle}
-            className={`rounded-2xl border p-4 ${design.border} bg-white dark:bg-neutral-900/80`}
-            style={{ backgroundColor: design.bgCard }}
-          >
-            <p className="text-sm font-semibold text-neutral-800 dark:text-neutral-100 mb-2">
-              {emoji} {titre}
-            </p>
-            <p className="text-sm leading-relaxed" style={{ color: design.texte }}>
-              {c[cle]}
-            </p>
-          </div>
-        ))}
-      </div>
-
-      <div className="rounded-2xl border border-amber-200 bg-amber-50/90 dark:bg-amber-950/40 dark:border-amber-800/60 p-4">
-        <p className="text-sm font-semibold text-amber-900 dark:text-amber-100 mb-2">
-          💡 Le savais-tu ?
-        </p>
-        <p className="text-sm leading-relaxed text-amber-950/90 dark:text-amber-50/95">
-          {c.anecdote}
-        </p>
-      </div>
-
       <div
-        className={`rounded-2xl border p-4 ${design.border}`}
+        className={cn(
+          'rounded-2xl border bg-white p-4 dark:bg-neutral-900/80',
+          design.border
+        )}
         style={{ backgroundColor: design.bgCard }}
       >
-        <p className="text-sm font-semibold mb-2" style={{ color: design.texte }}>
-          ⚡ Astuce pratique
-        </p>
-        <p className="text-sm leading-relaxed text-neutral-800 dark:text-neutral-200">{c.astuce}</p>
+        <Tabs defaultValue="sport" className="gap-4">
+          <div className="-mx-1 overflow-x-auto px-1 pb-1 [scrollbar-width:thin]">
+            <TabsList
+              variant="line"
+              className="h-auto w-max min-w-full flex-nowrap justify-start gap-0 bg-transparent p-0"
+            >
+              {ONGLETS.map(({ value, label }) => (
+                <TabsTrigger
+                  key={value}
+                  value={value}
+                  className={cn(
+                    'shrink-0 rounded-none px-3 py-2 text-xs sm:text-sm',
+                    'text-neutral-500 dark:text-neutral-400',
+                    accentOnglet
+                  )}
+                >
+                  {label}
+                </TabsTrigger>
+              ))}
+            </TabsList>
+          </div>
+
+          {ONGLETS.map(({ value, texte }) => (
+            <TabsContent
+              key={value}
+              value={value}
+              className="mt-0 pt-1 text-sm leading-relaxed text-neutral-800 dark:text-neutral-200"
+            >
+              {texte(conseils)}
+            </TabsContent>
+          ))}
+        </Tabs>
       </div>
     </section>
   )

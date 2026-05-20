@@ -16,10 +16,14 @@ import {
   getPhaseEtConseilAvecApprentissage,
   premierJourAffichageRetardDepuisAncre,
 } from '@/lib/cycle'
+import { BADGE_PHASE_CYCLE } from '@/lib/cycle-affichage'
+import { PHASES_DESIGN } from '@/lib/data/phases-design'
 import { getDonneesCyclePourAffichage } from '@/lib/db/cycles'
 import { getDailyLogsParMois } from '@/lib/db/dailyLog'
 import { getUserPreferences } from '@/lib/db/parametres'
 import { creerClientServeur } from '@/lib/supabase-server'
+import { cn } from '@/lib/utils'
+import type { Phase } from '@/types'
 
 export const dynamic = 'force-dynamic'
 
@@ -78,19 +82,23 @@ export default async function PageCycle({ searchParams }: PageProps) {
     user?.user_metadata?.first_name?.trim() ??
     user?.email?.split('@')[0] ??
     'toi'
-  const phaseNav = conseilAujourdhui?.phase ?? null
+  const phaseNav: Phase | null = conseilAujourdhui?.phase ?? null
 
   return (
     <div className="min-h-screen bg-[#F8F7FF] dark:bg-gray-950">
       <Nav phase={phaseNav} prenom={prenom} />
-      <div className="max-w-7xl mx-auto px-6 py-6 pb-24 flex flex-col gap-6">
+      <div className="mx-auto flex max-w-7xl flex-col gap-6 px-4 py-6 pb-24 sm:px-6">
         <PageHeader
           title="Mon cycle"
-          subtitle="Calendrier des phases, prédictions en pointillés et suivi du retard. Clique sur un jour pour ton journal."
           phaseBadge={
             phaseNav ? (
-              <span className="inline-flex rounded-full bg-violet-600 px-2.5 py-1 text-xs font-medium text-white">
-                {phaseNav}
+              <span
+                className={cn(
+                  'inline-flex rounded-full px-2.5 py-1 text-xs font-medium text-white',
+                  BADGE_PHASE_CYCLE[phaseNav]
+                )}
+              >
+                {PHASES_DESIGN[phaseNav].label}
               </span>
             ) : undefined
           }

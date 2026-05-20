@@ -3,7 +3,7 @@
 import { useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { format } from 'date-fns'
-import { Droplet } from 'lucide-react'
+import { Droplets } from 'lucide-react'
 import { toast } from 'sonner'
 import { signalerDebutCycle } from '@/lib/db/cycles'
 import { Button } from '@/components/ui/button'
@@ -16,6 +16,10 @@ import {
   DialogTitle,
   DialogTrigger,
 } from '@/components/ui/dialog'
+import { cn } from '@/lib/utils'
+
+const CLASSES_BOUTON_DOUX =
+  'inline-flex h-9 items-center justify-center gap-2 rounded-md border border-teal-200 bg-teal-100 px-4 text-sm font-medium text-teal-800 transition-colors hover:bg-teal-200/90 dark:border-teal-800 dark:bg-teal-950/50 dark:text-teal-200 dark:hover:bg-teal-900/60'
 
 interface BoutonDebutReglesProps {
   /** Date ISO yyyy-MM-dd pré-remplie (ex. jour sélectionné au calendrier). */
@@ -26,6 +30,7 @@ interface BoutonDebutReglesProps {
   idTrigger?: string
   /** Appelé après enregistrement réussi, avant le rafraîchissement de la page. */
   onSucces?: () => void
+  className?: string
 }
 
 export function BoutonDebutRegles({
@@ -33,6 +38,7 @@ export function BoutonDebutRegles({
   libelle,
   idTrigger,
   onSucces,
+  className,
 }: BoutonDebutReglesProps) {
   const router = useRouter()
   const [ouvert, setOuvert] = useState(false)
@@ -54,6 +60,8 @@ export function BoutonDebutRegles({
     router.refresh()
   }
 
+  const libelleAffiche = libelle ?? 'Signaler le début des règles'
+
   return (
     <Dialog
       open={ouvert}
@@ -68,16 +76,10 @@ export function BoutonDebutRegles({
       <DialogTrigger
         id={idTrigger}
         type="button"
-        className="inline-flex h-9 items-center justify-center gap-2 rounded-md bg-red-600 px-4 text-sm font-medium text-white hover:bg-red-700 dark:bg-red-700 dark:hover:bg-red-800"
+        className={cn(CLASSES_BOUTON_DOUX, 'w-full sm:w-auto', className)}
       >
-        {libelle ? (
-          libelle
-        ) : (
-          <>
-            <Droplet className="size-4 shrink-0" />
-            Signaler le début des règles
-          </>
-        )}
+        <Droplets className="size-4 shrink-0" aria-hidden />
+        {libelleAffiche}
       </DialogTrigger>
       <DialogContent className="sm:max-w-md">
         <DialogHeader>
@@ -94,7 +96,7 @@ export function BoutonDebutRegles({
               type="date"
               value={date}
               onChange={(e) => setDate(e.target.value)}
-              className="rounded-lg border border-neutral-200 dark:border-neutral-700 bg-white dark:bg-neutral-900 px-3 py-2 text-neutral-900 dark:text-neutral-100"
+              className="rounded-lg border border-neutral-200 bg-white px-3 py-2 text-neutral-900 dark:border-neutral-700 dark:bg-neutral-900 dark:text-neutral-100"
             />
           </label>
           <label className="flex flex-col gap-1 text-sm">
@@ -107,7 +109,7 @@ export function BoutonDebutRegles({
               max={14}
               value={duree}
               onChange={(e) => setDuree(Number(e.target.value) || 1)}
-              className="rounded-lg border border-neutral-200 dark:border-neutral-700 bg-white dark:bg-neutral-900 px-3 py-2 text-neutral-900 dark:text-neutral-100 w-24"
+              className="w-24 rounded-lg border border-neutral-200 bg-white px-3 py-2 text-neutral-900 dark:border-neutral-700 dark:bg-neutral-900 dark:text-neutral-100"
             />
           </label>
         </div>
@@ -117,7 +119,7 @@ export function BoutonDebutRegles({
           </Button>
           <Button
             type="button"
-            className="bg-red-600 text-white hover:bg-red-700"
+            className={cn(CLASSES_BOUTON_DOUX, 'h-9')}
             disabled={envoi}
             onClick={() => void confirmer()}
           >
