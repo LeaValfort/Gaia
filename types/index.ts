@@ -809,3 +809,20 @@ export interface SeanceYoga {
   description: string
   postures: PostureYoga[]
 }
+
+// ------------------------------------------------------------
+// Todo — récurrence
+// ------------------------------------------------------------
+
+export type FrequenceRecurrence = 'daily' | 'weekly' | 'monthly'
+
+export interface RecurringTodo {
+  id: string
+  user_id: string
+  text: string
+  frequency: FrequenceRecurrence
+  week_days: number[] | null   // 1=lundi ... 7=dimanche
+  month_day: number | null     // 1-31
+  active: boolean
+  created_at: string
+}

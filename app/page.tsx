@@ -4,11 +4,12 @@ import { redirect } from 'next/navigation'
 import { creerClientServeur } from '@/lib/supabase-server'
 import { getDonneesCyclePourAffichage } from '@/lib/db/cycles'
 import { getDailyLogParDate } from '@/lib/db/dailyLog'
-import { getTodosParDate } from '@/lib/db/todo'
+import { getTodosParDatePourUtilisateur } from '@/lib/db/todo'
 import { getDailyMealIntakesJour } from '@/lib/db/dailyMealIntake'
 import { fusionIntakesJour, totauxDepuisIntakes } from '@/lib/recapManuel'
 import { getCycleDay, getPhaseAvecStats } from '@/lib/cycle'
 import { getTypeJournee } from '@/lib/nutrition'
+import { generateTodosForToday } from '@/lib/recurring'
 import { Nav } from '@/components/shared/Nav'
 import { SeanceDuJour } from '@/components/today/SeanceDuJour'
 import { JournalDuJour } from '@/components/today/JournalDuJour'
@@ -55,12 +56,16 @@ export default async function PageAujourdhui({
 
   const userId = user?.id ?? ''
 
-  const [donnees, logDuJour, todos, intakesJour] = await Promise.all([
+  if (userId) {
+    await generateTodosForToday(userId, aujourdhui)
+  }
+
+  const [donnees, logDuJour, intakesJour] = await Promise.all([
     getDonneesCyclePourAffichage(),
     getDailyLogParDate(dateStr),
-    getTodosParDate(dateStr),
     userId ? getDailyMealIntakesJour(supabase, userId, dateStr) : Promise.resolve([]),
   ])
+  const todos = userId ? await getTodosParDatePourUtilisateur(userId, dateStr) : []
 
   const consoJour = totauxDepuisIntakes(fusionIntakesJour(dateStr, intakesJour))
 

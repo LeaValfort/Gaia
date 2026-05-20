@@ -1,6 +1,7 @@
 import { redirect } from 'next/navigation'
 import { creerClientServeur } from '@/lib/supabase-server'
 import { getUserPreferences, initUserPreferences } from '@/lib/db/parametres'
+import { getRecurringTodos } from '@/lib/db/recurring-todos'
 import { Nav } from '@/components/shared/Nav'
 import { ParametresClient } from '@/components/parametres/ParametresClient'
 import { PageHeader } from '@/components/shared/PageHeader'
@@ -24,6 +25,8 @@ export default async function PageParametres({ searchParams }: PageParametresPro
   }
   if (!prefs) redirect('/login')
 
+  const recurringTodos = await getRecurringTodos(user.id)
+
   const prenom =
     user.user_metadata?.full_name?.trim().split(/\s+/)[0] ??
     (user.user_metadata?.first_name as string | undefined)?.trim() ??
@@ -46,6 +49,7 @@ export default async function PageParametres({ searchParams }: PageParametresPro
         <ParametresClient
           prefsInitiales={prefs}
           userId={user.id}
+          recurringTodosInitiales={recurringTodos}
           messageUrl={params.message}
         />
       </div>

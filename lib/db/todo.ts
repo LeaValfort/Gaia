@@ -48,18 +48,31 @@ export async function getTodosParDate(date: string): Promise<Todo[]> {
     const supabase = await creerClientServeur()
     const { data: { user } } = await supabase.auth.getUser()
     if (!user) return []
+    return getTodosParDatePourUtilisateur(user.id, date)
+  } catch (erreur) {
+    console.error('Erreur getTodosParDate:', erreur)
+    return []
+  }
+}
 
+/** Todos du jour pour un user_id (page d'accueil serveur, après génération récurrente). */
+export async function getTodosParDatePourUtilisateur(
+  userId: string,
+  date: string
+): Promise<Todo[]> {
+  try {
+    const supabase = await creerClientServeur()
     const { data, error } = await supabase
       .from('todos')
       .select('*')
-      .eq('user_id', user.id)
+      .eq('user_id', userId)
       .eq('date', date)
       .order('created_at', { ascending: true })
 
     if (error) throw error
     return data ?? []
   } catch (erreur) {
-    console.error('Erreur getTodosParDate:', erreur)
+    console.error('Erreur getTodosParDatePourUtilisateur:', erreur)
     return []
   }
 }
@@ -118,5 +131,52 @@ export async function supprimerTodo(id: string): Promise<void> {
     if (error) throw error
   } catch (erreur) {
     console.error('Erreur supprimerTodo:', erreur)
+  }
+}
+
+/** Todo auto généré déjà présent pour ce jour et ce libellé. */
+export async function todoAutoExiste(
+  userId: string,
+  date: string,
+  text: string
+): Promise<boolean> {
+  try {
+    const supabase = await creerClientServeur()
+    const { data, error } = await supabase
+      .from('todos')
+      .select('id')
+      .eq('user_id', userId)
+      .eq('date', date)
+      .eq('text', text)
+      .eq('auto', true)
+      .maybeSingle()
+
+    if (error) throw error
+    return data != null
+  } catch (erreur) {
+    console.error('Erreur todoAutoExiste:', erreur)
+    return false
+  }
+}
+
+/** Insère un todo généré automatiquement (récurrent). */
+export async function insererTodoAuto(
+  userId: string,
+  date: string,
+  text: string
+): Promise<Todo | null> {
+  try {
+    const supabase = await creerClientServeur()
+    const { data, error } = await supabase
+      .from('todos')
+      .insert({ user_id: userId, date, text, done: false, auto: true })
+      .select()
+      .single()
+
+    if (error) throw error
+    return data
+  } catch (erreur) {
+    console.error('Erreur insererTodoAuto:', erreur)
+    return null
   }
 }

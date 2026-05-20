@@ -11,18 +11,21 @@ import { SectionExport } from '@/components/parametres/SectionExport'
 import { SectionProches } from '@/components/parametres/SectionProches'
 import { SectionPlanningSport } from '@/components/parametres/SectionPlanningSport'
 import { SectionMacrosSeance } from '@/components/parametres/SectionMacrosSeance'
+import { SectionTachesRecurrentes } from '@/components/parametres/SectionTachesRecurrentes'
 import { updateUserPreferences } from '@/lib/db/parametres'
-import type { UserPreferences } from '@/types'
+import type { RecurringTodo, UserPreferences } from '@/types'
 
 interface ParametresClientProps {
   prefsInitiales: UserPreferences
   userId: string
+  recurringTodosInitiales: RecurringTodo[]
   messageUrl?: string
 }
 
 export function ParametresClient({
   prefsInitiales,
   userId,
+  recurringTodosInitiales,
   messageUrl,
 }: ParametresClientProps) {
   const router = useRouter()
@@ -63,6 +66,7 @@ export function ParametresClient({
       <SectionPlanningSport prefs={prefs} onUpdate={onUpdate} />
       <SectionMacrosSeance userId={userId} />
       <SectionAlimentation prefs={prefs} onUpdate={onUpdate} />
+      <SectionTachesRecurrentes userId={userId} todosInitiales={recurringTodosInitiales} />
       <SectionApp prefs={prefs} onUpdate={onUpdate} />
       <SectionExport userId={userId} />
     </div>

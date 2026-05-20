@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { Checkbox } from '@/components/ui/checkbox'
 import { Button } from '@/components/ui/button'
@@ -21,6 +21,10 @@ export function TodoList({ todosInitiaux, date, titre = 'To-do du jour', message
   const [todos, setTodos] = useState<Todo[]>(todosInitiaux)
   const [nouveauTexte, setNouveauTexte] = useState('')
   const [chargement, setChargement] = useState(false)
+
+  useEffect(() => {
+    setTodos(todosInitiaux)
+  }, [todosInitiaux])
 
   async function ajouterTodo() {
     const texte = nouveauTexte.trim()
