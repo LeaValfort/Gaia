@@ -7,7 +7,11 @@ import { AlimentationLayout } from '@/components/alimentation/AlimentationLayout
 import { AlimentationOnglets } from '@/components/alimentation/AlimentationOnglets'
 import { getLundiSemaine, getTypeJournee } from '@/lib/nutrition'
 import { getMacroProfile } from '@/lib/db/macro-profiles'
-import { macrosCiblesPourJour, planningSportDepuisPrefs } from '@/lib/macros-du-jour'
+import {
+  macrosCiblesPourJour,
+  planningEffectif,
+  typeJourneeMacrosDepuisPlanning,
+} from '@/lib/macros-du-jour'
 import { getCycleDay, getPhaseAvecStats } from '@/lib/cycle'
 import { getDonneesCyclePourAffichage } from '@/lib/db/cycles'
 import { getDailyMealIntakesJour } from '@/lib/db/dailyMealIntake'
@@ -52,10 +56,13 @@ export default async function PageAlimentation() {
 
   const design = designPhaseAffichage(sansSuivi ? null : phase, { sansCycle: sansSuivi })
   const weekStartLabel = format(parseISO(`${weekStart}T12:00:00`), "'Semaine du' d MMMM yyyy", { locale: fr })
+  const planningSport = planningEffectif(prefs?.planning_sport)
+  typeJourneeMacrosDepuisPlanning(phase, planningSport, today, sansSuivi)
+
   const macrosCibles = macrosCiblesPourJour({
     profil: macroProfil,
     phase,
-    planning: planningSportDepuisPrefs(prefs?.planning_sport),
+    planning: planningSport,
     date: today,
     sansSuiviCycle: sansSuivi,
   })

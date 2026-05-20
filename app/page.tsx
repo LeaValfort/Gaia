@@ -9,9 +9,14 @@ import { getDailyMealIntakesJour } from '@/lib/db/dailyMealIntake'
 import { fusionIntakesJour, totauxDepuisIntakes } from '@/lib/recapManuel'
 import { getCycleDay, getPhaseAvecStats } from '@/lib/cycle'
 import { getMacroProfile } from '@/lib/db/macro-profiles'
-import { macrosCiblesPourJour, planningSportDepuisPrefs } from '@/lib/macros-du-jour'
+import {
+  macrosCiblesPourJour,
+  planningEffectif,
+  typeJourneeMacrosDepuisPlanning,
+} from '@/lib/macros-du-jour'
 import { generateTodosForToday } from '@/lib/recurring'
 import { Nav } from '@/components/shared/Nav'
+import { MacrosCibles } from '@/components/today/MacrosCibles'
 import { SeanceDuJour } from '@/components/today/SeanceDuJour'
 import { JournalDuJour } from '@/components/today/JournalDuJour'
 import { TodoDuJour } from '@/components/today/TodoDuJour'
@@ -82,14 +87,17 @@ export default async function PageAujourdhui({
   const phase = jourDuCycle != null ? getPhaseAvecStats(jourDuCycle, stats, cycleLength) : null
   const phaseHeader: Phase | null = sansSuivi ? null : phase
 
+  const phaseMacros = phaseHeader ?? 'folliculaire'
+  const planningSport = planningEffectif(prefs?.planning_sport)
+  typeJourneeMacrosDepuisPlanning(phaseMacros, planningSport, aujourdhui, sansSuivi)
+
   const macrosCibles = macrosCiblesPourJour({
     profil: macroProfil,
-    phase: phaseHeader ?? 'folliculaire',
-    planning: planningSportDepuisPrefs(prefs?.planning_sport),
+    phase: phaseMacros,
+    planning: planningSport,
     date: aujourdhui,
     sansSuiviCycle: sansSuivi,
   })
-  void macrosCibles
 
   return (
     <div className="min-h-screen bg-[#F8F7FF] dark:bg-gray-950 page-accueil">
@@ -117,6 +125,13 @@ export default async function PageAujourdhui({
             date={dateStr}
             jourDuCycle={jourDuCycle ?? 1}
             logInitial={logDuJour}
+          />
+          <MacrosCibles
+            phase={phaseHeader}
+            typeJournee={macrosCibles.typeJournee}
+            sansCycle={sansSuivi}
+            conso={consoJour}
+            macrosCibles={macrosCibles}
           />
           <AgendaDuJour
             date={dateStr}
