@@ -43,6 +43,18 @@ const POIDS_MIN_KG = 30
 const POIDS_MAX_KG = 200
 const MACROS_MODE_AUTO: MacrosMode = 'auto'
 const MACROS_MODE_MANUEL: MacrosMode = 'manuel'
+const CLE_MACROS_MODE_LOCAL = 'gaia_macros_mode'
+
+function lireModeLocal(): MacrosMode | null {
+  if (typeof window === 'undefined') return null
+  const v = window.localStorage.getItem(CLE_MACROS_MODE_LOCAL)
+  return v === 'manuel' || v === 'auto' ? v : null
+}
+
+function ecrireModeLocal(mode: MacrosMode): void {
+  if (typeof window === 'undefined') return
+  window.localStorage.setItem(CLE_MACROS_MODE_LOCAL, mode)
+}
 
 const DELAI_MOIS_OPTIONS: { value: number; label: string }[] = [
   { value: 1, label: '1 mois' },
@@ -201,7 +213,9 @@ export function SectionCalculateurMacros({
 }: SectionCalculateurMacrosProps) {
   const router = useRouter()
   const planning = useMemo(() => planningEffectif(prefs.planning_sport), [prefs.planning_sport])
-  const [mode, setMode] = useState<MacrosMode>(prefs.macros_mode ?? MACROS_MODE_AUTO)
+  const [mode, setMode] = useState<MacrosMode>(
+    prefs.macros_mode ?? lireModeLocal() ?? MACROS_MODE_AUTO
+  )
   const [etape, setEtape] = useState(0)
   const [poids, setPoids] = useState('')
   const [poidsCible, setPoidsCible] = useState('')
@@ -221,7 +235,7 @@ export function SectionCalculateurMacros({
   )
 
   useEffect(() => {
-    setMode(prefs.macros_mode ?? MACROS_MODE_AUTO)
+    setMode(prefs.macros_mode ?? lireModeLocal() ?? MACROS_MODE_AUTO)
   }, [prefs.macros_mode])
 
   useEffect(() => {
@@ -325,7 +339,13 @@ export function SectionCalculateurMacros({
     setChargementMode(true)
     const ok = await onMacrosModeChange(nouveau)
     if (!ok) {
-      setMode(precedent)
+      ecrireModeLocal(nouveau)
+      setMode(nouveau)
+      toast.warning(
+        'Mode affiché en local uniquement. Exécute supabase/RUN_MACROS_MIGRATIONS.sql dans Supabase pour enregistrer en base.'
+      )
+    } else {
+      ecrireModeLocal(nouveau)
     }
     setChargementMode(false)
   }

@@ -113,7 +113,7 @@ export async function setMacrosMode(
         return {
           ok: false,
           error:
-            'Colonne macros_mode absente en base. Exécute la migration supabase/migrations/20260520170000_macros_mode.sql.',
+            'Colonne macros_mode absente. Dans Supabase → SQL Editor, exécute le fichier supabase/RUN_MACROS_MIGRATIONS.sql (bouton Run).',
         }
       }
       throw error

@@ -69,10 +69,10 @@ export function ParametresClient({
       const result = await setMacrosMode(mode)
       if (!result.ok) {
         setPrefs((p) => ({ ...p, macros_mode: prev }))
-        toast.error(
+        const msg =
           result.error ??
-            'Impossible d’enregistrer le mode. Vérifie la migration Supabase macros_mode.'
-        )
+          'Impossible d’enregistrer le mode. Exécute supabase/RUN_MACROS_MIGRATIONS.sql dans Supabase.'
+        toast.error(msg)
         return false
       }
       toast.success('Mode macros enregistré')
