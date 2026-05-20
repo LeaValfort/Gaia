@@ -103,6 +103,7 @@ export default async function PageAujourdhui({
     planning: planningSport,
     date: aujourdhui,
     sansSuiviCycle: sansSuivi,
+    macrosMode: prefs?.macros_mode ?? 'auto',
   })
 
   return (

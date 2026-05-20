@@ -10,7 +10,6 @@ import { SectionCycle } from '@/components/parametres/SectionCycle'
 import { SectionExport } from '@/components/parametres/SectionExport'
 import { SectionProches } from '@/components/parametres/SectionProches'
 import { SectionPlanningSport } from '@/components/parametres/SectionPlanningSport'
-import { SectionMacrosSeance } from '@/components/parametres/SectionMacrosSeance'
 import { SectionCalculateurMacros } from '@/components/parametres/SectionCalculateurMacros'
 import { SectionTachesRecurrentes } from '@/components/parametres/SectionTachesRecurrentes'
 import { updateUserPreferences } from '@/lib/db/parametres'
@@ -74,9 +73,14 @@ export function ParametresClient({
         seanceProfilsInitiales={seanceProfilsInitiales}
         onUpdate={onUpdate}
       />
-      <SectionMacrosSeance userId={userId} />
       <SectionAlimentation prefs={prefs} onUpdate={onUpdate} />
-      <SectionCalculateurMacros userId={userId} profilInitial={macroProfilInitial} />
+      <SectionCalculateurMacros
+        userId={userId}
+        profilInitial={macroProfilInitial}
+        prefs={prefs}
+        seanceProfilsInitiales={seanceProfilsInitiales}
+        onUpdate={onUpdate}
+      />
       <SectionTachesRecurrentes userId={userId} todosInitiales={recurringTodosInitiales} />
       <SectionApp prefs={prefs} onUpdate={onUpdate} />
       <SectionExport userId={userId} />

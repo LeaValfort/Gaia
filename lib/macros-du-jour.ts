@@ -14,6 +14,7 @@ import type {
   MacroProfile,
   MacrosCiblesJour,
   MacrosJour,
+  MacrosMode,
   Phase,
   PlanningSport,
   ProfilEffort,
@@ -198,15 +199,33 @@ export async function profilEffortPourJour(
   }
 }
 
+function macrosDepuisManuels(
+  profil: MacroProfile,
+  seanceType: TypePlanningJour
+): MacrosJour | null {
+  const manuels = profil.macros_manuels
+  if (!manuels || typeof manuels !== 'object') return null
+  const m = manuels[seanceType]
+  if (!m || m.kcal == null) return null
+  return {
+    kcal: m.kcal,
+    proteines: m.proteines,
+    glucides: m.glucides,
+    lipides: m.lipides,
+  }
+}
+
 function macrosCiblesDepuisProfil(
   profil: MacroProfile,
   phase: Phase,
   typeMacro: TypeJourneeMacros,
   typeJourneeUi: TypeJournee,
-  profilEffort: ProfilEffort
+  profilEffort: ProfilEffort,
+  seanceType: TypePlanningJour,
+  macrosMode: MacrosMode
 ): MacrosCiblesJour {
-  const stocke = macrosJourDepuisProfilStocke(profil, typeMacro)
-  const m = stocke ?? calculerMacrosDepuisProfil(profil, profilEffort, phase)
+  const manuel = macrosMode === 'manuel' ? macrosDepuisManuels(profil, seanceType) : null
+  const m = manuel ?? calculerMacrosDepuisProfil(profil, profilEffort, phase)
 
   return {
     calories: m.kcal,
@@ -226,8 +245,10 @@ export function macrosCiblesPourJour(options: {
   planning: PlanningSport
   date: Date
   sansSuiviCycle: boolean
+  macrosMode?: MacrosMode
 }): MacrosCiblesJour {
-  const { profil, profilEffort, phase, planning, date, sansSuiviCycle } = options
+  const { profil, profilEffort, phase, planning, date, sansSuiviCycle, macrosMode = 'auto' } =
+    options
   const planningMerge = planningEffectif(planning)
   const dateStable = datePourPlanningSport(date)
   const typeJourneePlanning = getTypeJournee(dateStable)
@@ -249,12 +270,15 @@ export function macrosCiblesPourJour(options: {
   )
   const effort =
     profilEffort ?? profilEffortLocalDepuisPlanning(planningMerge, date)
+  const seanceType = activitePlanningDuJour(planningMerge, date)
 
   return macrosCiblesDepuisProfil(
     profil,
     phase,
     typeMacro,
     typeJourneeAffichageDepuisMacros(typeMacro),
-    effort
+    effort,
+    seanceType,
+    macrosMode
   )
 }

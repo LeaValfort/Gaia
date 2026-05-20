@@ -626,7 +626,11 @@ export interface UserPreferences {
   proteines_defaut?: number | null
   glucides_defaut?: number | null
   lipides_defaut?: number | null
+  /** Mode calculateur macros : auto (calcul) ou manuel (saisie par séance) */
+  macros_mode?: MacrosMode
 }
+
+export type MacrosMode = 'auto' | 'manuel'
 
 // ------------------------------------------------------------
 // Constantes métier
@@ -865,6 +869,7 @@ export interface MacroProfile {
   proteines_repos_g: number | null
   glucides_repos_g: number | null
   lipides_repos_g: number | null
+  macros_manuels?: MacrosManuelsParSeance | null
   updated_at: string
 }
 
@@ -874,6 +879,8 @@ export interface MacrosJour {
   glucides: number
   lipides: number
 }
+
+export type MacrosManuelsParSeance = Partial<Record<TypePlanningJour, MacrosJour>>
 
 export type IntensiteEffort = 'legere' | 'moderee' | 'intense'
 export type TypeEffort = 'force' | 'cardio' | 'mixte' | 'mobilite' | 'aucun'

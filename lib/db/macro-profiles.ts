@@ -1,7 +1,7 @@
 'use server'
 
 import { creerClientServeur } from '@/lib/supabase-server'
-import type { MacroProfile, NiveauActivite, Objectif } from '@/types'
+import type { MacroProfile, MacrosManuelsParSeance, NiveauActivite, Objectif } from '@/types'
 
 /** Données enregistrables (création ou upsert complet). */
 export type MacroProfileSaveData = {
@@ -28,6 +28,7 @@ export type MacroProfileSaveData = {
   proteines_repos_g: number | null
   glucides_repos_g: number | null
   lipides_repos_g: number | null
+  macros_manuels?: MacrosManuelsParSeance | null
 }
 
 export type MacroProfileUpdateData = Partial<MacroProfileSaveData>

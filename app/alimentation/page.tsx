@@ -69,6 +69,7 @@ export default async function PageAlimentation() {
     planning: planningSport,
     date: today,
     sansSuiviCycle: sansSuivi,
+    macrosMode: prefs?.macros_mode ?? 'auto',
   })
 
   return (
