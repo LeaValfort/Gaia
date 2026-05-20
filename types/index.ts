@@ -874,3 +874,32 @@ export interface MacrosJour {
   glucides: number
   lipides: number
 }
+
+export type IntensiteEffort = 'legere' | 'moderee' | 'intense'
+export type TypeEffort = 'force' | 'cardio' | 'mixte' | 'mobilite' | 'aucun'
+
+export interface ProfilEffort {
+  intensite: IntensiteEffort
+  type_effort: TypeEffort
+  duree_min: number
+}
+
+export interface SeanceProfil {
+  id: string
+  user_id: string
+  seance_type: string
+  intensite: IntensiteEffort
+  type_effort: TypeEffort
+  duree_min: number
+  created_at: string
+}
+
+/** Profils par défaut pour chaque type de séance */
+export const PROFILS_DEFAUT: Record<string, ProfilEffort> = {
+  muscu_full: { intensite: 'intense', type_effort: 'force', duree_min: 45 },
+  muscu_upper: { intensite: 'intense', type_effort: 'force', duree_min: 45 },
+  natation: { intensite: 'moderee', type_effort: 'cardio', duree_min: 50 },
+  yoga: { intensite: 'legere', type_effort: 'mobilite', duree_min: 40 },
+  escalade: { intensite: 'moderee', type_effort: 'mixte', duree_min: 90 },
+  repos: { intensite: 'legere', type_effort: 'aucun', duree_min: 0 },
+}

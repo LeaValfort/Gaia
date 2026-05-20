@@ -1,7 +1,7 @@
 import { format, getISODay, parseISO } from 'date-fns'
 import { toZonedTime } from 'date-fns-tz'
-import type { TypeJourneeMacros } from '@/lib/macro-calculator'
-import { calculerMacrosJour as calculerMacrosProfil } from '@/lib/macro-calculator'
+import { calculerMacrosDepuisProfil, type TypeJourneeMacros } from '@/lib/macro-calculator'
+import { getProfilPourSeance } from '@/lib/db/seance-profils'
 import {
   calculerMacrosJour,
   calculerMacrosJourSansCycle,
@@ -9,12 +9,14 @@ import {
   getTypeJourneeEffectifMacros,
 } from '@/lib/nutrition'
 import { PLANNING_DEFAUT } from '@/lib/planning-sport'
+import { PROFILS_DEFAUT } from '@/types'
 import type {
   MacroProfile,
   MacrosCiblesJour,
   MacrosJour,
   Phase,
   PlanningSport,
+  ProfilEffort,
   TypeJournee,
   TypePlanningJour,
 } from '@/types'
@@ -166,21 +168,45 @@ function macrosJourDepuisProfilStocke(
   }
 }
 
-function phasePourCalculMacro(typeMacro: TypeJourneeMacros, phase: Phase): Phase {
-  if (typeMacro === 'cycle') return 'menstruation'
-  return phase
+const SEANCE_TYPE_REPOS = 'repos'
+
+/** Profil d'effort local (sans appel DB) à partir du planning du jour. */
+export function profilEffortLocalDepuisPlanning(
+  planning: PlanningSport,
+  date: Date
+): ProfilEffort {
+  const seanceType = activitePlanningDuJour(planningEffectif(planning), date)
+  const defaut = PROFILS_DEFAUT[seanceType]
+  if (defaut) return { ...defaut }
+  return { ...PROFILS_DEFAUT[SEANCE_TYPE_REPOS] }
+}
+
+/**
+ * Profil d'effort du jour (planning + préférences personnalisées Supabase).
+ */
+export async function profilEffortPourJour(
+  userId: string,
+  planning: PlanningSport,
+  date: Date
+): Promise<ProfilEffort> {
+  try {
+    const seanceType = activitePlanningDuJour(planningEffectif(planning), date)
+    return await getProfilPourSeance(userId, seanceType)
+  } catch (erreur) {
+    console.error('Erreur profilEffortPourJour:', erreur)
+    return profilEffortLocalDepuisPlanning(planning, date)
+  }
 }
 
 function macrosCiblesDepuisProfil(
   profil: MacroProfile,
   phase: Phase,
   typeMacro: TypeJourneeMacros,
-  typeJourneeUi: TypeJournee
+  typeJourneeUi: TypeJournee,
+  profilEffort: ProfilEffort
 ): MacrosCiblesJour {
   const stocke = macrosJourDepuisProfilStocke(profil, typeMacro)
-  const m =
-    stocke ??
-    calculerMacrosProfil(profil, phasePourCalculMacro(typeMacro, phase), typeMacro)
+  const m = stocke ?? calculerMacrosDepuisProfil(profil, profilEffort, phase)
 
   return {
     calories: m.kcal,
@@ -195,12 +221,13 @@ function macrosCiblesDepuisProfil(
 
 export function macrosCiblesPourJour(options: {
   profil: MacroProfile | null
+  profilEffort: ProfilEffort | null
   phase: Phase
   planning: PlanningSport
   date: Date
   sansSuiviCycle: boolean
 }): MacrosCiblesJour {
-  const { profil, phase, planning, date, sansSuiviCycle } = options
+  const { profil, profilEffort, phase, planning, date, sansSuiviCycle } = options
   const planningMerge = planningEffectif(planning)
   const dateStable = datePourPlanningSport(date)
   const typeJourneePlanning = getTypeJournee(dateStable)
@@ -220,10 +247,14 @@ export function macrosCiblesPourJour(options: {
     date,
     sansSuiviCycle
   )
+  const effort =
+    profilEffort ?? profilEffortLocalDepuisPlanning(planningMerge, date)
+
   return macrosCiblesDepuisProfil(
     profil,
     phase,
     typeMacro,
-    typeJourneeAffichageDepuisMacros(typeMacro)
+    typeJourneeAffichageDepuisMacros(typeMacro),
+    effort
   )
 }

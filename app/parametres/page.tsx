@@ -3,6 +3,7 @@ import { creerClientServeur } from '@/lib/supabase-server'
 import { getUserPreferences, initUserPreferences } from '@/lib/db/parametres'
 import { getMacroProfile } from '@/lib/db/macro-profiles'
 import { getRecurringTodos } from '@/lib/db/recurring-todos'
+import { getSeanceProfils } from '@/lib/db/seance-profils'
 import { Nav } from '@/components/shared/Nav'
 import { ParametresClient } from '@/components/parametres/ParametresClient'
 import { PageHeader } from '@/components/shared/PageHeader'
@@ -26,9 +27,10 @@ export default async function PageParametres({ searchParams }: PageParametresPro
   }
   if (!prefs) redirect('/login')
 
-  const [recurringTodos, macroProfil] = await Promise.all([
+  const [recurringTodos, macroProfil, seanceProfils] = await Promise.all([
     getRecurringTodos(user.id),
     getMacroProfile(user.id),
+    getSeanceProfils(user.id),
   ])
 
   const prenom =
@@ -55,6 +57,7 @@ export default async function PageParametres({ searchParams }: PageParametresPro
           userId={user.id}
           recurringTodosInitiales={recurringTodos}
           macroProfilInitial={macroProfil}
+          seanceProfilsInitiales={seanceProfils}
           messageUrl={params.message}
         />
       </div>

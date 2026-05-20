@@ -12,6 +12,7 @@ import { getMacroProfile } from '@/lib/db/macro-profiles'
 import {
   macrosCiblesPourJour,
   planningEffectif,
+  profilEffortPourJour,
   typeJourneeMacrosDepuisPlanning,
 } from '@/lib/macros-du-jour'
 import { generateTodosForToday } from '@/lib/recurring'
@@ -91,8 +92,13 @@ export default async function PageAujourdhui({
   const planningSport = planningEffectif(prefs?.planning_sport)
   typeJourneeMacrosDepuisPlanning(phaseMacros, planningSport, aujourdhui, sansSuivi)
 
+  const profilEffort = userId
+    ? await profilEffortPourJour(userId, planningSport, aujourdhui)
+    : null
+
   const macrosCibles = macrosCiblesPourJour({
     profil: macroProfil,
+    profilEffort,
     phase: phaseMacros,
     planning: planningSport,
     date: aujourdhui,

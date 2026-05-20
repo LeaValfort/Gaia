@@ -10,6 +10,7 @@ import { getMacroProfile } from '@/lib/db/macro-profiles'
 import {
   macrosCiblesPourJour,
   planningEffectif,
+  profilEffortPourJour,
   typeJourneeMacrosDepuisPlanning,
 } from '@/lib/macros-du-jour'
 import { getCycleDay, getPhaseAvecStats } from '@/lib/cycle'
@@ -59,8 +60,11 @@ export default async function PageAlimentation() {
   const planningSport = planningEffectif(prefs?.planning_sport)
   typeJourneeMacrosDepuisPlanning(phase, planningSport, today, sansSuivi)
 
+  const profilEffort = await profilEffortPourJour(user.id, planningSport, today)
+
   const macrosCibles = macrosCiblesPourJour({
     profil: macroProfil,
+    profilEffort,
     phase,
     planning: planningSport,
     date: today,
