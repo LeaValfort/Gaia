@@ -621,6 +621,11 @@ export interface UserPreferences {
   google_calendar_enabled?: boolean
   /** Planning hebdo (lundi–dimanche), colonne `planning_sport` */
   planning_sport?: PlanningSport
+  /** Objectifs macros par défaut (jour de sport) */
+  calories_defaut?: number | null
+  proteines_defaut?: number | null
+  glucides_defaut?: number | null
+  lipides_defaut?: number | null
 }
 
 // ------------------------------------------------------------
@@ -825,4 +830,45 @@ export interface RecurringTodo {
   month_day: number | null     // 1-31
   active: boolean
   created_at: string
+}
+
+// ------------------------------------------------------------
+// Nutrition — profil macros personnalisé
+// ------------------------------------------------------------
+
+export type Objectif = 'perte_gras' | 'recompo' | 'maintien'
+export type NiveauActivite = 'sedentaire' | 'leger' | 'modere' | 'actif'
+
+export interface MacroProfile {
+  id: string
+  user_id: string
+  poids_kg: number
+  taille_cm: number
+  age: number
+  objectif: Objectif
+  activite: NiveauActivite
+  sommeil_heures: number
+  pas_quotidiens: number
+  mb: number | null
+  tdee: number | null
+  kcal_base: number | null
+  proteines_g: number | null
+  glucides_g: number | null
+  lipides_g: number | null
+  kcal_sport: number | null
+  proteines_sport_g: number | null
+  glucides_sport_g: number | null
+  lipides_sport_g: number | null
+  kcal_repos: number | null
+  proteines_repos_g: number | null
+  glucides_repos_g: number | null
+  lipides_repos_g: number | null
+  updated_at: string
+}
+
+export interface MacrosJour {
+  kcal: number
+  proteines: number
+  glucides: number
+  lipides: number
 }

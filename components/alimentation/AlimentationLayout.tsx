@@ -5,7 +5,7 @@ import { MacrosCard } from '@/components/alimentation/MacrosCard'
 import { PageHeader } from '@/components/shared/PageHeader'
 import type { PhaseDesign } from '@/lib/data/phases-design'
 import type { TotauxConsommesJour } from '@/lib/recapManuel'
-import type { Phase, TypeJournee } from '@/types'
+import type { MacrosCiblesJour, Phase, TypeJournee } from '@/types'
 
 export interface AlimentationLayoutProps {
   design: PhaseDesign
@@ -15,6 +15,7 @@ export interface AlimentationLayoutProps {
   phase: Phase
   sansSuiviCycle: boolean
   consoJour: TotauxConsommesJour
+  macrosCibles?: MacrosCiblesJour
   children: ReactNode
 }
 
@@ -26,6 +27,7 @@ export function AlimentationLayout({
   phase,
   sansSuiviCycle,
   consoJour,
+  macrosCibles,
   children,
 }: AlimentationLayoutProps) {
   const vars: CSSProperties = {
@@ -59,6 +61,7 @@ export function AlimentationLayout({
             date={todayIso}
             sansSuiviCycle={sansSuiviCycle}
             conso={consoJour}
+            macrosCibles={macrosCibles}
           />
         </aside>
       </div>

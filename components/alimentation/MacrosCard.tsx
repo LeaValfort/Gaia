@@ -1,6 +1,6 @@
 import { calculerMacrosJour, calculerMacrosJourSansCycle, PHASE_STYLES } from '@/lib/nutrition'
 import type { TotauxConsommesJour } from '@/lib/recapManuel'
-import type { Phase, TypeJournee } from '@/types'
+import type { MacrosCiblesJour, Phase, TypeJournee } from '@/types'
 
 const PHASE_NOM: Record<Phase, string> = {
   menstruation: '🩸 Règles',
@@ -27,6 +27,8 @@ interface MacrosCardProps {
   date: string  // ISO
   sansSuiviCycle?: boolean
   conso?: TotauxConsommesJour | null
+  /** Macros pré-calculées côté serveur (profil + planning du jour). */
+  macrosCibles?: MacrosCiblesJour
 }
 
 const STYLES_NEUTRE = {
@@ -35,8 +37,16 @@ const STYLES_NEUTRE = {
   pill: 'bg-emerald-100 text-emerald-900 dark:bg-emerald-900/50 dark:text-emerald-100',
 }
 
-export function MacrosCard({ phase, typeJournee, sansSuiviCycle, conso }: MacrosCardProps) {
-  const macros = sansSuiviCycle ? calculerMacrosJourSansCycle(typeJournee) : calculerMacrosJour(phase, typeJournee)
+export function MacrosCard({
+  phase,
+  typeJournee,
+  sansSuiviCycle,
+  conso,
+  macrosCibles,
+}: MacrosCardProps) {
+  const macros =
+    macrosCibles ??
+    (sansSuiviCycle ? calculerMacrosJourSansCycle(typeJournee) : calculerMacrosJour(phase, typeJournee))
   const styles = sansSuiviCycle ? STYLES_NEUTRE : PHASE_STYLES[phase]
   const c = conso ?? { calories: 0, proteines: 0, glucides: 0, lipides: 0 }
 

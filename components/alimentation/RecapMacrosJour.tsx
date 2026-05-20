@@ -4,7 +4,7 @@ import { useCallback, useEffect, useMemo, useState } from 'react'
 import { TrendingUp, CheckCircle2 } from 'lucide-react'
 import { supabase } from '@/lib/supabase'
 import { getDailyMealIntakesJour } from '@/lib/db/dailyMealIntake'
-import { fusionIntakesJour, calculerRecapDepuisIntakes, ORDRE_TYPES_REPAS } from '@/lib/recapManuel'
+import { fusionIntakesJour, totauxDepuisIntakes, ORDRE_TYPES_REPAS } from '@/lib/recapManuel'
 import { couleurResteKcal } from '@/lib/recapjour'
 import { MACROS_JOURNEE, PHASE_STYLES, getTypeJourneeEffectifMacros } from '@/lib/nutrition'
 import { Progress } from '@/components/ui/progress'
@@ -13,7 +13,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { PanneauRepasJour } from '@/components/alimentation/PanneauRepasJour'
 import { PanneauImportRecetteJournal } from '@/components/alimentation/PanneauImportRecetteJournal'
 import { FormRecettePersoRapide } from '@/components/alimentation/FormRecettePersoRapide'
-import type { Phase, TypeJournee, DailyMealIntake, TypeRepas } from '@/types'
+import type { MacrosCiblesJour, Phase, TypeJournee, DailyMealIntake, TypeRepas } from '@/types'
 
 const LIB_CRENEAU: Record<TypeRepas, string> = {
   'petit-dej': '🌅 Petit-déj',
@@ -29,6 +29,7 @@ interface RecapMacrosJourProps {
   typeJournee: TypeJournee
   weekStart: string
   sansSuiviCycle?: boolean
+  macrosCibles?: MacrosCiblesJour
 }
 
 const STYLES_NEUTRE = {
@@ -43,6 +44,7 @@ export function RecapMacrosJour({
   typeJournee,
   weekStart: _weekStart,
   sansSuiviCycle,
+  macrosCibles,
 }: RecapMacrosJourProps) {
   const [lignes, setLignes] = useState<DailyMealIntake[]>([])
   const [chargement, setChargement] = useState(true)
@@ -67,15 +69,37 @@ export function RecapMacrosJour({
   const rechargerSilencieux = useCallback(() => void charger(true), [charger])
 
   const typeJourneeMacros = useMemo(
-    () => getTypeJourneeEffectifMacros(phase, typeJournee, sansSuiviCycle),
-    [phase, typeJournee, sansSuiviCycle]
+    () =>
+      macrosCibles?.typeJournee ??
+      getTypeJourneeEffectifMacros(phase, typeJournee, sansSuiviCycle),
+    [macrosCibles?.typeJournee, phase, typeJournee, sansSuiviCycle]
   )
 
-  const { total, reste, pourcentageAtteint } = useMemo(
-    () => calculerRecapDepuisIntakes(lignes, typeJourneeMacros),
-    [lignes, typeJourneeMacros]
+  const cibles = useMemo(
+    () =>
+      macrosCibles
+        ? {
+            kcal: macrosCibles.calories,
+            proteines: macrosCibles.proteines,
+            glucides: macrosCibles.glucides,
+            lipides: macrosCibles.lipides,
+          }
+        : MACROS_JOURNEE[typeJourneeMacros],
+    [macrosCibles, typeJourneeMacros]
   )
-  const cibles = MACROS_JOURNEE[typeJourneeMacros]
+
+  const { total, reste, pourcentageAtteint } = useMemo(() => {
+    const totalPris = totauxDepuisIntakes(lignes)
+    const resteCalc = {
+      calories: cibles.kcal - totalPris.calories,
+      proteines: cibles.proteines - totalPris.proteines,
+      glucides: cibles.glucides - totalPris.glucides,
+      lipides: cibles.lipides - totalPris.lipides,
+    }
+    const pourcentageAtteint =
+      cibles.kcal > 0 ? Math.min(150, Math.round((totalPris.calories / cibles.kcal) * 100)) : 0
+    return { total: totalPris, reste: resteCalc, pourcentageAtteint }
+  }, [lignes, cibles])
 
   if (chargement) return <Skeleton className="h-40 w-full rounded-xl" />
 

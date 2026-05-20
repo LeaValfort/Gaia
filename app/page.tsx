@@ -8,7 +8,8 @@ import { getTodosParDatePourUtilisateur } from '@/lib/db/todo'
 import { getDailyMealIntakesJour } from '@/lib/db/dailyMealIntake'
 import { fusionIntakesJour, totauxDepuisIntakes } from '@/lib/recapManuel'
 import { getCycleDay, getPhaseAvecStats } from '@/lib/cycle'
-import { getTypeJournee } from '@/lib/nutrition'
+import { getMacroProfile } from '@/lib/db/macro-profiles'
+import { macrosCiblesPourJour, planningSportDepuisPrefs } from '@/lib/macros-du-jour'
 import { generateTodosForToday } from '@/lib/recurring'
 import { Nav } from '@/components/shared/Nav'
 import { SeanceDuJour } from '@/components/today/SeanceDuJour'
@@ -52,23 +53,21 @@ export default async function PageAujourdhui({
   const aujourdhui = new Date()
   const dateStr = format(aujourdhui, 'yyyy-MM-dd')
   const dateAffichee = format(aujourdhui, "EEEE d MMMM yyyy", { locale: fr })
-  const typeJournee = getTypeJournee(aujourdhui)
-
   const userId = user?.id ?? ''
 
   if (userId) {
     await generateTodosForToday(userId, aujourdhui)
   }
 
-  const [donnees, logDuJour, intakesJour] = await Promise.all([
+  const [donnees, logDuJour, intakesJour, macroProfil] = await Promise.all([
     getDonneesCyclePourAffichage(),
     getDailyLogParDate(dateStr),
     userId ? getDailyMealIntakesJour(supabase, userId, dateStr) : Promise.resolve([]),
+    userId ? getMacroProfile(userId) : Promise.resolve(null),
   ])
   const todos = userId ? await getTodosParDatePourUtilisateur(userId, dateStr) : []
 
   const consoJour = totauxDepuisIntakes(fusionIntakesJour(dateStr, intakesJour))
-
   const { prefs, stats, effectiveStart, cycleLength } = donnees
   const mode = prefs?.mode_utilisateur ?? DEFAULT_MODE_UTILISATEUR
   const sansSuivi = mode === 'sans_cycle'
@@ -81,10 +80,16 @@ export default async function PageAujourdhui({
   const cycleOk = effectiveStart != null
   const jourDuCycle = cycleOk ? getCycleDay(parseISO(effectiveStart), aujourdhui, cycleLength) : null
   const phase = jourDuCycle != null ? getPhaseAvecStats(jourDuCycle, stats, cycleLength) : null
-  void consoJour
-  void typeJournee
-
   const phaseHeader: Phase | null = sansSuivi ? null : phase
+
+  const macrosCibles = macrosCiblesPourJour({
+    profil: macroProfil,
+    phase: phaseHeader ?? 'folliculaire',
+    planning: planningSportDepuisPrefs(prefs?.planning_sport),
+    date: aujourdhui,
+    sansSuiviCycle: sansSuivi,
+  })
+  void macrosCibles
 
   return (
     <div className="min-h-screen bg-[#F8F7FF] dark:bg-gray-950 page-accueil">

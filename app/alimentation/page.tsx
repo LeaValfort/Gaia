@@ -5,12 +5,9 @@ import { creerClientServeur } from '@/lib/supabase-server'
 import { designPhaseAffichage } from '@/lib/data/phases-design'
 import { AlimentationLayout } from '@/components/alimentation/AlimentationLayout'
 import { AlimentationOnglets } from '@/components/alimentation/AlimentationOnglets'
-import {
-  getLundiSemaine,
-  getTypeJournee,
-  calculerMacrosJour,
-  calculerMacrosJourSansCycle,
-} from '@/lib/nutrition'
+import { getLundiSemaine, getTypeJournee } from '@/lib/nutrition'
+import { getMacroProfile } from '@/lib/db/macro-profiles'
+import { macrosCiblesPourJour, planningSportDepuisPrefs } from '@/lib/macros-du-jour'
 import { getCycleDay, getPhaseAvecStats } from '@/lib/cycle'
 import { getDonneesCyclePourAffichage } from '@/lib/db/cycles'
 import { getDailyMealIntakesJour } from '@/lib/db/dailyMealIntake'
@@ -36,10 +33,12 @@ export default async function PageAlimentation() {
   const typeJournee = getTypeJournee(today)
   const todayIso = today.toISOString().slice(0, 10)
 
-  const [{ prefs, stats, effectiveStart, cycleLength }, intakesJour] = await Promise.all([
-    getDonneesCyclePourAffichage(),
-    getDailyMealIntakesJour(supabase, user.id, todayIso),
-  ])
+  const [{ prefs, stats, effectiveStart, cycleLength }, intakesJour, macroProfil] =
+    await Promise.all([
+      getDonneesCyclePourAffichage(),
+      getDailyMealIntakesJour(supabase, user.id, todayIso),
+      getMacroProfile(user.id),
+    ])
   const consoJour = totauxDepuisIntakes(fusionIntakesJour(todayIso, intakesJour))
 
   const mode = prefs?.mode_utilisateur ?? DEFAULT_MODE_UTILISATEUR
@@ -53,7 +52,13 @@ export default async function PageAlimentation() {
 
   const design = designPhaseAffichage(sansSuivi ? null : phase, { sansCycle: sansSuivi })
   const weekStartLabel = format(parseISO(`${weekStart}T12:00:00`), "'Semaine du' d MMMM yyyy", { locale: fr })
-  const macros = sansSuivi ? calculerMacrosJourSansCycle(typeJournee) : calculerMacrosJour(phase, typeJournee)
+  const macrosCibles = macrosCiblesPourJour({
+    profil: macroProfil,
+    phase,
+    planning: planningSportDepuisPrefs(prefs?.planning_sport),
+    date: today,
+    sansSuiviCycle: sansSuivi,
+  })
 
   return (
     <div className="min-h-screen bg-[#F8F7FF] dark:bg-gray-950">
@@ -67,10 +72,11 @@ export default async function PageAlimentation() {
           design={design}
           weekStartLabel={weekStartLabel}
           todayIso={todayIso}
-          typeJournee={typeJournee}
+          typeJournee={macrosCibles.typeJournee}
           phase={phase}
           sansSuiviCycle={sansSuivi}
           consoJour={consoJour}
+          macrosCibles={macrosCibles}
         >
           <AlimentationOnglets
             userId={user.id}
@@ -83,7 +89,8 @@ export default async function PageAlimentation() {
             effectiveStart={effectiveStart}
             cycleLength={cycleLength}
             stats={stats}
-            macrosTypeJournee={macros.typeJournee}
+            macrosTypeJournee={macrosCibles.typeJournee}
+            macrosCibles={macrosCibles}
             allergies={prefs?.food_allergies ?? []}
             cookTimeMinutes={prefs?.cook_time_minutes ?? 30}
           />

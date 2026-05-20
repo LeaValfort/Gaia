@@ -8,7 +8,7 @@ import { ListeCourses } from '@/components/alimentation/ListeCourses'
 import { RecettesSauvegardees } from '@/components/alimentation/RecettesSauvegardees'
 import { RecapMacrosJour } from '@/components/alimentation/RecapMacrosJour'
 import PlanSemaine from '@/components/alimentation/PlanSemaine'
-import type { CycleStats, Phase, TypeJournee } from '@/types'
+import type { CycleStats, MacrosCiblesJour, Phase, TypeJournee } from '@/types'
 
 const ONGL: OngletNav[] = [
   { id: 'semaine', label: 'Plan', emoji: '📅' },
@@ -31,6 +31,7 @@ export interface AlimentationOngletsProps {
   cycleLength: number
   stats: CycleStats | null
   macrosTypeJournee: TypeJournee
+  macrosCibles?: MacrosCiblesJour
   allergies: string[]
   cookTimeMinutes: number
 }
@@ -67,6 +68,7 @@ export function AlimentationOnglets(p: AlimentationOngletsProps) {
             typeJournee={p.typeJournee}
             weekStart={p.weekStart}
             sansSuiviCycle={p.sansSuiviCycle}
+            macrosCibles={p.macrosCibles}
           />
         )}
         {actif === 'checklist' && <ChecklistHebdo userId={p.userId} weekStart={p.weekStart} />}

@@ -1,7 +1,7 @@
 import { calculerMacrosJour, calculerMacrosJourSansCycle } from '@/lib/nutrition'
 import type { TotauxConsommesJour } from '@/lib/recapManuel'
 import { designPhaseAffichage } from '@/lib/cycle'
-import type { Phase, TypeJournee } from '@/types'
+import type { MacrosCiblesJour, Phase, TypeJournee } from '@/types'
 import { cn } from '@/lib/utils'
 
 const CARD =
@@ -20,6 +20,8 @@ export interface MacrosCiblesProps {
   sansCycle?: boolean
   /** Totaux du récap du jour — les barres = consommé / cible (max 100 %). */
   conso?: TotauxConsommesJour | null
+  /** Macros pré-calculées côté serveur. */
+  macrosCibles?: MacrosCiblesJour
 }
 
 function pctRemplissage(cible: number, consomme: number): number {
@@ -27,12 +29,13 @@ function pctRemplissage(cible: number, consomme: number): number {
   return Math.min(100, Math.round((consomme / cible) * 100))
 }
 
-export function MacrosCibles({ phase, typeJournee, sansCycle, conso }: MacrosCiblesProps) {
+export function MacrosCibles({ phase, typeJournee, sansCycle, conso, macrosCibles }: MacrosCiblesProps) {
   const d = designPhaseAffichage(phase, { sansCycle })
   const macros =
-    sansCycle || !phase
+    macrosCibles ??
+    (sansCycle || !phase
       ? calculerMacrosJourSansCycle(typeJournee)
-      : calculerMacrosJour(phase, typeJournee)
+      : calculerMacrosJour(phase, typeJournee))
   const c = conso ?? { calories: 0, proteines: 0, glucides: 0, lipides: 0 }
 
   return (
