@@ -30,11 +30,22 @@ export const BADGE_PHASE_CYCLE: Record<Phase, string> = {
 /** Soulignement et texte actif des onglets conseils (teal / amber / red / purple). */
 export const ONGLET_CONSEIL_ACTIF: Record<Phase, string> = {
   menstruation:
-    'data-active:text-rose-700 dark:data-active:text-rose-300 data-active:after:bg-rose-500',
+    'data-active:text-rose-800 dark:data-active:text-rose-200 data-active:after:bg-rose-600',
   folliculaire:
-    'data-active:text-amber-800 dark:data-active:text-amber-300 data-active:after:bg-amber-500',
+    'data-active:text-amber-900 dark:data-active:text-amber-200 data-active:after:bg-amber-600',
   ovulation:
-    'data-active:text-teal-800 dark:data-active:text-teal-300 data-active:after:bg-teal-500',
+    'data-active:text-teal-900 dark:data-active:text-teal-200 data-active:after:bg-teal-600',
   luteale:
-    'data-active:text-violet-800 dark:data-active:text-violet-300 data-active:after:bg-violet-500',
+    'data-active:text-violet-900 dark:data-active:text-violet-200 data-active:after:bg-violet-600',
 }
+
+/** Texte des conseils : contraste fort sur fond pastel clair. */
+export const TEXTE_CONSEIL_PHASE: Record<Phase, string> = {
+  menstruation: 'text-rose-950 dark:text-rose-50',
+  folliculaire: 'text-amber-950 dark:text-amber-50',
+  ovulation: 'text-teal-950 dark:text-teal-50',
+  luteale: 'text-violet-950 dark:text-violet-50',
+}
+
+export const ONGLET_CONSEIL_INACTIF =
+  'text-neutral-800 hover:text-neutral-950 dark:text-neutral-400 dark:hover:text-neutral-200'

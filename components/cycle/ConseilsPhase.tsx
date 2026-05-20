@@ -1,7 +1,11 @@
 'use client'
 
 import { getConseilsPhase } from '@/lib/cycle'
-import { ONGLET_CONSEIL_ACTIF } from '@/lib/cycle-affichage'
+import {
+  ONGLET_CONSEIL_ACTIF,
+  ONGLET_CONSEIL_INACTIF,
+  TEXTE_CONSEIL_PHASE,
+} from '@/lib/cycle-affichage'
 import { PHASES_DESIGN } from '@/lib/data/phases-design'
 import type { Phase } from '@/types'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
@@ -32,10 +36,11 @@ export function ConseilsPhase({ phase }: ConseilsPhaseProps) {
 
       <div
         className={cn(
-          'rounded-2xl border bg-white p-4 dark:bg-neutral-900/80',
-          design.border
+          'rounded-2xl border p-4',
+          design.border,
+          design.bg,
+          'dark:border-neutral-800 dark:bg-neutral-900'
         )}
-        style={{ backgroundColor: design.bgCard }}
       >
         <Tabs defaultValue="sport" className="gap-4">
           <div className="-mx-1 overflow-x-auto px-1 pb-1 [scrollbar-width:thin]">
@@ -48,8 +53,8 @@ export function ConseilsPhase({ phase }: ConseilsPhaseProps) {
                   key={value}
                   value={value}
                   className={cn(
-                    'shrink-0 rounded-none px-3 py-2 text-xs sm:text-sm',
-                    'text-neutral-500 dark:text-neutral-400',
+                    'shrink-0 rounded-none px-3 py-2 text-xs font-medium sm:text-sm',
+                    ONGLET_CONSEIL_INACTIF,
                     accentOnglet
                   )}
                 >
@@ -63,7 +68,10 @@ export function ConseilsPhase({ phase }: ConseilsPhaseProps) {
             <TabsContent
               key={value}
               value={value}
-              className="mt-0 pt-1 text-sm leading-relaxed text-neutral-800 dark:text-neutral-200"
+              className={cn(
+                'mt-0 pt-2 text-sm leading-relaxed sm:text-[0.9375rem]',
+                TEXTE_CONSEIL_PHASE[phase]
+              )}
             >
               {texte(conseils)}
             </TabsContent>
