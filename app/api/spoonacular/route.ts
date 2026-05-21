@@ -15,6 +15,11 @@ function idNumerique(id: string): number {
   return Math.abs(h)
 }
 
+function macroApi(v: number | null | undefined): number {
+  if (v == null || v <= 0) return 0
+  return Math.round(v)
+}
+
 function suggestionVersSpoonacular(s: RecetteSuggestion): RecetteSpoonacular {
   const ingredients = (s.ingredients ?? [s.nom]).map((nom, i) => {
     const mesure = s.mesures?.[i]?.trim()
@@ -29,10 +34,10 @@ function suggestionVersSpoonacular(s: RecetteSuggestion): RecetteSpoonacular {
     titre: s.nom,
     image: s.image_url ?? '',
     tempsMin: s.temps_min ?? 0,
-    calories: Math.round(s.calories ?? 0),
-    proteines: Math.round(s.proteines ?? 0),
-    glucides: Math.round(s.glucides ?? 0),
-    lipides: Math.round(s.lipides ?? 0),
+    calories: macroApi(s.calories),
+    proteines: macroApi(s.proteines),
+    glucides: macroApi(s.glucides),
+    lipides: macroApi(s.lipides),
     ingredients,
     urlOriginale:
       s.source === 'themealdb'

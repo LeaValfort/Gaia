@@ -88,50 +88,44 @@ async function chargerRepasTheMealDB(query: string, phase: Phase): Promise<MealD
   }
 }
 
+function macroOff(v: number | null | undefined): number | null {
+  if (v == null || v <= 0) return null
+  return Math.round(v)
+}
+
+/** Macros uniquement si Open Food Facts les retourne (pas d'estimation). */
 export async function estimerMacrosDepuisOff(ingredients: string[]): Promise<{
   calories: number | null
   proteines: number | null
   glucides: number | null
   lipides: number | null
 }> {
+  const vide = { calories: null, proteines: null, glucides: null, lipides: null }
   const principaux = ingredients.slice(0, 3)
-  if (principaux.length === 0) {
-    return { calories: null, proteines: null, glucides: null, lipides: null }
-  }
+  if (principaux.length === 0) return vide
 
   try {
-    const recherches = await Promise.all(
-      principaux.map((ing) => searchRecipes(nettoyerNomIngredient(ing), 'fr'))
-    )
+    for (const ing of principaux) {
+      const produits = await searchRecipes(nettoyerNomIngredient(ing), 'fr')
+      const p = produits[0]
+      if (!p) continue
 
-    const produits = recherches
-      .map((liste) => liste[0])
-      .filter((p): p is NonNullable<(typeof recherches)[number][number]> => p != null)
+      const macros = {
+        calories: macroOff(p.calories_100g),
+        proteines: macroOff(p.proteines_100g),
+        glucides: macroOff(p.glucides_100g),
+        lipides: macroOff(p.lipides_100g),
+      }
 
-    if (produits.length === 0) {
-      return { calories: null, proteines: null, glucides: null, lipides: null }
+      if (macros.calories || macros.proteines || macros.glucides || macros.lipides) {
+        return macros
+      }
     }
 
-    const n = produits.length
-    const somme = produits.reduce(
-      (acc, p) => ({
-        calories: acc.calories + (p.calories_100g ?? 0),
-        proteines: acc.proteines + (p.proteines_100g ?? 0),
-        glucides: acc.glucides + (p.glucides_100g ?? 0),
-        lipides: acc.lipides + (p.lipides_100g ?? 0),
-      }),
-      { calories: 0, proteines: 0, glucides: 0, lipides: 0 }
-    )
-
-    return {
-      calories: Math.round(somme.calories / n),
-      proteines: Math.round(somme.proteines / n),
-      glucides: Math.round(somme.glucides / n),
-      lipides: Math.round(somme.lipides / n),
-    }
+    return vide
   } catch (erreur) {
-    console.error('Erreur estimation macros Open Food Facts:', erreur)
-    return { calories: null, proteines: null, glucides: null, lipides: null }
+    console.error('Erreur macros Open Food Facts:', erreur)
+    return vide
   }
 }
 
@@ -159,7 +153,7 @@ async function mealVersSuggestion(meal: MealDBResult, phase: Phase): Promise<Rec
  * 1. Recettes perso (Supabase)
  * 2. TheMealDB (+ catégories par phase si query vide)
  * 3. Traduction MyMemory (FR ↔ EN)
- * 4. Macros estimées via Open Food Facts (3 ingrédients max)
+ * 4. Macros Open Food Facts si trouvées (sinon null)
  */
 export async function searchRecettesFr(
   supabase: SupabaseClient,

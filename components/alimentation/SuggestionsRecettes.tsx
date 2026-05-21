@@ -31,25 +31,46 @@ const PHASES_OPTIONS: { id: Phase; label: string; style: string; styleActif: str
 ]
 
 // Sous-composant carte recette
+function macroAffichable(v: number): boolean {
+  return v > 0
+}
+
 function RecetteCard({ recette, userId, weekStart, phase }: {
   recette: RecetteSpoonacular; userId: string; weekStart: string; phase: Phase
 }) {
   const [saved, setSaved] = useState(false)
   const [added, setAdded] = useState(false)
 
+  const macros = [
+    macroAffichable(recette.calories)
+      ? { label: `${recette.calories} kcal`, className: 'text-orange-600 dark:text-orange-400' }
+      : null,
+    macroAffichable(recette.proteines)
+      ? { label: `${recette.proteines}g P`, className: 'text-blue-600 dark:text-blue-400' }
+      : null,
+    macroAffichable(recette.glucides)
+      ? { label: `${recette.glucides}g G`, className: 'text-amber-600 dark:text-amber-400' }
+      : null,
+    macroAffichable(recette.lipides)
+      ? { label: `${recette.lipides}g L`, className: 'text-green-600 dark:text-green-400' }
+      : null,
+  ].filter((m): m is { label: string; className: string } => m !== null)
+
+  const ingredientsAffiches = recette.ingredients.slice(0, 4)
+
   async function handleSave() {
     await saveRecette(supabase, userId, {
       nom: recette.titre,
       ingredients: recette.ingredients.map((i) => `${i.quantite ?? ''} ${i.nom}`.trim()),
-      temps_min: recette.tempsMin,
+      temps_min: recette.tempsMin > 0 ? recette.tempsMin : null,
       phase,
       type_repas: null,
       raison: null,
       spoonacular_id: recette.id,
-      calories:  recette.calories  ?? null,
-      proteines: recette.proteines ?? null,
-      glucides:  recette.glucides  ?? null,
-      lipides:   recette.lipides   ?? null,
+      calories: macroAffichable(recette.calories) ? recette.calories : null,
+      proteines: macroAffichable(recette.proteines) ? recette.proteines : null,
+      glucides: macroAffichable(recette.glucides) ? recette.glucides : null,
+      lipides: macroAffichable(recette.lipides) ? recette.lipides : null,
     })
     setSaved(true)
   }
@@ -75,18 +96,41 @@ function RecetteCard({ recette, userId, weekStart, phase }: {
 
   return (
     <div className="rounded-xl border border-neutral-200 dark:border-neutral-800 overflow-hidden flex flex-col">
-      {recette.image && (
+      {recette.image ? (
         <img src={recette.image} alt={recette.titre} className="w-full h-36 object-cover" />
-      )}
+      ) : null}
       <div className="p-3 flex flex-col gap-2 flex-1">
-        <p className="font-semibold text-sm text-neutral-900 dark:text-neutral-50 leading-snug">{recette.titre}</p>
-        <div className="flex flex-wrap gap-1">
-          <Badge variant="outline" className="text-xs">{recette.tempsMin} min</Badge>
-          <Badge variant="outline" className="text-xs text-orange-600 dark:text-orange-400">{recette.calories} kcal</Badge>
-          <Badge variant="outline" className="text-xs text-blue-600 dark:text-blue-400">{recette.proteines}g P</Badge>
-          <Badge variant="outline" className="text-xs text-amber-600 dark:text-amber-400">{recette.glucides}g G</Badge>
-          <Badge variant="outline" className="text-xs text-green-600 dark:text-green-400">{recette.lipides}g L</Badge>
-        </div>
+        <p className="font-semibold text-sm text-neutral-900 dark:text-neutral-50 leading-snug">
+          {recette.titre}
+        </p>
+
+        {macros.length > 0 ? (
+          <div className="flex flex-wrap gap-1">
+            {macros.map(({ label, className }) => (
+              <Badge key={label} variant="outline" className={`text-xs ${className}`}>
+                {label}
+              </Badge>
+            ))}
+          </div>
+        ) : null}
+
+        {ingredientsAffiches.length > 0 ? (
+          <ul className="flex flex-col gap-0.5">
+            {ingredientsAffiches.map((ing) => (
+              <li key={ing.nom} className="truncate text-xs text-muted-foreground">
+                {ing.quantite ? `${ing.quantite} ` : ''}
+                {ing.nom}
+              </li>
+            ))}
+            {recette.ingredients.length > ingredientsAffiches.length ? (
+              <li className="text-xs text-muted-foreground">
+                +{recette.ingredients.length - ingredientsAffiches.length} ingrédient
+                {recette.ingredients.length - ingredientsAffiches.length > 1 ? 's' : ''}
+              </li>
+            ) : null}
+          </ul>
+        ) : null}
+
         <div className="flex gap-1.5 flex-wrap mt-auto pt-1">
           <Button size="sm" variant="outline" onClick={handleSave} disabled={saved} className="text-xs h-7 px-2">
             {saved ? <><Check size={11} className="mr-1" />Sauvée</> : <><Bookmark size={11} className="mr-1" />Sauvegarder</>}
@@ -200,7 +244,7 @@ export function SuggestionsRecettes({
           </p>
         )}
 
-        <p className="text-xs text-neutral-400">TheMealDB · traduit en français · macros estimées / 100 g</p>
+        <p className="text-xs text-neutral-400">TheMealDB · traduit en français</p>
 
         {/* Barre de recherche */}
         <div className="flex gap-2 mt-1">
