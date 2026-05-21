@@ -1,8 +1,9 @@
 'use client'
 
-import { useState, useEffect, useCallback } from 'react'
-import { BookOpen } from 'lucide-react'
+import { useState, useEffect, useCallback, useMemo } from 'react'
+import { BookOpen, Search } from 'lucide-react'
 import { Skeleton } from '@/components/ui/skeleton'
+import { Input } from '@/components/ui/input'
 import { supabase } from '@/lib/supabase'
 import { getRecettes, deleteRecette } from '@/lib/db/recettes'
 import { CarteRecette } from './CarteRecette'
@@ -43,6 +44,7 @@ export function RecettesSauvegardees({
   const [erreur, setErreur]           = useState<string | null>(null)
   const [filtrePhase, setFiltrePhase] = useState<Phase | 'toutes'>(phase)
   const [filtreRepas, setFiltreRepas] = useState<TypeRepas | 'tous'>('tous')
+  const [recherche, setRecherche] = useState('')
 
   const charger = useCallback(
     async (opts?: { silent?: boolean }) => {
@@ -75,11 +77,17 @@ export function RecettesSauvegardees({
     await deleteRecette(supabase, userId, id)
   }
 
-  const recettesFiltrees = recettes.filter((r) => {
-    const okPhase = filtrePhase === 'toutes' || r.phase === filtrePhase || r.phase === null
-    const okRepas = filtreRepas === 'tous'   || r.type_repas === filtreRepas
-    return okPhase && okRepas
-  })
+  const recettesFiltrees = useMemo(() => {
+    const q = recherche.trim().toLowerCase()
+    return recettes.filter((r) => {
+      const okPhase = filtrePhase === 'toutes' || r.phase === filtrePhase || r.phase === null
+      const okRepas = filtreRepas === 'tous' || r.type_repas === filtreRepas
+      if (!okPhase || !okRepas) return false
+      if (!q) return true
+      if (r.nom.toLowerCase().includes(q)) return true
+      return r.ingredients.some((ing) => ing.toLowerCase().includes(q))
+    })
+  }, [recettes, filtrePhase, filtreRepas, recherche])
 
   if (chargement) return (
     <div className="flex flex-col gap-4">
@@ -140,6 +148,21 @@ export function RecettesSauvegardees({
         ))}
       </div>
 
+      <div className="relative">
+        <Search
+          className="pointer-events-none absolute left-2.5 top-1/2 size-4 -translate-y-1/2 text-muted-foreground"
+          aria-hidden
+        />
+        <Input
+          type="search"
+          value={recherche}
+          onChange={(e) => setRecherche(e.target.value)}
+          placeholder="Nom, ingrédient…"
+          className="h-9 pl-9"
+          aria-label="Rechercher dans tes recettes"
+        />
+      </div>
+
       {onVersSuggestions ? (
         <button
           type="button"
@@ -156,7 +179,9 @@ export function RecettesSauvegardees({
           <p className="text-sm text-neutral-500 dark:text-neutral-400">
             {recettes.length === 0
               ? 'Aucune recette sauvegardée.'
-              : 'Aucune recette pour ces filtres.'}
+              : recherche.trim()
+                ? 'Aucun résultat pour cette recherche.'
+                : 'Aucune recette pour ces filtres.'}
           </p>
           {recettes.length === 0 && (
             <p className="text-xs text-neutral-400 dark:text-neutral-500 max-w-xs">

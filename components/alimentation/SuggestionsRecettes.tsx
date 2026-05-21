@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useCallback, useRef } from 'react'
 import { ChefHat, ExternalLink, Bookmark, ShoppingCart, Check, Search } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -106,31 +106,49 @@ export function SuggestionsRecettes({
   const [erreur, setErreur] = useState<string | null>(null)
   const [userId, setUserId] = useState('')
   const [recherche, setRecherche] = useState('')
+  const rechercheRef = useRef(recherche)
+  rechercheRef.current = recherche
   const weekStart = getLundiSemaine(new Date())
 
   useEffect(() => {
     supabase.auth.getUser().then(({ data }) => { if (data.user) setUserId(data.user.id) })
   }, [])
 
-  async function chercher() {
-    setChargement(true); setErreur(null)
-    try {
-      const offset = Math.floor(Math.random() * 80)
-      const params = new URLSearchParams({
-        typeJournee, allergies: allergies.join(','),
-        tempsMax: String(tempsMax), offset: String(offset),
-        phase: phaseSelectee,
-      })
-      if (recherche.trim()) params.set('query', recherche.trim())
-      const rep = await fetch(`/api/spoonacular?${params}`)
-      if (!rep.ok) throw new Error('Erreur serveur')
-      const { recettes: data, erreur: err } = await rep.json()
-      if (err) throw new Error(err)
-      setRecettes(data ?? [])
-    } catch (e) {
-      setErreur(e instanceof Error ? e.message : 'Erreur lors de la recherche')
-    } finally { setChargement(false) }
-  }
+  const chercher = useCallback(
+    async (queryText?: string) => {
+      setChargement(true)
+      setErreur(null)
+      try {
+        const offset = Math.floor(Math.random() * 80)
+        const params = new URLSearchParams({
+          typeJournee,
+          allergies: allergies.join(','),
+          tempsMax: String(tempsMax),
+          offset: String(offset),
+          phase: phaseSelectee,
+        })
+        const q = (queryText ?? rechercheRef.current).trim()
+        if (q) params.set('query', q)
+        const rep = await fetch(`/api/spoonacular?${params}`)
+        if (!rep.ok) throw new Error('Erreur serveur')
+        const { recettes: data, erreur: err } = (await rep.json()) as {
+          recettes?: RecetteSpoonacular[]
+          erreur?: string
+        }
+        if (err) throw new Error(err)
+        setRecettes(data ?? [])
+      } catch (e) {
+        setErreur(e instanceof Error ? e.message : 'Erreur lors de la recherche')
+      } finally {
+        setChargement(false)
+      }
+    },
+    [typeJournee, allergies, tempsMax, phaseSelectee]
+  )
+
+  useEffect(() => {
+    void chercher('')
+  }, [chercher])
 
   return (
     <div className="flex flex-col gap-4">
@@ -177,14 +195,15 @@ export function SuggestionsRecettes({
           <div className="relative flex-1">
             <Search size={14} className="absolute left-2.5 top-1/2 -translate-y-1/2 text-neutral-400" />
             <Input
-              placeholder="Ingrédient ou mot-clé... (ex: salmon, lentils)"
+              placeholder="Ingrédient ou mot-clé… (ex. saumon, lentilles)"
               value={recherche}
               onChange={(e) => setRecherche(e.target.value)}
-              onKeyDown={(e) => e.key === 'Enter' && chercher()}
+              onKeyDown={(e) => e.key === 'Enter' && void chercher()}
               className="pl-8 text-sm h-9"
+              aria-label="Rechercher une recette par ingrédient ou mot-clé"
             />
           </div>
-          <Button onClick={chercher} disabled={chargement} size="sm" className="alimentation-btn-primaire shrink-0">
+          <Button onClick={() => void chercher()} disabled={chargement} size="sm" className="alimentation-btn-primaire shrink-0">
             {chargement ? 'Recherche...' : recettes.length ? 'Relancer' : 'Chercher'}
           </Button>
         </div>

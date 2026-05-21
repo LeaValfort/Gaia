@@ -7,7 +7,7 @@ import {
 } from '@/components/alimentation/AlimentationNav'
 import { ChecklistHebdo } from '@/components/alimentation/ChecklistHebdo'
 import { ListeCourses } from '@/components/alimentation/ListeCourses'
-import { ListeRecettesPhase } from '@/components/alimentation/ListeRecettesPhase'
+import { SuggestionsRecettes } from '@/components/alimentation/SuggestionsRecettes'
 import { OngletAujourdhui } from '@/components/alimentation/OngletAujourdhui'
 import PlanSemaine from '@/components/alimentation/PlanSemaine'
 import { RecettesSauvegardees } from '@/components/alimentation/RecettesSauvegardees'
@@ -63,7 +63,7 @@ export function AlimentationOnglets(p: AlimentationOngletsProps) {
         ) : null}
 
         {vue === 'suggestions' ? (
-          <ListeRecettesPhase
+          <SuggestionsRecettes
             phase={p.phase}
             typeJournee={p.macrosTypeJournee}
             allergies={p.allergies}

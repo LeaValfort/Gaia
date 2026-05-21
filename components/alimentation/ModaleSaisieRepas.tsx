@@ -1,6 +1,7 @@
 'use client'
 
 import { useCallback, useEffect, useMemo, useState } from 'react'
+import { Search } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import {
   Dialog,
@@ -84,6 +85,7 @@ export function ModaleSaisieRepas({
     lipides: '0',
   })
   const [sourceRecipeId, setSourceRecipeId] = useState<string | null>(null)
+  const [recherche, setRecherche] = useState('')
   const [recettes, setRecettes] = useState<Recipe[]>([])
   const [chargementRecettes, setChargementRecettes] = useState(false)
   const [erreurRecettes, setErreurRecettes] = useState<string | null>(null)
@@ -94,6 +96,15 @@ export function ModaleSaisieRepas({
     () => sousTitreObjectifRepas(typeJournee, intake.type_repas),
     [typeJournee, intake.type_repas]
   )
+
+  const recettesFiltrees = useMemo(() => {
+    const q = recherche.trim().toLowerCase()
+    if (!q) return recettes
+    return recettes.filter((r) => {
+      if (r.nom.toLowerCase().includes(q)) return true
+      return r.ingredients.some((ing) => ing.toLowerCase().includes(q))
+    })
+  }, [recherche, recettes])
 
   const chargerRecettes = useCallback(async () => {
     setChargementRecettes(true)
@@ -112,6 +123,7 @@ export function ModaleSaisieRepas({
   useEffect(() => {
     if (!ouvert) return
     setMode('manuel')
+    setRecherche('')
     setSourceRecipeId(intake.source_recipe_id ?? null)
     setValeurs({
       calories: String(intake.calories),
@@ -207,6 +219,21 @@ export function ModaleSaisieRepas({
 
         {mode === 'recette' ? (
           <div className="flex flex-col gap-3">
+            <div className="relative">
+              <Search
+                className="pointer-events-none absolute left-2.5 top-1/2 size-4 -translate-y-1/2 text-muted-foreground"
+                aria-hidden
+              />
+              <Input
+                type="search"
+                value={recherche}
+                onChange={(e) => setRecherche(e.target.value)}
+                placeholder="Nom ou ingrédient…"
+                className="h-10 pl-9"
+                aria-label="Filtrer les recettes enregistrées"
+              />
+            </div>
+
             {erreurRecettes ? (
               <p className="text-sm text-red-600 dark:text-red-400">{erreurRecettes}</p>
             ) : null}
@@ -235,9 +262,13 @@ export function ModaleSaisieRepas({
                   </button>
                 ) : null}
               </div>
+            ) : recettesFiltrees.length === 0 ? (
+              <p className="text-sm text-muted-foreground py-2">
+                Aucun résultat pour cette recherche.
+              </p>
             ) : (
               <ul className="max-h-52 overflow-y-auto rounded-lg border border-neutral-200 dark:border-neutral-800">
-                {recettes.map((r) => (
+                {recettesFiltrees.map((r) => (
                   <li
                     key={r.id}
                     className="flex items-center gap-2 border-b border-neutral-100 px-3 py-2.5 last:border-0 dark:border-neutral-800"
