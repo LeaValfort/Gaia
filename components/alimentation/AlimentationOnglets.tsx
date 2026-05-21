@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import {
   AlimentationNav,
   type VueAlimentation,
@@ -33,15 +33,24 @@ export interface AlimentationOngletsProps {
   cookTimeMinutes: number
 }
 
+const VUES_PLUS: VueAlimentation[] = ['checklist', 'courses', 'recettes-perso']
+
 export function AlimentationOnglets(p: AlimentationOngletsProps) {
   const vueInitiale: VueAlimentation = p.suiviCalorique ? 'aujourdhui' : 'recettes'
   const [vue, setVue] = useState<VueAlimentation>(vueInitiale)
+  const contenuRef = useRef<HTMLDivElement>(null)
+
+  useEffect(() => {
+    if (VUES_PLUS.includes(vue)) {
+      contenuRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' })
+    }
+  }, [vue])
 
   return (
     <div className="flex min-w-0 flex-col gap-4">
       <AlimentationNav suiviCalorique={p.suiviCalorique} vue={vue} onChange={setVue} />
 
-      <div className="min-w-0">
+      <div ref={contenuRef} className="min-w-0 scroll-mt-4">
         {vue === 'aujourdhui' && p.suiviCalorique ? (
           <OngletAujourdhui
             userId={p.userId}

@@ -1,12 +1,23 @@
 'use client'
 
-import { useEffect, useMemo, useState } from 'react'
+import { useEffect, useState } from 'react'
 import { Button } from '@/components/ui/button'
+import { Input } from '@/components/ui/input'
+import { Label } from '@/components/ui/label'
 import { supabase } from '@/lib/supabase'
 import { upsertDailyMealIntake } from '@/lib/db/dailyMealIntake'
-import { objectifsMacroRepas, objectifsRepasDefaut } from '@/lib/repartitionRepas'
-import { SousOngletsMacrosRepas, type CleMacro } from '@/components/alimentation/SousOngletsMacrosRepas'
+import { objectifsRepasDefaut } from '@/lib/repartitionRepas'
+import { cn } from '@/lib/utils'
 import type { DailyMealIntake, TypeJournee } from '@/types'
+
+type CleMacro = 'calories' | 'proteines' | 'glucides' | 'lipides'
+
+const CHAMPS: { cle: CleMacro; label: string; unite: string; max: number }[] = [
+  { cle: 'calories', label: 'Calories', unite: 'kcal', max: 20000 },
+  { cle: 'proteines', label: 'Protéines', unite: 'g', max: 1000 },
+  { cle: 'glucides', label: 'Glucides', unite: 'g', max: 1000 },
+  { cle: 'lipides', label: 'Lipides', unite: 'g', max: 1000 },
+]
 
 function parseN(v: string, max: number): number {
   const n = Number.parseInt(v.replace(/\D/g, ''), 10)
@@ -19,41 +30,43 @@ interface PanneauRepasJourProps {
   intake: DailyMealIntake
   typeJournee: TypeJournee
   onEnregistre: () => void
+  onAnnuler?: () => void
 }
 
-export function PanneauRepasJour({ userId, intake, typeJournee, onEnregistre }: PanneauRepasJourProps) {
-  const [macro, setMacro] = useState<CleMacro>('calories')
-  const [act, setAct] = useState<Record<CleMacro, string>>({ calories: '0', proteines: '0', glucides: '0', lipides: '0' })
-  const [obj, setObj] = useState<Record<CleMacro, string>>({ calories: '0', proteines: '0', glucides: '0', lipides: '0' })
+export function PanneauRepasJour({
+  userId,
+  intake,
+  typeJournee,
+  onEnregistre,
+  onAnnuler,
+}: PanneauRepasJourProps) {
+  const [valeurs, setValeurs] = useState<Record<CleMacro, string>>({
+    calories: '0',
+    proteines: '0',
+    glucides: '0',
+    lipides: '0',
+  })
   const [err, setErr] = useState<string | null>(null)
-
-  const def = useMemo(() => objectifsRepasDefaut(typeJournee, intake.type_repas), [typeJournee, intake.type_repas])
+  const [envoi, setEnvoi] = useState(false)
 
   useEffect(() => {
-    const o = objectifsMacroRepas(intake, typeJournee)
-    setAct({
+    setValeurs({
       calories: String(intake.calories),
       proteines: String(intake.proteines),
       glucides: String(intake.glucides),
       lipides: String(intake.lipides),
     })
-    setObj({ calories: String(o.calories), proteines: String(o.proteines), glucides: String(o.glucides), lipides: String(o.lipides) })
     setErr(null)
-  }, [intake, typeJournee])
+  }, [intake])
 
-  const enregistrer = async () => {
+  async function enregistrer() {
     setErr(null)
+    setEnvoi(true)
     const a = {
-      calories: parseN(act.calories, 20000),
-      proteines: parseN(act.proteines, 1000),
-      glucides: parseN(act.glucides, 1000),
-      lipides: parseN(act.lipides, 1000),
-    }
-    const o = {
-      calories: parseN(obj.calories, 20000),
-      proteines: parseN(obj.proteines, 1000),
-      glucides: parseN(obj.glucides, 1000),
-      lipides: parseN(obj.lipides, 1000),
+      calories: parseN(valeurs.calories, 20000),
+      proteines: parseN(valeurs.proteines, 1000),
+      glucides: parseN(valeurs.glucides, 1000),
+      lipides: parseN(valeurs.lipides, 1000),
     }
     const res = await upsertDailyMealIntake(supabase, userId, {
       date: intake.date,
@@ -64,13 +77,14 @@ export function PanneauRepasJour({ userId, intake, typeJournee, onEnregistre }: 
       proteines: a.proteines,
       glucides: a.glucides,
       lipides: a.lipides,
-      objectif_calories: o.calories === def.calories ? null : o.calories,
-      objectif_proteines: o.proteines === def.proteines ? null : o.proteines,
-      objectif_glucides: o.glucides === def.glucides ? null : o.glucides,
-      objectif_lipides: o.lipides === def.lipides ? null : o.lipides,
+      objectif_calories: null,
+      objectif_proteines: null,
+      objectif_glucides: null,
+      objectif_lipides: null,
       nom_personnalise: null,
       source_recipe_id: intake.source_recipe_id ?? null,
     })
+    setEnvoi(false)
     if (!res.ok) {
       setErr(res.message ?? 'Erreur enregistrement')
       return
@@ -79,20 +93,60 @@ export function PanneauRepasJour({ userId, intake, typeJournee, onEnregistre }: 
   }
 
   return (
-    <div className="rounded-lg border border-neutral-200 dark:border-neutral-700 bg-white/60 dark:bg-neutral-900/40 p-3 space-y-3">
-      <SousOngletsMacrosRepas
-        macro={macro}
-        onMacro={setMacro}
-        act={act}
-        setAct={setAct}
-        obj={obj}
-        setObj={setObj}
-        def={def}
-      />
-      {err ? <p className="text-xs text-red-600 dark:text-red-400">{err}</p> : null}
-      <Button type="button" className="alimentation-btn-primaire h-9 w-full text-sm" onClick={() => void enregistrer()}>
-        Enregistrer ce créneau
+    <div className="flex flex-col gap-4">
+      <div className="flex flex-col gap-3">
+        {CHAMPS.map(({ cle, label, unite, max }) => (
+          <div key={cle} className="flex flex-col gap-1.5">
+            <Label htmlFor={`repas-${intake.type_repas}-${cle}`} className="text-sm">
+              {label} ({unite})
+            </Label>
+            <Input
+              id={`repas-${intake.type_repas}-${cle}`}
+              type="number"
+              min={0}
+              max={max}
+              inputMode="numeric"
+              value={valeurs[cle]}
+              onChange={(e) =>
+                setValeurs((prev) => ({
+                  ...prev,
+                  [cle]: e.target.value,
+                }))
+              }
+              className="h-10"
+            />
+          </div>
+        ))}
+      </div>
+
+      {err ? <p className="text-sm text-red-600 dark:text-red-400">{err}</p> : null}
+
+      <Button
+        type="button"
+        disabled={envoi}
+        className={cn(
+          'h-10 w-full bg-amber-600 text-white hover:bg-amber-700',
+          'dark:bg-amber-600 dark:hover:bg-amber-700'
+        )}
+        onClick={() => void enregistrer()}
+      >
+        {envoi ? 'Enregistrement…' : 'Enregistrer'}
       </Button>
+
+      {onAnnuler ? (
+        <Button type="button" variant="ghost" className="h-10 w-full" onClick={onAnnuler}>
+          Annuler
+        </Button>
+      ) : null}
     </div>
   )
+}
+
+/** Sous-titre objectif créneau pour la modale repas. */
+export function sousTitreObjectifRepas(
+  typeJournee: TypeJournee,
+  typeRepas: DailyMealIntake['type_repas']
+): string {
+  const o = objectifsRepasDefaut(typeJournee, typeRepas)
+  return `Objectif : ${o.calories} kcal · ${o.proteines}g P · ${o.glucides}g G · ${o.lipides}g L`
 }

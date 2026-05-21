@@ -2,17 +2,21 @@
 
 import { useCallback, useEffect, useState } from 'react'
 import { ChevronRight } from 'lucide-react'
-import { supabase } from '@/lib/supabase'
-import { getDailyMealIntakesJour } from '@/lib/db/dailyMealIntake'
-import { fusionIntakesJour, ORDRE_TYPES_REPAS } from '@/lib/recapManuel'
-import { PanneauRepasJour } from '@/components/alimentation/PanneauRepasJour'
+import {
+  PanneauRepasJour,
+  sousTitreObjectifRepas,
+} from '@/components/alimentation/PanneauRepasJour'
 import {
   Dialog,
   DialogContent,
+  DialogDescription,
   DialogHeader,
   DialogTitle,
 } from '@/components/ui/dialog'
 import { Skeleton } from '@/components/ui/skeleton'
+import { getDailyMealIntakesJour } from '@/lib/db/dailyMealIntake'
+import { fusionIntakesJour, ORDRE_TYPES_REPAS } from '@/lib/recapManuel'
+import { supabase } from '@/lib/supabase'
 import type { DailyMealIntake, TypeJournee, TypeRepas } from '@/types'
 
 const LIB_REPAS: Record<TypeRepas, { emoji: string; label: string }> = {
@@ -31,13 +35,21 @@ interface RepasDuJourCardProps {
 export function RepasDuJourCard({ userId, date, typeJournee }: RepasDuJourCardProps) {
   const [lignes, setLignes] = useState<DailyMealIntake[]>([])
   const [chargement, setChargement] = useState(true)
+  const [erreur, setErreur] = useState<string | null>(null)
   const [creneauOuvert, setCreneauOuvert] = useState<TypeRepas | null>(null)
 
   const charger = useCallback(async () => {
     setChargement(true)
-    const rows = await getDailyMealIntakesJour(supabase, userId, date)
-    setLignes(fusionIntakesJour(date, rows))
-    setChargement(false)
+    setErreur(null)
+    try {
+      const rows = await getDailyMealIntakesJour(supabase, userId, date)
+      setLignes(fusionIntakesJour(date, rows))
+    } catch {
+      setErreur('Impossible de charger les repas du jour.')
+      setLignes([])
+    } finally {
+      setChargement(false)
+    }
   }, [userId, date])
 
   useEffect(() => {
@@ -47,6 +59,16 @@ export function RepasDuJourCard({ userId, date, typeJournee }: RepasDuJourCardPr
   if (chargement) {
     return <Skeleton className="h-44 w-full rounded-xl" />
   }
+
+  if (erreur) {
+    return (
+      <section className="rounded-xl border border-neutral-200 bg-white p-4 dark:border-neutral-800 dark:bg-neutral-900/80">
+        <p className="text-sm text-muted-foreground">{erreur}</p>
+      </section>
+    )
+  }
+
+  const intakeOuvert = creneauOuvert ? intakeFor(lignes, creneauOuvert) : undefined
 
   return (
     <>
@@ -90,22 +112,28 @@ export function RepasDuJourCard({ userId, date, typeJournee }: RepasDuJourCardPr
 
       <Dialog open={creneauOuvert != null} onOpenChange={(o) => !o && setCreneauOuvert(null)}>
         <DialogContent className="max-h-[90vh] overflow-y-auto sm:max-w-md">
-          <DialogHeader>
-            <DialogTitle>
-              {creneauOuvert ? LIB_REPAS[creneauOuvert].emoji : ''}{' '}
-              {creneauOuvert ? LIB_REPAS[creneauOuvert].label : 'Repas'}
-            </DialogTitle>
-          </DialogHeader>
-          {creneauOuvert && intakeFor(lignes, creneauOuvert) ? (
-            <PanneauRepasJour
-              userId={userId}
-              intake={intakeFor(lignes, creneauOuvert)!}
-              typeJournee={typeJournee}
-              onEnregistre={() => {
-                void charger()
-                setCreneauOuvert(null)
-              }}
-            />
+          {creneauOuvert && intakeOuvert ? (
+            <>
+              <DialogHeader>
+                <DialogTitle className="flex items-center gap-2 text-lg">
+                  <span aria-hidden>{LIB_REPAS[creneauOuvert].emoji}</span>
+                  {LIB_REPAS[creneauOuvert].label}
+                </DialogTitle>
+                <DialogDescription className="text-left text-sm text-muted-foreground">
+                  {sousTitreObjectifRepas(typeJournee, creneauOuvert)}
+                </DialogDescription>
+              </DialogHeader>
+              <PanneauRepasJour
+                userId={userId}
+                intake={intakeOuvert}
+                typeJournee={typeJournee}
+                onEnregistre={() => {
+                  void charger()
+                  setCreneauOuvert(null)
+                }}
+                onAnnuler={() => setCreneauOuvert(null)}
+              />
+            </>
           ) : null}
         </DialogContent>
       </Dialog>
