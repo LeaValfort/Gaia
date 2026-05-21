@@ -1,6 +1,6 @@
 import type { SupabaseClient } from '@supabase/supabase-js'
 import { searchRecipes } from '@/lib/api/open-food-facts'
-import { translateMeal } from '@/lib/api/libretranslate'
+import { translateMeal, translateToEn } from '@/lib/api/libretranslate'
 import { getMealById, getMealsByCategory, searchMeals } from '@/lib/api/themealdb'
 import { nettoyerNomIngredient } from '@/lib/db/shopping-items'
 import { getRecettes } from '@/lib/db/recettes'
@@ -54,6 +54,10 @@ async function chargerRepasTheMealDB(query: string, phase: Phase): Promise<MealD
   const q = query.trim()
 
   if (q) {
+    const queryEN = await translateToEn(q)
+    console.log('Recherche TheMealDB:', q, '→', queryEN)
+    const results = await searchMeals(queryEN)
+    if (results.length > 0) return results
     return searchMeals(q)
   }
 
@@ -154,7 +158,7 @@ async function mealVersSuggestion(meal: MealDBResult, phase: Phase): Promise<Rec
 /**
  * 1. Recettes perso (Supabase)
  * 2. TheMealDB (+ catégories par phase si query vide)
- * 3. Traduction LibreTranslate
+ * 3. Traduction MyMemory (FR ↔ EN)
  * 4. Macros estimées via Open Food Facts (3 ingrédients max)
  */
 export async function searchRecettesFr(
