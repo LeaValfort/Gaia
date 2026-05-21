@@ -6,7 +6,6 @@ import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { supabase } from '@/lib/supabase'
 import { upsertDailyMealIntake } from '@/lib/db/dailyMealIntake'
-import { objectifsRepasDefaut } from '@/lib/repartitionRepas'
 import { cn } from '@/lib/utils'
 import type { DailyMealIntake, TypeJournee } from '@/types'
 
@@ -142,11 +141,5 @@ export function PanneauRepasJour({
   )
 }
 
-/** Sous-titre objectif créneau pour la modale repas. */
-export function sousTitreObjectifRepas(
-  typeJournee: TypeJournee,
-  typeRepas: DailyMealIntake['type_repas']
-): string {
-  const o = objectifsRepasDefaut(typeJournee, typeRepas)
-  return `Objectif : ${o.calories} kcal · ${o.proteines}g P · ${o.glucides}g G · ${o.lipides}g L`
-}
+/** @deprecated Préférer ModaleSaisieRepas — conservé pour RecapMacrosJour. */
+export { sousTitreObjectifRepas } from '@/components/alimentation/ModaleSaisieRepas'

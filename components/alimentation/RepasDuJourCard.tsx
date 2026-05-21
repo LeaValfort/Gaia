@@ -2,17 +2,7 @@
 
 import { useCallback, useEffect, useState } from 'react'
 import { ChevronRight } from 'lucide-react'
-import {
-  PanneauRepasJour,
-  sousTitreObjectifRepas,
-} from '@/components/alimentation/PanneauRepasJour'
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogHeader,
-  DialogTitle,
-} from '@/components/ui/dialog'
+import { ModaleSaisieRepas } from '@/components/alimentation/ModaleSaisieRepas'
 import { Skeleton } from '@/components/ui/skeleton'
 import { getDailyMealIntakesJour } from '@/lib/db/dailyMealIntake'
 import { fusionIntakesJour, ORDRE_TYPES_REPAS } from '@/lib/recapManuel'
@@ -30,9 +20,15 @@ interface RepasDuJourCardProps {
   userId: string
   date: string
   typeJournee: TypeJournee
+  onVersRecettes?: () => void
 }
 
-export function RepasDuJourCard({ userId, date, typeJournee }: RepasDuJourCardProps) {
+export function RepasDuJourCard({
+  userId,
+  date,
+  typeJournee,
+  onVersRecettes,
+}: RepasDuJourCardProps) {
   const [lignes, setLignes] = useState<DailyMealIntake[]>([])
   const [chargement, setChargement] = useState(true)
   const [erreur, setErreur] = useState<string | null>(null)
@@ -110,33 +106,19 @@ export function RepasDuJourCard({ userId, date, typeJournee }: RepasDuJourCardPr
         </ul>
       </section>
 
-      <Dialog open={creneauOuvert != null} onOpenChange={(o) => !o && setCreneauOuvert(null)}>
-        <DialogContent className="max-h-[90vh] overflow-y-auto sm:max-w-md">
-          {creneauOuvert && intakeOuvert ? (
-            <>
-              <DialogHeader>
-                <DialogTitle className="flex items-center gap-2 text-lg">
-                  <span aria-hidden>{LIB_REPAS[creneauOuvert].emoji}</span>
-                  {LIB_REPAS[creneauOuvert].label}
-                </DialogTitle>
-                <DialogDescription className="text-left text-sm text-muted-foreground">
-                  {sousTitreObjectifRepas(typeJournee, creneauOuvert)}
-                </DialogDescription>
-              </DialogHeader>
-              <PanneauRepasJour
-                userId={userId}
-                intake={intakeOuvert}
-                typeJournee={typeJournee}
-                onEnregistre={() => {
-                  void charger()
-                  setCreneauOuvert(null)
-                }}
-                onAnnuler={() => setCreneauOuvert(null)}
-              />
-            </>
-          ) : null}
-        </DialogContent>
-      </Dialog>
+      {creneauOuvert && intakeOuvert ? (
+        <ModaleSaisieRepas
+          ouvert={creneauOuvert != null}
+          onOuvertChange={(o) => !o && setCreneauOuvert(null)}
+          userId={userId}
+          intake={intakeOuvert}
+          typeJournee={typeJournee}
+          emoji={LIB_REPAS[creneauOuvert].emoji}
+          libelleRepas={LIB_REPAS[creneauOuvert].label}
+          onEnregistre={() => void charger()}
+          onVersRecettes={onVersRecettes}
+        />
+      ) : null}
     </>
   )
 }

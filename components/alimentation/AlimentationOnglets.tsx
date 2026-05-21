@@ -58,10 +58,11 @@ export function AlimentationOnglets(p: AlimentationOngletsProps) {
             typeJournee={p.macrosCibles.typeJournee}
             macrosCibles={p.macrosCibles}
             consoJour={p.consoJour}
+            onVersRecettes={() => setVue('recettes')}
           />
         ) : null}
 
-        {vue === 'recettes' && !p.suiviCalorique ? (
+        {vue === 'recettes' ? (
           <ListeRecettesPhase
             phase={p.phase}
             typeJournee={p.macrosTypeJournee}

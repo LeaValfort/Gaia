@@ -11,6 +11,7 @@ interface OngletAujourdhuiProps {
   typeJournee: TypeJournee
   macrosCibles: MacrosCiblesJour
   consoJour: TotauxConsommesJour
+  onVersRecettes?: () => void
 }
 
 export function OngletAujourdhui({
@@ -19,11 +20,17 @@ export function OngletAujourdhui({
   typeJournee,
   macrosCibles,
   consoJour,
+  onVersRecettes,
 }: OngletAujourdhuiProps) {
   return (
     <div className="flex flex-col gap-4">
       <MacrosDuJourCard macrosCibles={macrosCibles} conso={consoJour} />
-      <RepasDuJourCard userId={userId} date={todayIso} typeJournee={typeJournee} />
+      <RepasDuJourCard
+        userId={userId}
+        date={todayIso}
+        typeJournee={typeJournee}
+        onVersRecettes={onVersRecettes}
+      />
     </div>
   )
 }
