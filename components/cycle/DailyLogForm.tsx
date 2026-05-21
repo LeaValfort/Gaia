@@ -2,7 +2,9 @@
 
 import { useEffect, useState } from 'react'
 import { useRouter } from 'next/navigation'
+import { ChevronDown } from 'lucide-react'
 import { Button } from '@/components/ui/button'
+import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Slider } from '@/components/ui/slider'
@@ -11,6 +13,7 @@ import { DailyLogSectionEtendue } from '@/components/cycle/DailyLogSectionEtendu
 import {
   EXTENDED_LOG_INITIAL,
   extendedFromDailyLog,
+  logAContenuEnrichi,
 } from '@/lib/data/journalOptions'
 import { upsertDailyLog } from '@/lib/db/dailyLog'
 import { cn } from '@/lib/utils'
@@ -41,6 +44,7 @@ export function DailyLogForm({
   const [extended, setExtended] = useState<ExtendedLogData>(
     logInitial ? extendedFromDailyLog(logInitial) : EXTENDED_LOG_INITIAL
   )
+  const [detailsOuvert, setDetailsOuvert] = useState(() => logAContenuEnrichi(logInitial))
   const [chargement, setChargement] = useState(false)
   const [erreur, setErreur] = useState<string | null>(null)
 
@@ -49,6 +53,7 @@ export function DailyLogForm({
     setDouleur(logInitial?.pain ?? 0)
     setHumeur(logInitial?.mood ?? '')
     setExtended(logInitial ? extendedFromDailyLog(logInitial) : EXTENDED_LOG_INITIAL)
+    setDetailsOuvert(logAContenuEnrichi(logInitial))
     setErreur(null)
   }, [date, logInitial])
 
@@ -144,7 +149,27 @@ export function DailyLogForm({
       </div>
 
       {afficherDetailsEtendus ? (
-        <DailyLogSectionEtendue data={extended} onChange={setExtended} phase={phase} />
+        <Collapsible open={detailsOuvert} onOpenChange={setDetailsOuvert}>
+          <CollapsibleTrigger
+            className={cn(
+              'flex w-full items-center justify-between gap-2 rounded-xl border border-neutral-200 px-3 py-2.5 text-sm font-medium',
+              'text-neutral-800 dark:border-neutral-700 dark:text-neutral-200',
+              'hover:bg-neutral-50 dark:hover:bg-neutral-800/50 transition-colors'
+            )}
+          >
+            <span>Questionnaire du cycle</span>
+            <ChevronDown
+              className={cn(
+                'size-4 shrink-0 text-neutral-500 transition-transform',
+                detailsOuvert && 'rotate-180'
+              )}
+              aria-hidden
+            />
+          </CollapsibleTrigger>
+          <CollapsibleContent className="pt-4">
+            <DailyLogSectionEtendue data={extended} onChange={setExtended} phase={phase} />
+          </CollapsibleContent>
+        </Collapsible>
       ) : (
         <div className="space-y-1.5">
           <Label htmlFor="note-rapide">Note libre</Label>
