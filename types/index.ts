@@ -104,6 +104,7 @@ export interface ExtendedLogData {
   libido:        string | null
   sleep_quality: string | null
   sleep_hours:   string       // saisie texte, converti en number à la sauvegarde
+  stress_level:  string | null
   appetite:      string[]
   flow_intensity: string | null
   free_note:     string

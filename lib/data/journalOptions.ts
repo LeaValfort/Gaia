@@ -1,83 +1,96 @@
 // ============================================================
 // Options des sélecteurs (pills) du journal quotidien enrichi
-// Toutes les listes de choix centralisées ici.
 // ============================================================
 
 import type { DailyLog, ExtendedLogData } from '@/types'
 
 export const EMOTIONS = [
-  'Joyeuse', 'Énergisée', 'Calme', 'Fatiguée', 'Stressée', 'Triste',
-  'Irritée', 'Anxieuse', 'Motivée', 'Mélancolique', 'En forme', 'Massacrante',
+  'Joie',
+  'Fatigue',
+  'Irritabilité',
+  'Anxiété',
+  'Sérénité',
+  'Tristesse',
+  'Confiance',
 ] as const
 
 export const SYMPTOMES = [
-  'Mal au ventre', 'Mal au dos', 'Mal de tête', 'Nausées',
-  'Seins sensibles', 'Ballonnements', 'Crampes', 'Spotting',
-  'Jambes lourdes', 'Acné', 'Insomnie', 'Aucun symptôme',
+  'Crampes',
+  'Maux de tête',
+  'Gonflement',
+  'Acné',
+  'Sensibilité poitrine',
+  'Fatigue',
 ] as const
 
-export const LIBIDO_OPTIONS = [
-  'Absente', 'Faible', 'Normale', 'Élevée', 'Très élevée',
-] as const
+export const LIBIDO_OPTIONS = ['Faible', 'Normale', 'Élevée'] as const
 
-export const SOMMEIL_OPTIONS = [
-  'Très mauvais', 'Mauvais', 'Moyen', 'Bon', 'Très bon',
-] as const
+export const SOMMEIL_OPTIONS = ['Mauvaise', 'Moyenne', 'Bonne'] as const
+
+export const STRESS_OPTIONS = ['Bas', 'Moyen', 'Élevé'] as const
 
 export const APPETIT_OPTIONS = [
-  'Pas faim', 'Faim normale', 'Très faim',
-  'Envie de sucre', 'Envie de salé', 'Envie de gras',
+  'Normal',
+  'Fringales sucrées',
+  'Fringales salées',
+  'Pas faim',
 ] as const
 
-export const FLOT_OPTIONS = [
-  'Léger', 'Normal', 'Abondant', 'Très abondant', 'Spotting',
-] as const
+export const FLOT_OPTIONS = ['Léger', 'Moyen', 'Abondant'] as const
 
-/** Valeur initiale vide pour DailyLogSectionEtendue */
 export const EXTENDED_LOG_INITIAL: ExtendedLogData = {
-  emotions:      [],
-  symptoms:      [],
-  libido:        null,
+  emotions: [],
+  symptoms: [],
+  libido: null,
   sleep_quality: null,
-  sleep_hours:   '',
-  appetite:      [],
+  sleep_hours: '',
+  stress_level: null,
+  appetite: [],
   flow_intensity: null,
-  free_note:     '',
+  free_note: '',
 }
 
-/** Construit un ExtendedLogData depuis un DailyLog existant (pour l'édition) */
 export function extendedLogFromExisting(log: {
   emotions?: string[] | null
   symptoms?: string[] | null
   libido?: string | null
   sleep_quality?: string | null
   sleep_hours?: number | null
+  stress_level?: string | null
   appetite?: string[] | null
   flow_intensity?: string | null
   free_note?: string | null
 }): ExtendedLogData {
   return {
-    emotions:      log.emotions      ?? [],
-    symptoms:      log.symptoms      ?? [],
-    libido:        log.libido        ?? null,
+    emotions: log.emotions ?? [],
+    symptoms: log.symptoms ?? [],
+    libido: log.libido ?? null,
     sleep_quality: log.sleep_quality ?? null,
-    sleep_hours:   log.sleep_hours != null ? String(log.sleep_hours) : '',
-    appetite:      log.appetite      ?? [],
+    sleep_hours: log.sleep_hours != null ? String(log.sleep_hours) : '',
+    stress_level: log.stress_level ?? null,
+    appetite: log.appetite ?? [],
     flow_intensity: log.flow_intensity ?? null,
-    free_note:     log.free_note     ?? '',
+    free_note: log.free_note ?? '',
   }
 }
 
-/** Journal enrichi + reprise des émotions depuis l’ancien champ texte `mood` si besoin. */
+/** Journal enrichi depuis un DailyLog existant. */
 export function extendedFromDailyLog(log: DailyLog): ExtendedLogData {
-  const base = extendedLogFromExisting(log)
-  if (base.emotions.length) return base
-  const mood = log.mood?.trim()
-  if (!mood) return base
-  const matched: string[] = []
-  for (const part of mood.split(',').map((s) => s.trim()).filter(Boolean)) {
-    const hit = EMOTIONS.find((e) => e.toLowerCase() === part.toLowerCase())
-    if (hit && !matched.includes(hit)) matched.push(hit)
-  }
-  return matched.length ? { ...base, emotions: matched } : base
+  return extendedLogFromExisting(log)
+}
+
+/** Indique si le log contient des données enrichies. */
+export function logAContenuEnrichi(log: DailyLog | null): boolean {
+  if (!log) return false
+  return Boolean(
+    log.emotions?.length ||
+      log.symptoms?.length ||
+      log.libido ||
+      log.sleep_quality ||
+      log.sleep_hours != null ||
+      log.stress_level ||
+      log.appetite?.length ||
+      log.flow_intensity ||
+      log.free_note?.trim()
+  )
 }

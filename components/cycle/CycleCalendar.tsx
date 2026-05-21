@@ -14,6 +14,12 @@ import {
 import { fr } from 'date-fns/locale'
 import { ChevronLeft, ChevronRight } from 'lucide-react'
 import { Button } from '@/components/ui/button'
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+} from '@/components/ui/dialog'
 import { DailyLogForm } from '@/components/cycle/DailyLogForm'
 import { BoutonDebutRegles } from '@/components/cycle/BoutonDebutRegles'
 import { genererJoursCalendrier, getInfosJour } from '@/lib/cycle'
@@ -89,7 +95,7 @@ export function CycleCalendar({
   }
 
   function clicJour(dateStr: string) {
-    setJourSelectionne((prev) => (prev === dateStr ? null : dateStr))
+    setJourSelectionne(dateStr)
     onJourClick?.(dateStr)
   }
 
@@ -279,28 +285,38 @@ export function CycleCalendar({
       </div>
 
       {jourSelectionne && infosJourSel ? (
-        <div className="flex flex-col gap-3">
-          <p className="text-sm font-medium text-neutral-500 dark:text-neutral-400">
-            {format(parseISO(jourSelectionne), 'EEEE d MMMM', { locale: fr })}
-          </p>
-          {predSel?.estPrediction ? (
-            <p className="text-xs text-neutral-500 dark:text-neutral-400">
-              Phase estimée (prédiction, fiabilité {predSel.fiabilite}).
-            </p>
-          ) : null}
-          <DailyLogForm
-            date={jourSelectionne}
-            phase={infosJourSel.phase}
-            jourDuCycle={infosJourSel.jourDuCycle}
-            logInitial={logsParDate[jourSelectionne] ?? null}
-          />
-          <div className="flex flex-wrap items-center gap-2 text-sm">
-            <span className="text-neutral-500 dark:text-neutral-400">
-              Ce jour correspond au début de tes règles ?
-            </span>
-            <BoutonDebutRegles dateInitiale={jourSelectionne} />
-          </div>
-        </div>
+        <Dialog
+          open
+          onOpenChange={(open) => {
+            if (!open) setJourSelectionne(null)
+          }}
+        >
+          <DialogContent className="max-h-[90vh] overflow-y-auto sm:max-w-lg">
+            <DialogHeader>
+              <DialogTitle className="capitalize">
+                {format(parseISO(jourSelectionne), 'EEEE d MMMM', { locale: fr })}
+              </DialogTitle>
+              {predSel?.estPrediction ? (
+                <p className="text-xs text-muted-foreground">
+                  Phase estimée (prédiction, fiabilité {predSel.fiabilite}).
+                </p>
+              ) : null}
+            </DialogHeader>
+
+            <DailyLogForm
+              date={jourSelectionne}
+              phase={infosJourSel.phase}
+              jourDuCycle={infosJourSel.jourDuCycle}
+              logInitial={logsParDate[jourSelectionne] ?? null}
+              onSaved={() => setJourSelectionne(null)}
+            />
+
+            <div className="flex flex-wrap items-center gap-2 border-t border-neutral-200 pt-4 text-sm dark:border-neutral-800">
+              <span className="text-muted-foreground">Début des règles ce jour ?</span>
+              <BoutonDebutRegles dateInitiale={jourSelectionne} />
+            </div>
+          </DialogContent>
+        </Dialog>
       ) : null}
     </div>
   )
