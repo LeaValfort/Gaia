@@ -7,7 +7,7 @@ export default function PageProches() {
   return (
     <Suspense
       fallback={
-        <div className="min-h-screen bg-[#F8F7FF] dark:bg-gray-950 flex items-center justify-center text-sm text-neutral-500">
+        <div className="min-h-screen bg-[#F8F7FF] dark:bg-gray-950 flex items-center justify-center text-sm text-muted-foreground">
           Chargement…
         </div>
       }

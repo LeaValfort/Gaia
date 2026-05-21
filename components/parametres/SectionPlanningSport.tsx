@@ -38,16 +38,16 @@ const JOURS: { cle: keyof PlanningSport; label: string }[] = [
 ]
 
 const INTENSITES: { id: IntensiteEffort; label: string }[] = [
-  { id: 'legere', label: 'L' },
-  { id: 'moderee', label: 'M' },
-  { id: 'intense', label: 'I' },
+  { id: 'legere', label: 'Légère' },
+  { id: 'moderee', label: 'Modérée' },
+  { id: 'intense', label: 'Intense' },
 ]
 
 const EFFORTS: { id: Exclude<TypeEffort, 'aucun'>; label: string }[] = [
-  { id: 'force', label: 'F' },
-  { id: 'cardio', label: 'C' },
-  { id: 'mixte', label: 'M' },
-  { id: 'mobilite', label: 'Mo' },
+  { id: 'force', label: 'Force' },
+  { id: 'cardio', label: 'Cardio' },
+  { id: 'mixte', label: 'Mixte' },
+  { id: 'mobilite', label: 'Mobilité' },
 ]
 
 const DUREE_MIN = 15
@@ -214,80 +214,88 @@ export function SectionPlanningSport({
               </div>
 
               {afficherEffort ? (
-                <div className="flex flex-wrap items-center gap-1.5 pl-10">
-                  <div className="flex gap-0.5" role="group" aria-label="Intensité">
-                    {INTENSITES.map(({ id, label: lib }) => (
-                      <button
-                        key={id}
-                        type="button"
-                        disabled={enChargement}
-                        onClick={() =>
-                          void modifieProfilEffort(cle, seanceType, { ...profil, intensite: id })
-                        }
-                        className={cn(
-                          'size-7 rounded-md border text-xs font-semibold transition-colors',
-                          profil.intensite === id
-                            ? 'border-amber-600 bg-amber-600 text-white'
-                            : 'border-neutral-200 text-muted-foreground dark:border-neutral-700'
-                        )}
-                      >
-                        {lib}
-                      </button>
-                    ))}
+                <div className="space-y-3 pl-10">
+                  <div className="space-y-1.5">
+                    <p className="text-xs font-medium text-muted-foreground">Intensité</p>
+                    <div className="flex flex-wrap gap-1.5" role="group" aria-label="Intensité">
+                      {INTENSITES.map(({ id, label: lib }) => (
+                        <button
+                          key={id}
+                          type="button"
+                          disabled={enChargement}
+                          onClick={() =>
+                            void modifieProfilEffort(cle, seanceType, { ...profil, intensite: id })
+                          }
+                          className={cn(
+                            'rounded-lg border px-3 py-2 text-xs font-medium transition-colors sm:text-sm',
+                            profil.intensite === id
+                              ? 'border-amber-600 bg-amber-600 text-white'
+                              : 'border-neutral-200 text-neutral-700 hover:border-neutral-300 dark:border-neutral-700 dark:text-neutral-300 dark:hover:border-neutral-600'
+                          )}
+                        >
+                          {lib}
+                        </button>
+                      ))}
+                    </div>
                   </div>
 
-                  <div className="flex gap-0.5" role="group" aria-label="Type d'effort">
-                    {EFFORTS.map(({ id, label: lib }) => (
-                      <button
-                        key={id}
-                        type="button"
-                        disabled={enChargement}
-                        onClick={() =>
-                          void modifieProfilEffort(cle, seanceType, { ...profil, type_effort: id })
-                        }
-                        className={cn(
-                          'h-7 min-w-7 rounded-md border px-1 text-[10px] font-semibold transition-colors',
-                          profil.type_effort === id
-                            ? 'border-amber-600 bg-amber-600 text-white'
-                            : 'border-neutral-200 text-muted-foreground dark:border-neutral-700'
-                        )}
-                      >
-                        {lib}
-                      </button>
-                    ))}
+                  <div className="space-y-1.5">
+                    <p className="text-xs font-medium text-muted-foreground">Effort</p>
+                    <div className="flex flex-wrap gap-1.5" role="group" aria-label="Type d'effort">
+                      {EFFORTS.map(({ id, label: lib }) => (
+                        <button
+                          key={id}
+                          type="button"
+                          disabled={enChargement}
+                          onClick={() =>
+                            void modifieProfilEffort(cle, seanceType, { ...profil, type_effort: id })
+                          }
+                          className={cn(
+                            'rounded-lg border px-3 py-2 text-xs font-medium transition-colors sm:text-sm',
+                            profil.type_effort === id
+                              ? 'border-amber-600 bg-amber-600 text-white'
+                              : 'border-neutral-200 text-neutral-700 hover:border-neutral-300 dark:border-neutral-700 dark:text-neutral-300 dark:hover:border-neutral-600'
+                          )}
+                        >
+                          {lib}
+                        </button>
+                      ))}
+                    </div>
                   </div>
 
-                  <Input
-                    type="number"
-                    min={DUREE_MIN}
-                    max={DUREE_MAX}
-                    step={5}
-                    disabled={enChargement}
-                    value={profil.duree_min}
-                    aria-label={`Durée ${label} en minutes`}
-                    onChange={(e) => {
-                      const v = parseInt(e.target.value, 10)
-                      const duree = Number.isFinite(v)
-                        ? Math.min(DUREE_MAX, Math.max(DUREE_MIN, v))
-                        : profil.duree_min
-                      setProfilsParType((prev) => ({
-                        ...prev,
-                        [seanceType]: { ...profil, duree_min: duree },
-                      }))
-                    }}
-                    onBlur={(e) => {
-                      const v = parseInt(e.target.value, 10)
-                      if (!Number.isFinite(v)) return
-                      const duree = Math.min(DUREE_MAX, Math.max(DUREE_MIN, v))
-                      void modifieProfilEffort(cle, seanceType, {
-                        intensite: profil.intensite,
-                        type_effort: profil.type_effort,
-                        duree_min: duree,
-                      })
-                    }}
-                    className="h-7 w-14 px-1.5 text-center text-xs tabular-nums dark:bg-neutral-950"
-                  />
-                  <span className="text-[10px] text-muted-foreground">min</span>
+                  <div className="flex items-center gap-2">
+                    <Input
+                      type="number"
+                      min={DUREE_MIN}
+                      max={DUREE_MAX}
+                      step={5}
+                      disabled={enChargement}
+                      value={profil.duree_min}
+                      aria-label={`Durée ${label} en minutes`}
+                      onChange={(e) => {
+                        const v = parseInt(e.target.value, 10)
+                        const duree = Number.isFinite(v)
+                          ? Math.min(DUREE_MAX, Math.max(DUREE_MIN, v))
+                          : profil.duree_min
+                        setProfilsParType((prev) => ({
+                          ...prev,
+                          [seanceType]: { ...profil, duree_min: duree },
+                        }))
+                      }}
+                      onBlur={(e) => {
+                        const v = parseInt(e.target.value, 10)
+                        if (!Number.isFinite(v)) return
+                        const duree = Math.min(DUREE_MAX, Math.max(DUREE_MIN, v))
+                        void modifieProfilEffort(cle, seanceType, {
+                          intensite: profil.intensite,
+                          type_effort: profil.type_effort,
+                          duree_min: duree,
+                        })
+                      }}
+                      className="h-9 w-16 px-2 text-center text-sm tabular-nums dark:bg-neutral-950"
+                    />
+                    <span className="text-xs text-muted-foreground">min</span>
+                  </div>
                 </div>
               ) : null}
             </li>

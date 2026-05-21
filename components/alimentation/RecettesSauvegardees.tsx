@@ -94,8 +94,10 @@ export function RecettesSauvegardees({
       <div className="flex gap-2 overflow-x-auto pb-1">
         {[1,2,3,4,5].map((i) => <Skeleton key={i} className="h-7 w-24 rounded-full shrink-0" />)}
       </div>
-      <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
-        {[1,2,3,4,5,6].map((i) => <Skeleton key={i} className="h-52 rounded-xl" />)}
+      <div className="flex flex-col gap-2">
+        {[1, 2, 3, 4, 5].map((i) => (
+          <Skeleton key={i} className="h-14 w-full rounded-xl" />
+        ))}
       </div>
     </div>
   )
@@ -202,7 +204,7 @@ export function RecettesSauvegardees({
           )}
         </div>
       ) : (
-        <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
+        <div className="flex flex-col gap-2">
           {recettesFiltrees.map((r) => (
             <CarteRecette key={r.id} recette={r} onDelete={handleDelete} />
           ))}

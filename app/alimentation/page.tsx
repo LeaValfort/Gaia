@@ -20,7 +20,7 @@ import { getDailyMealIntakesJour } from '@/lib/db/dailyMealIntake'
 import { fusionIntakesJour, totauxDepuisIntakes } from '@/lib/recapManuel'
 import { Nav } from '@/components/shared/Nav'
 import { cn } from '@/lib/utils'
-import type { Phase } from '@/types'
+import type { MacrosCiblesJour, Phase } from '@/types'
 import { DEFAULT_MODE_UTILISATEUR } from '@/types'
 
 export const dynamic = 'force-dynamic'
@@ -43,17 +43,20 @@ export default async function PageAlimentation() {
   const typeJournee = getTypeJournee(today)
   const todayIso = today.toISOString().slice(0, 10)
 
-  const [{ prefs, stats, effectiveStart, cycleLength }, intakesJour, macroProfil] =
-    await Promise.all([
-      getDonneesCyclePourAffichage(),
-      getDailyMealIntakesJour(supabase, user.id, todayIso),
-      getMacroProfile(user.id),
-    ])
-  const consoJour = totauxDepuisIntakes(fusionIntakesJour(todayIso, intakesJour))
-
+  const { prefs, stats, effectiveStart, cycleLength } = await getDonneesCyclePourAffichage()
   const mode = prefs?.mode_utilisateur ?? DEFAULT_MODE_UTILISATEUR
   const sansSuivi = mode === 'sans_cycle'
   const suiviCalorique = prefs?.suivi_calorique !== false
+
+  const [intakesJour, macroProfil] = await Promise.all([
+    suiviCalorique
+      ? getDailyMealIntakesJour(supabase, user.id, todayIso)
+      : Promise.resolve([]),
+    suiviCalorique ? getMacroProfile(user.id) : Promise.resolve(null),
+  ])
+  const consoJour = suiviCalorique
+    ? totauxDepuisIntakes(fusionIntakesJour(todayIso, intakesJour))
+    : { calories: 0, proteines: 0, glucides: 0, lipides: 0 }
 
   let phase: Phase = 'folliculaire'
   let jourDuCycle: number | null = null
@@ -64,17 +67,29 @@ export default async function PageAlimentation() {
 
   const design = designPhaseAffichage(sansSuivi ? null : phase, { sansCycle: sansSuivi })
   const planningSport = planningEffectif(prefs?.planning_sport)
-  const profilEffort = await profilEffortPourJour(user.id, planningSport, today)
+  const profilEffort = suiviCalorique
+    ? await profilEffortPourJour(user.id, planningSport, today)
+    : null
 
-  const macrosCibles = macrosCiblesPourJour({
-    profil: macroProfil,
-    profilEffort,
-    phase,
-    planning: planningSport,
-    date: today,
-    sansSuiviCycle: sansSuivi,
-    macrosMode: prefs?.macros_mode ?? 'auto',
-  })
+  const macrosCibles: MacrosCiblesJour = suiviCalorique
+    ? macrosCiblesPourJour({
+        profil: macroProfil,
+        profilEffort,
+        phase,
+        planning: planningSport,
+        date: today,
+        sansSuiviCycle: sansSuivi,
+        macrosMode: prefs?.macros_mode ?? 'auto',
+      })
+    : {
+        calories: 0,
+        proteines: 0,
+        glucides: 0,
+        lipides: 0,
+        message: '',
+        typeJournee,
+        phase,
+      }
 
   return (
     <div className="min-h-screen bg-[#F8F7FF] dark:bg-gray-950">

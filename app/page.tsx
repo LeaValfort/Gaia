@@ -6,15 +6,25 @@ import { redirect } from 'next/navigation'
 import { creerClientServeur } from '@/lib/supabase-server'
 import { getDonneesCyclePourAffichage } from '@/lib/db/cycles'
 import { getDailyLogParDate } from '@/lib/db/dailyLog'
+import { getDailyMealIntakesJour } from '@/lib/db/dailyMealIntake'
+import { getMacroProfile } from '@/lib/db/macro-profiles'
 import { getTodosParDatePourUtilisateur } from '@/lib/db/todo'
 import { getCycleDay, getPhaseAvecStats } from '@/lib/cycle'
+import {
+  macrosCiblesPourJour,
+  planningEffectif,
+  profilEffortPourJour,
+} from '@/lib/macros-du-jour'
+import { getTypeJournee } from '@/lib/nutrition'
 import { generateTodosForToday } from '@/lib/recurring'
+import { fusionIntakesJour, totauxDepuisIntakes } from '@/lib/recapManuel'
 import { Nav } from '@/components/shared/Nav'
 import { SeanceDuJour } from '@/components/today/SeanceDuJour'
 import { JournalDuJour } from '@/components/today/JournalDuJour'
 import { TodoDuJour } from '@/components/today/TodoDuJour'
 import { AgendaDuJour } from '@/components/today/AgendaDuJour'
-import { DEFAULT_MODE_UTILISATEUR, type Phase } from '@/types'
+import { MacrosCibles } from '@/components/today/MacrosCibles'
+import { DEFAULT_MODE_UTILISATEUR, type MacrosCiblesJour, type Phase } from '@/types'
 
 function premierParam(v: string | string[] | undefined): string | undefined {
   if (v == null) return undefined
@@ -50,7 +60,7 @@ export default async function PageAujourdhui({
 
   const aujourdhui = new Date()
   const dateStr = format(aujourdhui, 'yyyy-MM-dd')
-  const dateAffichee = format(aujourdhui, "EEEE d MMMM yyyy", { locale: fr })
+  const dateAffichee = format(aujourdhui, 'EEEE d MMMM yyyy', { locale: fr })
   const userId = user?.id ?? ''
 
   if (userId) {
@@ -66,15 +76,43 @@ export default async function PageAujourdhui({
   const { prefs, stats, effectiveStart, cycleLength } = donnees
   const mode = prefs?.mode_utilisateur ?? DEFAULT_MODE_UTILISATEUR
   const sansSuivi = mode === 'sans_cycle'
+  const suiviCalorique = prefs?.suivi_calorique !== false
+  const typeJournee = getTypeJournee(aujourdhui)
+
+  let phase: Phase = 'folliculaire'
+  let jourDuCycle: number | null = null
+  if (!sansSuivi && effectiveStart) {
+    jourDuCycle = getCycleDay(parseISO(effectiveStart), aujourdhui, cycleLength)
+    phase = getPhaseAvecStats(jourDuCycle, stats, cycleLength)
+  }
+
+  let consoJour = { calories: 0, proteines: 0, glucides: 0, lipides: 0 }
+  let macrosCibles: MacrosCiblesJour | null = null
+
+  if (suiviCalorique && userId) {
+    const planningSport = planningEffectif(prefs?.planning_sport)
+    const [intakesJour, macroProfil, profilEffort] = await Promise.all([
+      getDailyMealIntakesJour(supabase, userId, dateStr),
+      getMacroProfile(userId),
+      profilEffortPourJour(userId, planningSport, aujourdhui),
+    ])
+    consoJour = totauxDepuisIntakes(fusionIntakesJour(dateStr, intakesJour))
+    macrosCibles = macrosCiblesPourJour({
+      profil: macroProfil,
+      profilEffort,
+      phase,
+      planning: planningSport,
+      date: aujourdhui,
+      sansSuiviCycle: sansSuivi,
+      macrosMode: prefs?.macros_mode ?? 'auto',
+    })
+  }
 
   const prenom =
     user?.user_metadata?.full_name?.trim().split(/\s+/)[0] ??
     user?.user_metadata?.first_name?.trim() ??
     user?.email?.split('@')[0] ??
     'toi'
-  const cycleOk = effectiveStart != null
-  const jourDuCycle = cycleOk ? getCycleDay(parseISO(effectiveStart), aujourdhui, cycleLength) : null
-  const phase = jourDuCycle != null ? getPhaseAvecStats(jourDuCycle, stats, cycleLength) : null
   const phaseHeader: Phase | null = sansSuivi ? null : phase
 
   return (
@@ -114,6 +152,15 @@ export default async function PageAujourdhui({
         </header>
 
         <div className="flex flex-col gap-4">
+          {suiviCalorique && macrosCibles ? (
+            <MacrosCibles
+              phase={phaseHeader}
+              typeJournee={typeJournee}
+              sansCycle={sansSuivi}
+              conso={consoJour}
+              macrosCibles={macrosCibles}
+            />
+          ) : null}
           <SeanceDuJour phase={phaseHeader} sansCycle={sansSuivi} />
           <JournalDuJour
             phase={phaseHeader ?? 'folliculaire'}

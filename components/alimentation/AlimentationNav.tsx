@@ -4,7 +4,7 @@ import { useEffect, useRef, useState } from 'react'
 import { ChevronDown } from 'lucide-react'
 import { cn } from '@/lib/utils'
 
-export type OngletAlimentationPrincipal = 'aujourdhui' | 'suggestions'
+export type OngletAlimentationPrincipal = 'aujourdhui' | 'recettes' | 'suggestions'
 export type SectionAlimentationPlus = 'recettes' | 'semaine' | 'checklist' | 'courses'
 
 export type VueAlimentation = OngletAlimentationPrincipal | SectionAlimentationPlus
@@ -26,16 +26,22 @@ export function AlimentationNav({ suiviCalorique, vue, onChange }: AlimentationN
   const [plusOuvert, setPlusOuvert] = useState(false)
   const conteneurRef = useRef<HTMLDivElement>(null)
 
-  const plusActif = PLUS_OPTIONS.some((o) => o.id === vue)
+  const plusOptions = suiviCalorique
+    ? PLUS_OPTIONS
+    : PLUS_OPTIONS.filter((o) => o.id !== 'recettes')
+
+  const plusActif = plusOptions.some((o) => o.id === vue)
 
   const ongletPrincipal: OngletAlimentationPrincipal =
-    vue === 'suggestions'
-      ? 'suggestions'
-      : vue === 'aujourdhui'
-        ? 'aujourdhui'
-        : suiviCalorique
-          ? 'aujourdhui'
-          : 'suggestions'
+    vue === 'aujourdhui'
+      ? 'aujourdhui'
+      : vue === 'suggestions'
+        ? 'suggestions'
+        : vue === 'recettes' && suiviCalorique
+          ? 'recettes'
+          : suiviCalorique
+            ? 'aujourdhui'
+            : 'recettes'
 
   useEffect(() => {
     function fermer(e: MouseEvent) {
@@ -59,7 +65,7 @@ export function AlimentationNav({ suiviCalorique, vue, onChange }: AlimentationN
 
   const tabs: { id: OngletAlimentationPrincipal; label: string }[] = suiviCalorique
     ? [{ id: 'aujourdhui', label: "Aujourd'hui" }]
-    : [{ id: 'suggestions', label: 'Recettes' }]
+    : [{ id: 'recettes', label: 'Recettes' }]
 
   return (
     <div ref={conteneurRef} className="w-full">
@@ -111,7 +117,7 @@ export function AlimentationNav({ suiviCalorique, vue, onChange }: AlimentationN
           className="flex flex-col border-b border-neutral-200 bg-neutral-50/90 dark:border-neutral-800 dark:bg-neutral-900/50"
           role="menu"
         >
-          {PLUS_OPTIONS.map(({ id, label }) => (
+          {plusOptions.map(({ id, label }) => (
             <button
               key={id}
               type="button"

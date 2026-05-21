@@ -139,14 +139,16 @@ export function ParametresClient({
           onToggle={() => toggleSection('nutrition')}
         >
           <SectionAlimentation prefs={prefs} onUpdate={onUpdate} />
-          <SectionCalculateurMacros
-            userId={userId}
-            profilInitial={macroProfilInitial}
-            prefs={prefs}
-            seanceProfilsInitiales={seanceProfilsInitiales}
-            onUpdate={onUpdate}
-            onMacrosModeChange={onMacrosModeChange}
-          />
+          {prefs.suivi_calorique !== false ? (
+            <SectionCalculateurMacros
+              userId={userId}
+              profilInitial={macroProfilInitial}
+              prefs={prefs}
+              seanceProfilsInitiales={seanceProfilsInitiales}
+              onUpdate={onUpdate}
+              onMacrosModeChange={onMacrosModeChange}
+            />
+          ) : null}
         </AccordeonSection>
 
         <AccordeonSection

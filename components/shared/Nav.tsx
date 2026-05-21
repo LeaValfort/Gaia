@@ -10,8 +10,6 @@ import {
   Sun,
   Dumbbell,
   UtensilsCrossed,
-  TrendingUp,
-  HeartHandshake,
   Settings,
   type LucideIcon,
 } from 'lucide-react'
@@ -22,17 +20,7 @@ import type { ModeUtilisateur, Phase } from '@/types'
 import { DEFAULT_MODE_UTILISATEUR } from '@/types'
 import { cn } from '@/lib/utils'
 
-const LIENS_DESKTOP = [
-  { href: '/', label: "Aujourd'hui", icone: Home },
-  { href: '/cycle', label: 'Cycle', icone: Moon },
-  { href: '/sport', label: 'Sport', icone: Dumbbell },
-  { href: '/alimentation', label: 'Alimentation', icone: UtensilsCrossed },
-  { href: '/progression', label: 'Progression', icone: TrendingUp },
-  { href: '/proches', label: 'Proches', icone: HeartHandshake },
-  { href: '/parametres', label: 'Paramètres', icone: Settings },
-] as const
-
-const LIENS_MOBILE_PRINCIPAL: { href: string; label: string; icone: LucideIcon }[] = [
+const LIENS_NAV: { href: string; label: string; icone: LucideIcon }[] = [
   { href: '/', label: 'Accueil', icone: Home },
   { href: '/cycle', label: 'Cycle', icone: Moon },
   { href: '/sport', label: 'Sport', icone: Dumbbell },
@@ -84,10 +72,8 @@ export function Nav({ phase, sansCycle, prenom }: NavProps) {
     }
   }, [pathname])
 
-  const liensDesktop =
-    mode === 'sans_cycle' ? LIENS_DESKTOP.filter((l) => l.href !== '/cycle') : [...LIENS_DESKTOP]
-  const liensMobile =
-    mode === 'sans_cycle' ? LIENS_MOBILE_PRINCIPAL.filter((l) => l.href !== '/cycle') : LIENS_MOBILE_PRINCIPAL
+  const liens =
+    mode === 'sans_cycle' ? LIENS_NAV.filter((l) => l.href !== '/cycle') : LIENS_NAV
 
   async function seDeconnecter() {
     await supabase.auth.signOut()
@@ -101,8 +87,8 @@ export function Nav({ phase, sansCycle, prenom }: NavProps) {
           <Link href="/" className="shrink-0 text-lg font-bold tracking-tight text-gray-900 dark:text-gray-50">
             🌿 Gaia
           </Link>
-          <nav className="flex flex-1 flex-wrap items-center justify-center gap-1">
-            {liensDesktop.map(({ href, label, icone: Ic }) => {
+          <nav className="flex flex-1 items-center justify-center gap-1">
+            {liens.map(({ href, label, icone: Ic }) => {
               const actif = pathname === href
               return (
                 <Link
@@ -135,7 +121,7 @@ export function Nav({ phase, sansCycle, prenom }: NavProps) {
       </header>
 
       <nav className="fixed bottom-0 left-0 right-0 z-50 flex h-16 items-stretch border-t border-gray-200/80 bg-white/85 px-1 backdrop-blur-md dark:border-gray-800 dark:bg-gray-950/85 md:hidden">
-        {liensMobile.map(({ href, label, icone: Ic }) => {
+        {liens.map(({ href, label, icone: Ic }) => {
           const actif = pathname === href
           return (
             <Link
