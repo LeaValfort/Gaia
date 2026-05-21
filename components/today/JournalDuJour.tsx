@@ -35,7 +35,6 @@ export function JournalDuJour({ phase, sansCycle, date, jourDuCycle, logInitial 
         phase={phase}
         jourDuCycle={jourDuCycle}
         logInitial={logInitial}
-        afficherDetailsEtendus={false}
       />
       <Link
         href="/progression"

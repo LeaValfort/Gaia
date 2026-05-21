@@ -2,7 +2,6 @@
 
 import { useEffect, useState } from 'react'
 import { useRouter } from 'next/navigation'
-import { ChevronDown, ChevronUp } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
@@ -12,7 +11,6 @@ import { DailyLogSectionEtendue } from '@/components/cycle/DailyLogSectionEtendu
 import {
   EXTENDED_LOG_INITIAL,
   extendedFromDailyLog,
-  logAContenuEnrichi,
 } from '@/lib/data/journalOptions'
 import { upsertDailyLog } from '@/lib/db/dailyLog'
 import { cn } from '@/lib/utils'
@@ -43,7 +41,6 @@ export function DailyLogForm({
   const [extended, setExtended] = useState<ExtendedLogData>(
     logInitial ? extendedFromDailyLog(logInitial) : EXTENDED_LOG_INITIAL
   )
-  const [journalOuvert, setJournalOuvert] = useState(() => logAContenuEnrichi(logInitial))
   const [chargement, setChargement] = useState(false)
   const [erreur, setErreur] = useState<string | null>(null)
 
@@ -52,7 +49,6 @@ export function DailyLogForm({
     setDouleur(logInitial?.pain ?? 0)
     setHumeur(logInitial?.mood ?? '')
     setExtended(logInitial ? extendedFromDailyLog(logInitial) : EXTENDED_LOG_INITIAL)
-    setJournalOuvert(logAContenuEnrichi(logInitial))
     setErreur(null)
   }, [date, logInitial])
 
@@ -148,25 +144,7 @@ export function DailyLogForm({
       </div>
 
       {afficherDetailsEtendus ? (
-        <>
-          <Button
-            type="button"
-            variant="outline"
-            className="w-full justify-between gap-2"
-            onClick={() => setJournalOuvert((o) => !o)}
-          >
-            Journal détaillé {journalOuvert ? '−' : '+'}
-            {journalOuvert ? (
-              <ChevronUp className="size-4 shrink-0" aria-hidden />
-            ) : (
-              <ChevronDown className="size-4 shrink-0" aria-hidden />
-            )}
-          </Button>
-
-          {journalOuvert ? (
-            <DailyLogSectionEtendue data={extended} onChange={setExtended} phase={phase} />
-          ) : null}
-        </>
+        <DailyLogSectionEtendue data={extended} onChange={setExtended} phase={phase} />
       ) : (
         <div className="space-y-1.5">
           <Label htmlFor="note-rapide">Note libre</Label>
