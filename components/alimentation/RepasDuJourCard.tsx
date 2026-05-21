@@ -20,14 +20,14 @@ interface RepasDuJourCardProps {
   userId: string
   date: string
   typeJournee: TypeJournee
-  onVersRecettes?: () => void
+  onVersSuggestions?: () => void
 }
 
 export function RepasDuJourCard({
   userId,
   date,
   typeJournee,
-  onVersRecettes,
+  onVersSuggestions,
 }: RepasDuJourCardProps) {
   const [lignes, setLignes] = useState<DailyMealIntake[]>([])
   const [chargement, setChargement] = useState(true)
@@ -116,7 +116,7 @@ export function RepasDuJourCard({
           emoji={LIB_REPAS[creneauOuvert].emoji}
           libelleRepas={LIB_REPAS[creneauOuvert].label}
           onEnregistre={() => void charger()}
-          onVersRecettes={onVersRecettes}
+          onVersSuggestions={onVersSuggestions}
         />
       ) : null}
     </>

@@ -4,8 +4,8 @@ import { useEffect, useRef, useState } from 'react'
 import { ChevronDown } from 'lucide-react'
 import { cn } from '@/lib/utils'
 
-export type OngletAlimentationPrincipal = 'aujourdhui' | 'recettes' | 'semaine'
-export type SectionAlimentationPlus = 'checklist' | 'courses'
+export type OngletAlimentationPrincipal = 'aujourdhui' | 'suggestions'
+export type SectionAlimentationPlus = 'recettes' | 'semaine' | 'checklist' | 'courses'
 
 export type VueAlimentation = OngletAlimentationPrincipal | SectionAlimentationPlus
 
@@ -16,6 +16,8 @@ interface AlimentationNavProps {
 }
 
 const PLUS_OPTIONS: { id: SectionAlimentationPlus; label: string }[] = [
+  { id: 'recettes', label: 'Recettes' },
+  { id: 'semaine', label: 'Semaine' },
   { id: 'checklist', label: 'Checklist anti-inflammatoire' },
   { id: 'courses', label: 'Liste de courses' },
 ]
@@ -24,18 +26,16 @@ export function AlimentationNav({ suiviCalorique, vue, onChange }: AlimentationN
   const [plusOuvert, setPlusOuvert] = useState(false)
   const conteneurRef = useRef<HTMLDivElement>(null)
 
-  const ongletPrincipal: OngletAlimentationPrincipal =
-    vue === 'semaine'
-      ? 'semaine'
-      : vue === 'recettes'
-        ? 'recettes'
-        : vue === 'aujourdhui'
-          ? 'aujourdhui'
-          : suiviCalorique
-            ? 'aujourdhui'
-            : 'recettes'
-
   const plusActif = PLUS_OPTIONS.some((o) => o.id === vue)
+
+  const ongletPrincipal: OngletAlimentationPrincipal =
+    vue === 'suggestions'
+      ? 'suggestions'
+      : vue === 'aujourdhui'
+        ? 'aujourdhui'
+        : suiviCalorique
+          ? 'aujourdhui'
+          : 'suggestions'
 
   useEffect(() => {
     function fermer(e: MouseEvent) {
@@ -58,15 +58,8 @@ export function AlimentationNav({ suiviCalorique, vue, onChange }: AlimentationN
   }
 
   const tabs: { id: OngletAlimentationPrincipal; label: string }[] = suiviCalorique
-    ? [
-        { id: 'aujourdhui', label: "Aujourd'hui" },
-        { id: 'recettes', label: 'Recettes' },
-        { id: 'semaine', label: 'Semaine' },
-      ]
-    : [
-        { id: 'recettes', label: 'Recettes' },
-        { id: 'semaine', label: 'Semaine' },
-      ]
+    ? [{ id: 'aujourdhui', label: "Aujourd'hui" }]
+    : [{ id: 'suggestions', label: 'Recettes' }]
 
   return (
     <div ref={conteneurRef} className="w-full">

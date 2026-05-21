@@ -13,6 +13,7 @@ interface RecettesSauvegardeeProps {
   userId: string
   phase: Phase
   masquerFiltrePhase?: boolean
+  onVersSuggestions?: () => void
 }
 
 const FILTRES_PHASE: { value: Phase | 'toutes'; label: string }[] = [
@@ -31,7 +32,12 @@ const FILTRES_REPAS: { value: TypeRepas | 'tous'; label: string }[] = [
   { value: 'diner',     label: 'Dîner' },
 ]
 
-export function RecettesSauvegardees({ userId, phase, masquerFiltrePhase }: RecettesSauvegardeeProps) {
+export function RecettesSauvegardees({
+  userId,
+  phase,
+  masquerFiltrePhase,
+  onVersSuggestions,
+}: RecettesSauvegardeeProps) {
   const [recettes, setRecettes]       = useState<Recipe[]>([])
   const [chargement, setChargement]   = useState(true)
   const [erreur, setErreur]           = useState<string | null>(null)
@@ -134,6 +140,16 @@ export function RecettesSauvegardees({ userId, phase, masquerFiltrePhase }: Rece
         ))}
       </div>
 
+      {onVersSuggestions ? (
+        <button
+          type="button"
+          onClick={onVersSuggestions}
+          className="self-start text-sm text-muted-foreground underline-offset-2 hover:text-neutral-900 hover:underline dark:hover:text-neutral-200"
+        >
+          Chercher dans les suggestions →
+        </button>
+      ) : null}
+
       {recettesFiltrees.length === 0 ? (
         <div className="flex flex-col items-center gap-3 py-12 text-center">
           <BookOpen size={32} className="text-neutral-300 dark:text-neutral-600" />
@@ -144,7 +160,19 @@ export function RecettesSauvegardees({ userId, phase, masquerFiltrePhase }: Rece
           </p>
           {recettes.length === 0 && (
             <p className="text-xs text-neutral-400 dark:text-neutral-500 max-w-xs">
-              Utilise le bouton <span className="font-medium">Ajouter une recette</span> ci-dessus pour en créer une.
+              Utilise le bouton <span className="font-medium">Ajouter une recette</span> ci-dessus, ou{' '}
+              {onVersSuggestions ? (
+                <button
+                  type="button"
+                  onClick={onVersSuggestions}
+                  className="font-medium underline-offset-2 hover:underline"
+                >
+                  cherche dans les suggestions
+                </button>
+              ) : (
+                'cherche dans les suggestions'
+              )}
+              .
             </p>
           )}
         </div>

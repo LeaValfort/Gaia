@@ -61,8 +61,8 @@ export interface ModaleSaisieRepasProps {
   emoji: string
   libelleRepas: string
   onEnregistre: () => void
-  /** Ferme la modale et ouvre l’onglet Recettes. */
-  onVersRecettes?: () => void
+  /** Ferme la modale et ouvre les suggestions de recettes. */
+  onVersSuggestions?: () => void
 }
 
 export function ModaleSaisieRepas({
@@ -74,7 +74,7 @@ export function ModaleSaisieRepas({
   emoji,
   libelleRepas,
   onEnregistre,
-  onVersRecettes,
+  onVersSuggestions,
 }: ModaleSaisieRepasProps) {
   const [mode, setMode] = useState<ModeSaisie>('manuel')
   const [valeurs, setValeurs] = useState<Record<CleMacro, string>>({
@@ -222,16 +222,16 @@ export function ModaleSaisieRepas({
                 <p className="text-sm text-muted-foreground">
                   Aucune recette enregistrée pour le moment.
                 </p>
-                {onVersRecettes ? (
+                {onVersSuggestions ? (
                   <button
                     type="button"
                     onClick={() => {
                       onOuvertChange(false)
-                      onVersRecettes()
+                      onVersSuggestions()
                     }}
                     className="text-sm text-muted-foreground underline-offset-2 hover:text-neutral-900 hover:underline dark:hover:text-neutral-200"
                   >
-                    Aller à Recettes →
+                    Chercher dans les suggestions →
                   </button>
                 ) : null}
               </div>

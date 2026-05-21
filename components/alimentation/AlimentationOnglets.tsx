@@ -33,10 +33,10 @@ export interface AlimentationOngletsProps {
   cookTimeMinutes: number
 }
 
-const VUES_PLUS: VueAlimentation[] = ['checklist', 'courses']
+const VUES_PLUS: VueAlimentation[] = ['recettes', 'semaine', 'checklist', 'courses']
 
 export function AlimentationOnglets(p: AlimentationOngletsProps) {
-  const vueInitiale: VueAlimentation = p.suiviCalorique ? 'aujourdhui' : 'recettes'
+  const vueInitiale: VueAlimentation = p.suiviCalorique ? 'aujourdhui' : 'suggestions'
   const [vue, setVue] = useState<VueAlimentation>(vueInitiale)
   const contenuRef = useRef<HTMLDivElement>(null)
 
@@ -58,25 +58,26 @@ export function AlimentationOnglets(p: AlimentationOngletsProps) {
             typeJournee={p.macrosCibles.typeJournee}
             macrosCibles={p.macrosCibles}
             consoJour={p.consoJour}
-            onVersRecettes={() => setVue('recettes')}
+            onVersSuggestions={() => setVue('suggestions')}
           />
         ) : null}
 
-        {vue === 'recettes' && p.suiviCalorique ? (
-          <RecettesSauvegardees
-            userId={p.userId}
-            phase={p.phase}
-            masquerFiltrePhase={p.sansSuivi}
-          />
-        ) : null}
-
-        {vue === 'recettes' && !p.suiviCalorique ? (
+        {vue === 'suggestions' ? (
           <ListeRecettesPhase
             phase={p.phase}
             typeJournee={p.macrosTypeJournee}
             allergies={p.allergies}
             tempsMax={p.cookTimeMinutes}
             sansSuiviCycle={p.sansSuiviCycle}
+          />
+        ) : null}
+
+        {vue === 'recettes' ? (
+          <RecettesSauvegardees
+            userId={p.userId}
+            phase={p.phase}
+            masquerFiltrePhase={p.sansSuivi}
+            onVersSuggestions={() => setVue('suggestions')}
           />
         ) : null}
 
