@@ -31,7 +31,7 @@ export async function addShoppingItem(
     quantite: string | null
     enseigne: string | null
     rayon: Rayon | null
-    source: 'manuel' | 'spoonacular'
+    source: 'manuel' | 'spoonacular' | 'open_food_facts' | 'themealdb'
   }
 ): Promise<ShoppingItemComplet | null> {
   try {

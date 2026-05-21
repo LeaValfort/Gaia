@@ -11,6 +11,7 @@ import { saveRecette } from '@/lib/db/nutrition'
 import { addShoppingItem } from '@/lib/db/courses'
 import { getLundiSemaine } from '@/lib/nutrition'
 import { devinerAssignation } from '@/lib/data/courses'
+import { parserIngredientCourses } from '@/lib/db/shopping-items'
 import type { Phase, TypeJournee, RecetteSpoonacular } from '@/types'
 
 interface SuggestionsRecettesProps {
@@ -54,10 +55,21 @@ function RecetteCard({ recette, userId, weekStart, phase }: {
   }
 
   async function handleAddCourses() {
-    await Promise.all(recette.ingredients.map((ing) => {
-      const { rayon, enseigne } = devinerAssignation(ing.nom)
-      return addShoppingItem(supabase, userId, { week_start: weekStart, nom: ing.nom, quantite: ing.quantite, enseigne, rayon, source: 'spoonacular' })
-    }))
+    await Promise.all(
+      recette.ingredients.map((ing) => {
+        const ligne = ing.quantite ? `${ing.quantite} ${ing.nom}` : ing.nom
+        const { nom, quantite } = parserIngredientCourses(ligne)
+        const { rayon, enseigne } = devinerAssignation(nom)
+        return addShoppingItem(supabase, userId, {
+          week_start: weekStart,
+          nom,
+          quantite,
+          enseigne,
+          rayon,
+          source: 'themealdb',
+        })
+      })
+    )
     setAdded(true)
   }
 
@@ -82,7 +94,7 @@ function RecetteCard({ recette, userId, weekStart, phase }: {
           <Button size="sm" variant="outline" onClick={handleAddCourses} disabled={added} className="text-xs h-7 px-2">
             {added ? <><Check size={11} className="mr-1" />Ajoutés</> : <><ShoppingCart size={11} className="mr-1" />Courses</>}
           </Button>
-          <a href={`/alimentation/recette/${recette.id}`} target="_blank" rel="noopener noreferrer">
+          <a href={`/alimentation/recette/${recette.id}`} rel="noopener noreferrer">
             <Button size="sm" variant="ghost" className="text-xs h-7 px-2">
               <ExternalLink size={11} className="mr-1" />Voir
             </Button>
@@ -188,7 +200,7 @@ export function SuggestionsRecettes({
           </p>
         )}
 
-        <p className="text-xs text-neutral-400">Via Spoonacular · temps max {tempsMax} min</p>
+        <p className="text-xs text-neutral-400">TheMealDB · traduit en français · macros estimées / 100 g</p>
 
         {/* Barre de recherche */}
         <div className="flex gap-2 mt-1">

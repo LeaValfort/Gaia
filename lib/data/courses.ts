@@ -28,16 +28,16 @@ import type { Enseigne } from '@/types'
 
 export interface AssignationAuto { rayon: Rayon; enseigne: Enseigne }
 
-// Mots-clés par catégorie (noms d'ingrédients Spoonacular en anglais)
-const MOTS_POISSONS = ['salmon','tuna','cod','tilapia','trout','bass','halibut','snapper','swordfish','herring','mackerel','sardine','anchovy','shrimp','prawn','crab','lobster','scallop','mussel','clam','oyster','squid','octopus','fish','seafood']
-const MOTS_VIANDES  = ['chicken','beef','pork','lamb','turkey','duck','veal','steak','bacon','ham','sausage','chorizo','pancetta','prosciutto','lardons','mince','ground meat','breast','thigh','tenderloin','sirloin','rib','cutlet','drumstick']
-const MOTS_LEGUMES  = ['onion','garlic','tomato','carrot','potato','pepper','spinach','broccoli','cauliflower','zucchini','cucumber','lettuce','arugula','kale','cabbage','leek','celery','asparagus','eggplant','mushroom','corn','fennel','radish','beetroot','artichoke','squash','pumpkin','chard','bean sprout','watercress']
-const MOTS_FRUITS   = ['apple','banana','avocado','lemon','lime','orange','strawberry','blueberry','raspberry','mango','pineapple','peach','grape','cherry','plum','pear','melon','watermelon','coconut','ginger','turmeric','herb','parsley','cilantro','basil','thyme','rosemary','mint','dill','oregano','sage']
-const MOTS_FECULENTS = ['lentil','chickpea','black bean','kidney bean','white bean','rice','pasta','quinoa','oat','flour','bread','noodle','couscous','bulgur','barley','millet','buckwheat','polenta','almond','walnut','cashew','hazelnut','pecan','pistachio','flaxseed','chia seed','sunflower seed','sesame','hemp seed']
+// Mots-clés par catégorie (français + anglais)
+const MOTS_POISSONS = ['saumon','salmon','thon','tuna','cabillaud','cod','truite','trout','crevette','shrimp','prawn','crab','homard','lobster','moule','mussel','sardine','anchois','anchovy','poisson','fish','seafood','fruits de mer']
+const MOTS_VIANDES  = ['poulet','chicken','boeuf','beef','bœuf','porc','pork','agneau','lamb','dinde','turkey','canard','duck','viande','steak','bacon','jambon','ham','saucisse','sausage','chorizo','lardons','mince','ground meat','breast','thigh']
+const MOTS_LEGUMES  = ['oignon','onion','ail','garlic','tomate','tomato','carotte','carrot','pomme de terre','potato','poivron','pepper','épinard','spinach','brocoli','broccoli','chou','cabbage','courgette','zucchini','concombre','cucumber','salade','lettuce','champignon','mushroom','légume','haricot vert','celeri','celery','asperge','asparagus','aubergine','eggplant','courge','squash','pumpkin','potiron','fenouil','fennel','radis','radish','betterave','beetroot','artichaut','artichoke']
+const MOTS_FRUITS   = ['pomme','apple','banane','banana','avocat','avocado','citron','lemon','citron vert','lime','orange','fraise','strawberry','myrtille','blueberry','framboise','raspberry','mangue','mango','ananas','pineapple','pêche','peach','raisin','grape','cerise','cherry','prune','plum','poire','pear','melon','pastèque','watermelon','noix de coco','coconut','gingembre','ginger','curcuma','turmeric','persil','parsley','coriandre','cilantro','basilic','basil','thym','thyme','romarin','rosemary','menthe','mint','aneth','dill','origan','oregano','sauge','sage']
+const MOTS_FECULENTS = ['lentille','lentil','pois chiche','chickpea','haricot','black bean','kidney bean','riz','rice','pâtes','pasta','quinoa','avoine','oat','farine','flour','pain','bread','nouille','noodle','couscous','boulgour','bulgur','orge','barley','millet','sarrasin','buckwheat','polenta','amande','almond','noix','walnut','cajou','cashew','noisette','hazelnut','pécan','pecan','pistache','pistachio','lin','flaxseed','graine de chia','chia seed','tournesol','sunflower seed','sésame','sesame']
 
 /**
  * Détermine automatiquement le rayon et l'enseigne
- * d'un ingrédient à partir de son nom en anglais.
+ * d'un ingrédient à partir de son nom (français ou anglais).
  */
 export function devinerAssignation(nom: string): AssignationAuto {
   const n = nom.toLowerCase()

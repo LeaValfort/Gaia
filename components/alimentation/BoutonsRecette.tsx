@@ -8,6 +8,7 @@ import { saveRecette } from '@/lib/db/nutrition'
 import { addShoppingItem } from '@/lib/db/courses'
 import { getLundiSemaine } from '@/lib/nutrition'
 import { devinerAssignation } from '@/lib/data/courses'
+import { parserIngredientCourses } from '@/lib/db/shopping-items'
 import type { RecetteDetail } from '@/types'
 
 interface BoutonsRecetteProps {
@@ -53,14 +54,16 @@ export function BoutonsRecette({ recette, userId }: BoutonsRecetteProps) {
     try {
       await Promise.all(
         recette.ingredients.map((ing) => {
-          const { rayon, enseigne } = devinerAssignation(ing.nom)
+          const ligne = ing.quantite ? `${ing.quantite} ${ing.nom}` : ing.nom
+          const { nom, quantite } = parserIngredientCourses(ligne)
+          const { rayon, enseigne } = devinerAssignation(nom)
           return addShoppingItem(supabase, userId, {
             week_start: weekStart,
-            nom: ing.nom,
-            quantite: ing.quantite,
+            nom,
+            quantite,
             enseigne,
             rayon,
-            source: 'spoonacular',
+            source: 'themealdb',
           })
         })
       )

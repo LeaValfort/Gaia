@@ -1,89 +1,77 @@
-// Appels directs à l'API Spoonacular (côté serveur uniquement)
-import type { RecetteDetail } from '@/types'
+// Détail recette TheMealDB (traduite) — côté serveur uniquement.
+import { translateMeal } from '@/lib/api/libretranslate'
+import { getMealById } from '@/lib/api/themealdb'
+import { estimerMacrosDepuisOff } from '@/lib/api/recettes-fr'
+import type { MealDBResult, RecetteDetail } from '@/types'
 
-// Unités métriques françaises — couvre les cas Spoonacular les plus fréquents
-const UNITES_FR: Record<string, string> = {
-  g: 'g', kg: 'kg', ml: 'ml', l: 'L', L: 'L',
-  Tbsp: 'c. à s.', tbsp: 'c. à s.', Tbsps: 'c. à s.', tbsps: 'c. à s.',
-  tsp: 'c. à c.', Tsp: 'c. à c.', tsps: 'c. à c.', Tsps: 'c. à c.',
-  piece: 'pièce', pieces: 'pièces',
-  clove: 'gousse', cloves: 'gousses',
-  serving: 'portion', servings: 'portions',
-  handful: 'poignée', bunch: 'bouquet', pinch: 'pincée',
-  pinches: 'pincées', handfuls: 'poignées', bunches: 'bouquets',
-  slice: 'tranche', slices: 'tranches',
-  cup: 'tasse', cups: 'tasses',
-  large: 'grand', medium: 'moyen', small: 'petit',
-  head: 'tête', heads: 'têtes',
-  stalk: 'tige', stalks: 'tiges',
-  can: 'boîte', cans: 'boîtes',
-}
-
-export function traduireUnite(unit: string): string {
-  return UNITES_FR[unit] ?? unit
-}
-
-interface MesureMetrique { amount: number; unitShort: string }
-interface IngredientBrut {
-  nameClean?: string
-  name: string
-  original?: string
-  measures?: { metric?: MesureMetrique }
-}
-interface EtapeBrute { number: number; step: string }
-interface InfoBrute {
-  id: number; title: string; image?: string; readyInMinutes?: number; servings?: number
-  sourceUrl?: string; diets?: string[]
-  nutrition?: { nutrients: { name: string; amount: number }[] }
-  extendedIngredients?: IngredientBrut[]
-  analyzedInstructions?: { steps: EtapeBrute[] }[]
-}
-
-function trouverNutrient(nutrients: { name: string; amount: number }[], nom: string): number {
-  return Math.round(nutrients.find((n) => n.name === nom)?.amount ?? 0)
-}
-
-/** Formate la quantité en métrique avec unité française. */
-function formaterQuantite(ing: IngredientBrut): string {
-  const metric = ing.measures?.metric
-  if (metric && metric.amount > 0) {
-    const montant = Math.round(metric.amount * 10) / 10
-    const unite = metric.unitShort ? ` ${traduireUnite(metric.unitShort)}` : ''
-    return `${montant}${unite}`.trim()
+function idNumerique(id: string): number {
+  const parsed = Number.parseInt(id, 10)
+  if (!Number.isNaN(parsed) && parsed > 0) return parsed
+  let h = 0
+  for (let i = 0; i < id.length; i++) {
+    h = (Math.imul(31, h) + id.charCodeAt(i)) | 0
   }
-  return ing.original ?? ''
+  return Math.abs(h)
 }
 
-/** Récupère le détail complet d'une recette depuis Spoonacular. Retourne null si erreur. */
-export async function fetchRecetteDetail(id: string): Promise<RecetteDetail | null> {
-  const apiKey = process.env.SPOONACULAR_API_KEY
-  if (!apiKey) return null
-  try {
-    const url = `https://api.spoonacular.com/recipes/${id}/information?apiKey=${apiKey}&includeNutrition=true`
-    const rep = await fetch(url, { cache: 'no-store' })
-    if (!rep.ok) return null
-    const raw: InfoBrute = await rep.json()
+function decouperEtapes(instructions: string | null): { numero: number; instruction: string }[] {
+  if (!instructions?.trim()) {
+    return [{ numero: 1, instruction: 'Consulte la recette pour les étapes de préparation.' }]
+  }
 
-    const nutrients = raw.nutrition?.nutrients ?? []
-    return {
-      id: raw.id, titre: raw.title, image: raw.image ?? '',
-      tempsMin: raw.readyInMinutes ?? 0, portions: raw.servings ?? 0,
-      calories: trouverNutrient(nutrients, 'Calories'),
-      proteines: trouverNutrient(nutrients, 'Protein'),
-      glucides: trouverNutrient(nutrients, 'Carbohydrates'),
-      lipides: trouverNutrient(nutrients, 'Fat'),
-      ingredients: (raw.extendedIngredients ?? []).map((i) => ({
-        nom: i.nameClean ?? i.name,
-        quantite: formaterQuantite(i),
-      })),
-      etapes: (raw.analyzedInstructions?.[0]?.steps ?? []).map((s) => ({
-        numero: s.number,
-        instruction: s.step,
-      })),
-      urlOriginale: raw.sourceUrl ?? `https://spoonacular.com/recipes/${raw.id}`,
-      regimes: raw.diets ?? [],
-    }
-  } catch {
+  const lignes = instructions
+    .split(/\r?\n/)
+    .map((l) => l.trim())
+    .filter(Boolean)
+
+  if (lignes.length <= 1) {
+    return [{ numero: 1, instruction: instructions.trim() }]
+  }
+
+  return lignes.map((instruction, i) => ({ numero: i + 1, instruction }))
+}
+
+function mealVersRecetteDetail(
+  meal: MealDBResult,
+  macros: Awaited<ReturnType<typeof estimerMacrosDepuisOff>>
+): RecetteDetail {
+  return {
+    id: idNumerique(meal.id),
+    titre: meal.nom,
+    image: meal.image_url ?? '',
+    tempsMin: 30,
+    portions: 4,
+    calories: Math.round(macros.calories ?? 0),
+    proteines: Math.round(macros.proteines ?? 0),
+    glucides: Math.round(macros.glucides ?? 0),
+    lipides: Math.round(macros.lipides ?? 0),
+    ingredients: meal.ingredients.map((nom, i) => ({
+      nom,
+      quantite: meal.mesures[i]?.trim() || '—',
+    })),
+    etapes: decouperEtapes(meal.instructions),
+    urlOriginale: `https://www.themealdb.com/meal/${meal.id}`,
+    regimes: meal.categorie ? [meal.categorie] : [],
+  }
+}
+
+/** Récupère le détail d'une recette TheMealDB par identifiant. */
+export async function fetchRecetteDetail(mealId: string): Promise<RecetteDetail | null> {
+  try {
+    const meal = await getMealById(mealId)
+    if (!meal) return null
+
+    const traduit = await translateMeal(meal)
+    const macros = await estimerMacrosDepuisOff(traduit.ingredients)
+
+    return mealVersRecetteDetail(traduit, macros)
+  } catch (erreur) {
+    console.error('Erreur fetchRecetteDetail:', erreur)
     return null
   }
+}
+
+/** @deprecated Conservé pour compatibilité imports existants. */
+export function traduireUnite(unit: string): string {
+  return unit
 }

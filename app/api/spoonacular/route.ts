@@ -1,103 +1,67 @@
-// Proxy serveur pour l'API Spoonacular.
-// La clé API reste côté serveur (process.env.SPOONACULAR_API_KEY).
+// Proxy serveur recettes : perso + TheMealDB + LibreTranslate + Open Food Facts.
 
 import { NextRequest, NextResponse } from 'next/server'
-import { traduireUnite } from '@/lib/spoonacular'
-import type { TypeJournee, RecetteSpoonacular, IngredientCarte } from '@/types'
+import { searchRecettesFr } from '@/lib/api/recettes-fr'
+import { creerClientServeur } from '@/lib/supabase-server'
+import type { Phase, RecetteSpoonacular, RecetteSuggestion } from '@/types'
 
-// Typage minimal de la réponse Spoonacular
-interface NutrientRaw    { name: string; amount: number }
-interface IngredientRaw  {
-  nameClean?: string
-  name: string
-  original?: string
-  measures?: { metric?: { amount: number; unitShort: string } }
-}
-interface RecetteRaw {
-  id: number
-  title: string
-  image?: string
-  readyInMinutes?: number
-  sourceUrl?: string
-  nutrition?: { nutrients: NutrientRaw[] }
-  extendedIngredients?: IngredientRaw[]
-}
-
-function trouverNutrient(nutrients: NutrientRaw[], nom: string): number {
-  return Math.round(nutrients.find((n) => n.name === nom)?.amount ?? 0)
-}
-
-function formaterIngredient(i: IngredientRaw): IngredientCarte {
-  const metric = i.measures?.metric
-  let quantite: string | null = null
-  if (metric && metric.amount > 0) {
-    const montant = Math.round(metric.amount * 10) / 10
-    const unite = metric.unitShort ? ` ${traduireUnite(metric.unitShort)}` : ''
-    quantite = `${montant}${unite}`.trim()
+function idNumerique(id: string): number {
+  const parsed = Number.parseInt(id, 10)
+  if (!Number.isNaN(parsed) && parsed > 0) return parsed
+  let h = 0
+  for (let i = 0; i < id.length; i++) {
+    h = (Math.imul(31, h) + id.charCodeAt(i)) | 0
   }
-  return { nom: i.nameClean ?? i.name, quantite }
+  return Math.abs(h)
+}
+
+function suggestionVersSpoonacular(s: RecetteSuggestion): RecetteSpoonacular {
+  const ingredients = (s.ingredients ?? [s.nom]).map((nom, i) => {
+    const mesure = s.mesures?.[i]?.trim()
+    return {
+      nom,
+      quantite: mesure || (s.source === 'themealdb' ? null : null),
+    }
+  })
+
+  return {
+    id: idNumerique(s.id),
+    titre: s.nom,
+    image: s.image_url ?? '',
+    tempsMin: s.temps_min ?? 0,
+    calories: Math.round(s.calories ?? 0),
+    proteines: Math.round(s.proteines ?? 0),
+    glucides: Math.round(s.glucides ?? 0),
+    lipides: Math.round(s.lipides ?? 0),
+    ingredients,
+    urlOriginale:
+      s.source === 'themealdb'
+        ? `https://www.themealdb.com/meal/${s.id}`
+        : '#',
+  }
 }
 
 export async function GET(request: NextRequest) {
-  console.log('=== SPOONACULAR DEBUG ===')
-  console.log('API Key présente:', !!process.env.SPOONACULAR_API_KEY)
-  console.log('API Key début:', process.env.SPOONACULAR_API_KEY?.slice(0, 6))
-
   const { searchParams } = new URL(request.url)
-  const typeJournee = (searchParams.get('typeJournee') ?? 'repos') as TypeJournee
-  const allergies   = searchParams.get('allergies') ?? ''
-  const tempsMax    = parseInt(searchParams.get('tempsMax') ?? '30', 10)
-  const offset      = parseInt(searchParams.get('offset') ?? '0', 10)
-  const query       = searchParams.get('query') ?? ''
-
-  const apiKey = process.env.SPOONACULAR_API_KEY
-  if (!apiKey) return NextResponse.json({ erreur: 'Clé API manquante' }, { status: 500 })
-
-  const params = new URLSearchParams({
-    apiKey,
-    number:             '6',
-    offset:             String(offset),
-    maxReadyTime:       String(tempsMax),
-    addRecipeNutrition: 'true',
-    fillIngredients:    'true',
-    sort:               'healthiness',
-    sortDirection:      'desc',
-  })
-  if (query)     params.set('query', query)
-  if (allergies) params.set('intolerances', allergies)
-  params.set('language', 'fr')
+  const query = searchParams.get('query') ?? ''
+  const phase = (searchParams.get('phase') ?? 'folliculaire') as Phase
 
   try {
-    const reponse = await fetch(
-      `https://api.spoonacular.com/recipes/complexSearch?${params}`,
-      { cache: 'no-store' }
-    )
+    const supabase = await creerClientServeur()
+    const {
+      data: { user },
+    } = await supabase.auth.getUser()
 
-    const json = await reponse.json()
-    console.log('Spoonacular status:', reponse.status)
-    console.log('Spoonacular réponse:', JSON.stringify(json).slice(0, 500))
+    if (!user) {
+      return NextResponse.json({ erreur: 'Non authentifiée' }, { status: 401 })
+    }
 
-    if (!reponse.ok) throw new Error(`Spoonacular erreur ${reponse.status}: ${JSON.stringify(json)}`)
-
-    const recettes: RecetteSpoonacular[] = (json.results ?? []).map((r: RecetteRaw) => {
-      const nutrients = r.nutrition?.nutrients ?? []
-      return {
-        id:          r.id,
-        titre:       r.title,
-        image:       r.image ?? '',
-        tempsMin:    r.readyInMinutes ?? 0,
-        calories:    trouverNutrient(nutrients, 'Calories'),
-        proteines:   trouverNutrient(nutrients, 'Protein'),
-        glucides:    trouverNutrient(nutrients, 'Carbohydrates'),
-        lipides:     trouverNutrient(nutrients, 'Fat'),
-        ingredients: (r.extendedIngredients ?? []).map(formaterIngredient),
-        urlOriginale: r.sourceUrl ?? `https://spoonacular.com/recipes/${r.id}`,
-      }
-    })
+    const suggestions = await searchRecettesFr(supabase, user.id, query, phase)
+    const recettes = suggestions.map(suggestionVersSpoonacular)
 
     return NextResponse.json({ recettes })
   } catch (erreur) {
-    console.error('Erreur Spoonacular détaillée:', erreur)
+    console.error('Erreur recherche recettes:', erreur)
     return NextResponse.json({ erreur: 'Erreur lors de la recherche de recettes' }, { status: 500 })
   }
 }

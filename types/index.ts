@@ -227,7 +227,7 @@ export type Rayon =
 export interface ShoppingItemComplet extends ShoppingItem {
   enseigne: Enseigne | null
   rayon: Rayon | null
-  source: 'manuel' | 'spoonacular'
+  source: 'manuel' | 'spoonacular' | 'open_food_facts' | 'themealdb'
 }
 
 /** Macros cibles calculées pour un jour donné */
@@ -288,6 +288,45 @@ export interface RecetteSpoonacular {
   lipides: number
   ingredients: IngredientCarte[]
   urlOriginale: string
+}
+
+/** Produit alimentaire Open Food Facts (macros pour 100 g) */
+export interface OpenFoodProduct {
+  id: string
+  nom: string
+  calories_100g: number | null
+  proteines_100g: number | null
+  glucides_100g: number | null
+  lipides_100g: number | null
+  ingredients: string | null
+  image_url: string | null
+}
+
+/** Recette TheMealDB normalisée */
+export interface MealDBResult {
+  id: string
+  nom: string
+  categorie: string | null
+  instructions: string | null
+  image_url: string | null
+  ingredients: string[]
+  mesures: string[]
+}
+
+/** Suggestion unifiée (recettes perso + TheMealDB) */
+export interface RecetteSuggestion {
+  id: string
+  source: 'perso' | 'themealdb'
+  nom: string
+  phase: Phase | null
+  temps_min: number | null
+  calories: number | null
+  proteines: number | null
+  glucides: number | null
+  lipides: number | null
+  ingredients: string[] | null
+  mesures?: string[] | null
+  image_url?: string | null
 }
 
 /** Une recette sauvegardée */
