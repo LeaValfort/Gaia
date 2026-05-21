@@ -1,24 +1,11 @@
 'use client'
 
 import { useCallback, useEffect, useMemo, useState } from 'react'
-import {
-  Activity,
-  CalendarDays,
-  Clock,
-  Dumbbell,
-  Flame,
-  Heart,
-  Loader2,
-  PersonStanding,
-  Shuffle,
-  Wind,
-} from 'lucide-react'
+import { Loader2 } from 'lucide-react'
 import { toast } from 'sonner'
-import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
-import { Label } from '@/components/ui/label'
 import { upsertSeanceProfil } from '@/lib/db/seance-profils'
-import { LABELS_PLANNING, PLANNING_DEFAUT } from '@/lib/planning-sport'
+import { PLANNING_DEFAUT } from '@/lib/planning-sport'
 import {
   PROFILS_DEFAUT,
   type IntensiteEffort,
@@ -31,48 +18,40 @@ import {
 } from '@/types'
 import { cn } from '@/lib/utils'
 
-const TYPES_PLANNING: TypePlanningJour[] = [
-  'muscu_full',
-  'muscu_upper',
-  'yoga',
-  'natation',
-  'autre',
-  'repos',
+const SEANCES: { id: TypePlanningJour; label: string }[] = [
+  { id: 'repos', label: 'Repos' },
+  { id: 'muscu_full', label: 'Full body' },
+  { id: 'muscu_upper', label: 'Upper' },
+  { id: 'yoga', label: 'Yoga' },
+  { id: 'natation', label: 'Natation' },
+  { id: 'autre', label: 'Autre' },
 ]
 
 const JOURS: { cle: keyof PlanningSport; label: string }[] = [
-  { cle: 'lundi', label: 'Lundi' },
-  { cle: 'mardi', label: 'Mardi' },
-  { cle: 'mercredi', label: 'Mercredi' },
-  { cle: 'jeudi', label: 'Jeudi' },
-  { cle: 'vendredi', label: 'Vendredi' },
-  { cle: 'samedi', label: 'Samedi' },
-  { cle: 'dimanche', label: 'Dimanche' },
+  { cle: 'lundi', label: 'Lun' },
+  { cle: 'mardi', label: 'Mar' },
+  { cle: 'mercredi', label: 'Mer' },
+  { cle: 'jeudi', label: 'Jeu' },
+  { cle: 'vendredi', label: 'Ven' },
+  { cle: 'samedi', label: 'Sam' },
+  { cle: 'dimanche', label: 'Dim' },
 ]
 
-const DUREE_MIN_MINUTES = 15
-const DUREE_MAX_MINUTES = 240
-
-const OPTIONS_INTENSITE: {
-  id: IntensiteEffort
-  label: string
-  Icon: typeof Wind
-}[] = [
-  { id: 'legere', label: 'Légère', Icon: Wind },
-  { id: 'moderee', label: 'Modérée', Icon: Activity },
-  { id: 'intense', label: 'Intense', Icon: Flame },
+const INTENSITES: { id: IntensiteEffort; label: string }[] = [
+  { id: 'legere', label: 'L' },
+  { id: 'moderee', label: 'M' },
+  { id: 'intense', label: 'I' },
 ]
 
-const OPTIONS_TYPE_EFFORT: {
-  id: Exclude<TypeEffort, 'aucun'>
-  label: string
-  Icon: typeof Dumbbell
-}[] = [
-  { id: 'force', label: 'Force', Icon: Dumbbell },
-  { id: 'cardio', label: 'Cardio', Icon: Heart },
-  { id: 'mixte', label: 'Mixte', Icon: Shuffle },
-  { id: 'mobilite', label: 'Mobilité', Icon: PersonStanding },
+const EFFORTS: { id: Exclude<TypeEffort, 'aucun'>; label: string }[] = [
+  { id: 'force', label: 'F' },
+  { id: 'cardio', label: 'C' },
+  { id: 'mixte', label: 'M' },
+  { id: 'mobilite', label: 'Mo' },
 ]
+
+const DUREE_MIN = 15
+const DUREE_MAX = 240
 
 const PROFIL_AUTRE_DEFAUT: ProfilEffort = {
   intensite: 'moderee',
@@ -158,16 +137,13 @@ export function SectionPlanningSport({
       setErreur(null)
       try {
         const ok = await onUpdate({ planning_sport: nextPlanning })
-        if (!ok) {
-          throw new Error('Impossible d’enregistrer le planning.')
-        }
+        if (!ok) throw new Error('Impossible d’enregistrer le planning.')
         if (seanceType !== 'repos' && profil) {
           await upsertSeanceProfil(userId, seanceType, profil)
           setProfilsParType((prev) => ({ ...prev, [seanceType]: profil }))
         }
       } catch (e) {
-        const msg =
-          e instanceof Error ? e.message : 'Erreur lors de l’enregistrement du planning.'
+        const msg = e instanceof Error ? e.message : 'Erreur lors de l’enregistrement.'
         setErreur(msg)
         toast.error(msg)
       } finally {
@@ -180,9 +156,7 @@ export function SectionPlanningSport({
   async function modifieTypeSeance(jourCle: keyof PlanningSport, seanceType: TypePlanningJour) {
     const nextPlanning: PlanningSport = { ...planning, [jourCle]: seanceType }
     const profil = seanceType === 'repos' ? null : profilDefautPourType(seanceType)
-    if (profil) {
-      setProfilsParType((prev) => ({ ...prev, [seanceType]: profil }))
-    }
+    if (profil) setProfilsParType((prev) => ({ ...prev, [seanceType]: profil }))
     await persisterJour(jourCle, nextPlanning, seanceType, profil)
   }
 
@@ -196,27 +170,14 @@ export function SectionPlanningSport({
   }
 
   return (
-    <section className="space-y-4 rounded-2xl border border-neutral-200 bg-white/90 p-4 dark:border-neutral-800 dark:bg-neutral-900/80">
-      <div>
-        <h2 className="flex items-center gap-2 text-lg font-semibold text-neutral-900 dark:text-neutral-50">
-          <CalendarDays className="size-5 text-amber-600 dark:text-amber-500" aria-hidden />
-          Mon planning sport
-        </h2>
-        <p className="mt-1 text-sm text-neutral-500 dark:text-neutral-400">
-          Configure ta semaine type — Gaia adaptera les suggestions selon ta phase du cycle
-        </p>
-      </div>
-
+    <div className="space-y-4">
       {erreur ? (
-        <p
-          role="alert"
-          className="rounded-lg border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-800 dark:border-red-900 dark:bg-red-950/40 dark:text-red-200"
-        >
+        <p role="alert" className="text-sm text-destructive">
           {erreur}
         </p>
       ) : null}
 
-      <ul className="flex flex-col gap-3">
+      <ul className="flex flex-col gap-4">
         {JOURS.map(({ cle, label }) => {
           const seanceType = planning[cle]
           const enChargement = chargementJour === cle
@@ -224,144 +185,115 @@ export function SectionPlanningSport({
           const afficherEffort = seanceType !== 'repos'
 
           return (
-            <li
-              key={cle}
-              className="flex flex-col gap-3 rounded-xl border border-neutral-100 bg-neutral-50/80 p-3 dark:border-neutral-800 dark:bg-neutral-950/40"
-            >
-              <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
-                <span className="text-sm font-medium text-neutral-800 dark:text-neutral-100">
+            <li key={cle} className="space-y-2">
+              <div className="flex items-center gap-2">
+                <span className="w-8 shrink-0 text-sm font-medium text-neutral-800 dark:text-neutral-100">
                   {label}
                 </span>
-                <div className="flex items-center gap-2">
-                  {enChargement ? (
-                    <Loader2
-                      className="size-4 shrink-0 animate-spin text-amber-600 dark:text-amber-500"
-                      aria-hidden
-                    />
-                  ) : null}
-                  <select
-                    value={seanceType}
-                    disabled={enChargement}
-                    aria-label={`Activité du ${label}`}
-                    onChange={(e) => void modifieTypeSeance(cle, e.target.value as TypePlanningJour)}
-                    className="w-full min-w-0 rounded-lg border border-neutral-200 bg-white px-2 py-2 text-sm disabled:opacity-60 sm:max-w-xs dark:border-neutral-700 dark:bg-neutral-900 dark:text-neutral-50"
-                  >
-                    {TYPES_PLANNING.map((t) => {
-                      const m = LABELS_PLANNING[t]
-                      return (
-                        <option key={t} value={t}>
-                          {m.emoji} {m.label}
-                        </option>
-                      )
-                    })}
-                  </select>
+                {enChargement ? (
+                  <Loader2 className="size-3.5 shrink-0 animate-spin text-muted-foreground" aria-hidden />
+                ) : null}
+                <div className="flex min-w-0 flex-1 flex-wrap gap-1">
+                  {SEANCES.map(({ id, label: lib }) => (
+                    <button
+                      key={id}
+                      type="button"
+                      disabled={enChargement}
+                      onClick={() => void modifieTypeSeance(cle, id)}
+                      className={cn(
+                        'rounded-full border px-2 py-0.5 text-[11px] font-medium transition-colors',
+                        seanceType === id
+                          ? 'border-amber-600 bg-amber-600 text-white dark:border-amber-500 dark:bg-amber-600'
+                          : 'border-neutral-200 bg-transparent text-muted-foreground hover:border-neutral-300 dark:border-neutral-700 dark:hover:border-neutral-600'
+                      )}
+                    >
+                      {lib}
+                    </button>
+                  ))}
                 </div>
               </div>
 
               {afficherEffort ? (
-                <div className="space-y-3 border-t border-neutral-200/80 pt-3 dark:border-neutral-800">
-                  <div className="space-y-1.5">
-                    <Label className="text-xs text-neutral-500 dark:text-neutral-400">Intensité</Label>
-                    <div className="grid grid-cols-3 gap-1.5">
-                      {OPTIONS_INTENSITE.map(({ id, label: lib, Icon }) => (
-                        <Button
-                          key={id}
-                          type="button"
-                          size="sm"
-                          variant={profil.intensite === id ? 'default' : 'outline'}
-                          disabled={enChargement}
-                          className={cn(
-                            'h-auto min-h-9 flex-col gap-0.5 px-1 py-2 text-[11px] sm:flex-row sm:gap-1.5 sm:text-xs',
-                            profil.intensite === id &&
-                              'border-amber-600 bg-amber-600 text-white hover:bg-amber-700 dark:border-amber-600 dark:bg-amber-600'
-                          )}
-                          onClick={() =>
-                            void modifieProfilEffort(cle, seanceType, { ...profil, intensite: id })
-                          }
-                        >
-                          <Icon className="size-3.5 shrink-0" aria-hidden />
-                          {lib}
-                        </Button>
-                      ))}
-                    </div>
+                <div className="flex flex-wrap items-center gap-1.5 pl-10">
+                  <div className="flex gap-0.5" role="group" aria-label="Intensité">
+                    {INTENSITES.map(({ id, label: lib }) => (
+                      <button
+                        key={id}
+                        type="button"
+                        disabled={enChargement}
+                        onClick={() =>
+                          void modifieProfilEffort(cle, seanceType, { ...profil, intensite: id })
+                        }
+                        className={cn(
+                          'size-7 rounded-md border text-xs font-semibold transition-colors',
+                          profil.intensite === id
+                            ? 'border-amber-600 bg-amber-600 text-white'
+                            : 'border-neutral-200 text-muted-foreground dark:border-neutral-700'
+                        )}
+                      >
+                        {lib}
+                      </button>
+                    ))}
                   </div>
 
-                  <div className="space-y-1.5">
-                    <Label className="text-xs text-neutral-500 dark:text-neutral-400">
-                      Type d&apos;effort
-                    </Label>
-                    <div className="grid grid-cols-2 gap-1.5 sm:grid-cols-4">
-                      {OPTIONS_TYPE_EFFORT.map(({ id, label: lib, Icon }) => (
-                        <Button
-                          key={id}
-                          type="button"
-                          size="sm"
-                          variant={profil.type_effort === id ? 'default' : 'outline'}
-                          disabled={enChargement}
-                          className={cn(
-                            'h-auto min-h-9 gap-1 px-1.5 text-[11px] sm:text-xs',
-                            profil.type_effort === id &&
-                              'border-amber-600 bg-amber-600 text-white hover:bg-amber-700 dark:border-amber-600 dark:bg-amber-600'
-                          )}
-                          onClick={() =>
-                            void modifieProfilEffort(cle, seanceType, { ...profil, type_effort: id })
-                          }
-                        >
-                          <Icon className="size-3.5 shrink-0" aria-hidden />
-                          {lib}
-                        </Button>
-                      ))}
-                    </div>
+                  <div className="flex gap-0.5" role="group" aria-label="Type d'effort">
+                    {EFFORTS.map(({ id, label: lib }) => (
+                      <button
+                        key={id}
+                        type="button"
+                        disabled={enChargement}
+                        onClick={() =>
+                          void modifieProfilEffort(cle, seanceType, { ...profil, type_effort: id })
+                        }
+                        className={cn(
+                          'h-7 min-w-7 rounded-md border px-1 text-[10px] font-semibold transition-colors',
+                          profil.type_effort === id
+                            ? 'border-amber-600 bg-amber-600 text-white'
+                            : 'border-neutral-200 text-muted-foreground dark:border-neutral-700'
+                        )}
+                      >
+                        {lib}
+                      </button>
+                    ))}
                   </div>
 
-                  <div className="space-y-1.5">
-                    <Label
-                      htmlFor={`duree-${cle}`}
-                      className="flex items-center gap-1.5 text-xs text-neutral-500 dark:text-neutral-400"
-                    >
-                      <Clock className="size-3.5" aria-hidden />
-                      Durée (minutes)
-                    </Label>
-                    <Input
-                      id={`duree-${cle}`}
-                      type="number"
-                      min={DUREE_MIN_MINUTES}
-                      max={DUREE_MAX_MINUTES}
-                      step={5}
-                      disabled={enChargement}
-                      value={profil.duree_min}
-                      onChange={(e) => {
-                        const v = parseInt(e.target.value, 10)
-                        const duree = Number.isFinite(v)
-                          ? Math.min(DUREE_MAX_MINUTES, Math.max(DUREE_MIN_MINUTES, v))
-                          : profil.duree_min
-                        setProfilsParType((prev) => ({
-                          ...prev,
-                          [seanceType]: { ...profil, duree_min: duree },
-                        }))
-                      }}
-                      onBlur={(e) => {
-                        const v = parseInt(e.target.value, 10)
-                        if (!Number.isFinite(v)) return
-                        const duree = Math.min(
-                          DUREE_MAX_MINUTES,
-                          Math.max(DUREE_MIN_MINUTES, v)
-                        )
-                        void modifieProfilEffort(cle, seanceType, {
-                          intensite: profil.intensite,
-                          type_effort: profil.type_effort,
-                          duree_min: duree,
-                        })
-                      }}
-                      className="max-w-[8rem] bg-white dark:bg-neutral-950"
-                    />
-                  </div>
+                  <Input
+                    type="number"
+                    min={DUREE_MIN}
+                    max={DUREE_MAX}
+                    step={5}
+                    disabled={enChargement}
+                    value={profil.duree_min}
+                    aria-label={`Durée ${label} en minutes`}
+                    onChange={(e) => {
+                      const v = parseInt(e.target.value, 10)
+                      const duree = Number.isFinite(v)
+                        ? Math.min(DUREE_MAX, Math.max(DUREE_MIN, v))
+                        : profil.duree_min
+                      setProfilsParType((prev) => ({
+                        ...prev,
+                        [seanceType]: { ...profil, duree_min: duree },
+                      }))
+                    }}
+                    onBlur={(e) => {
+                      const v = parseInt(e.target.value, 10)
+                      if (!Number.isFinite(v)) return
+                      const duree = Math.min(DUREE_MAX, Math.max(DUREE_MIN, v))
+                      void modifieProfilEffort(cle, seanceType, {
+                        intensite: profil.intensite,
+                        type_effort: profil.type_effort,
+                        duree_min: duree,
+                      })
+                    }}
+                    className="h-7 w-14 px-1.5 text-center text-xs tabular-nums dark:bg-neutral-950"
+                  />
+                  <span className="text-[10px] text-muted-foreground">min</span>
                 </div>
               ) : null}
             </li>
           )
         })}
       </ul>
-    </section>
+    </div>
   )
 }

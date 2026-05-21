@@ -6,7 +6,6 @@ import { getRecurringTodos } from '@/lib/db/recurring-todos'
 import { getSeanceProfils } from '@/lib/db/seance-profils'
 import { Nav } from '@/components/shared/Nav'
 import { ParametresClient } from '@/components/parametres/ParametresClient'
-import { PageHeader } from '@/components/shared/PageHeader'
 
 export const dynamic = 'force-dynamic'
 
@@ -46,12 +45,10 @@ export default async function PageParametres({ searchParams }: PageParametresPro
         sansCycle={prefs.mode_utilisateur === 'sans_cycle'}
         prenom={prenom}
       />
-      <div className="max-w-7xl mx-auto px-6 py-6 pb-24">
-        <PageHeader
-          title="Paramètres"
-          subtitle="Tout est enregistré automatiquement à chaque modification."
-          className="mb-6"
-        />
+      <div className="mx-auto max-w-7xl px-4 py-6 pb-24 sm:px-6">
+        <h1 className="mb-6 text-2xl font-semibold text-neutral-900 dark:text-neutral-50">
+          Paramètres
+        </h1>
         <ParametresClient
           prefsInitiales={prefs}
           userId={user.id}

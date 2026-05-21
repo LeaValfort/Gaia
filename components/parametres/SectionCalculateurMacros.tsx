@@ -6,7 +6,6 @@ import { ChevronLeft, ChevronRight, Footprints, Loader2, RotateCcw } from 'lucid
 import { toast } from 'sonner'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Slider } from '@/components/ui/slider'
@@ -229,6 +228,7 @@ export function SectionCalculateurMacros({
   const [chargement, setChargement] = useState(false)
   const [chargementMode, setChargementMode] = useState(false)
   const [chargementCarte, setChargementCarte] = useState<TypePlanningJour | null>(null)
+  const [stepperOuvert, setStepperOuvert] = useState(false)
   const [erreur, setErreur] = useState<string | null>(null)
   const [lignesManuelles, setLignesManuelles] = useState<Partial<Record<TypePlanningJour, LigneManuelle>>>(
     {}
@@ -334,6 +334,7 @@ export function SectionCalculateurMacros({
   async function changerMode(nouveau: MacrosMode) {
     if (nouveau === mode || chargementMode) return
     setErreur(null)
+    setStepperOuvert(false)
     const precedent = mode
     setMode(nouveau)
     setChargementMode(true)
@@ -506,132 +507,113 @@ export function SectionCalculateurMacros({
   }
 
   return (
-    <Card>
-      <CardHeader className="space-y-3">
-        <div>
-          <CardTitle className="text-base">Calculateur de macros</CardTitle>
-          <CardDescription>
-            Questionnaire personnalisé (Mifflin-St Jeor) ou saisie manuelle par séance.
-          </CardDescription>
-        </div>
-        <div
-          className="inline-flex w-full max-w-md rounded-lg border border-neutral-200 p-0.5 dark:border-neutral-800"
-          role="group"
-          aria-label="Mode de saisie des macros"
+    <div className="space-y-5">
+      <div
+        className="inline-flex w-full max-w-md rounded-lg border border-neutral-200 p-0.5 dark:border-neutral-800"
+        role="group"
+        aria-label="Mode de saisie des macros"
+      >
+        <Button
+          type="button"
+          size="sm"
+          variant={mode === MACROS_MODE_AUTO ? 'default' : 'ghost'}
+          className={cn(
+            'flex-1 rounded-md',
+            mode === MACROS_MODE_AUTO &&
+              'bg-amber-600 text-white hover:bg-amber-700 dark:bg-amber-600'
+          )}
+          disabled={chargement}
+          onClick={() => void changerMode(MACROS_MODE_AUTO)}
         >
-          <Button
-            type="button"
-            size="sm"
-            variant={mode === MACROS_MODE_AUTO ? 'default' : 'ghost'}
-            className={cn(
-              'flex-1 rounded-md',
-              mode === MACROS_MODE_AUTO &&
-                'bg-amber-600 text-white hover:bg-amber-700 dark:bg-amber-600'
-            )}
-            disabled={chargement}
-            onClick={() => void changerMode(MACROS_MODE_AUTO)}
-          >
-            Calculateur automatique
-          </Button>
-          <Button
-            type="button"
-            size="sm"
-            variant={mode === MACROS_MODE_MANUEL ? 'default' : 'ghost'}
-            className={cn(
-              'flex-1 rounded-md',
-              mode === MACROS_MODE_MANUEL &&
-                'bg-amber-600 text-white hover:bg-amber-700 dark:bg-amber-600'
-            )}
-            disabled={chargement || chargementMode}
-            onClick={() => void changerMode(MACROS_MODE_MANUEL)}
-          >
-            Saisie manuelle
-          </Button>
-        </div>
-      </CardHeader>
-      <CardContent className="space-y-5">
-        {erreur ? (
-          <p
-            role="alert"
-            className="rounded-lg border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-800 dark:border-red-900 dark:bg-red-950/40 dark:text-red-200"
-          >
-            {erreur}
-          </p>
-        ) : null}
+          Auto
+        </Button>
+        <Button
+          type="button"
+          size="sm"
+          variant={mode === MACROS_MODE_MANUEL ? 'default' : 'ghost'}
+          className={cn(
+            'flex-1 rounded-md',
+            mode === MACROS_MODE_MANUEL &&
+              'bg-amber-600 text-white hover:bg-amber-700 dark:bg-amber-600'
+          )}
+          disabled={chargement || chargementMode}
+          onClick={() => void changerMode(MACROS_MODE_MANUEL)}
+        >
+          Manuel
+        </Button>
+      </div>
 
-        {mode === MACROS_MODE_MANUEL ? (
-          <div className="space-y-3">
-            <p className="text-sm text-neutral-600 dark:text-neutral-400">
-              Saisis tes objectifs pour chaque type de séance de ton planning. Les jours
-              correspondants utiliseront ces valeurs.
-            </p>
-            <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
-              {typesPlanning.map((seanceType) => {
-                const meta = recapPlanning?.find((c) => c.seanceType === seanceType)
-                const ligne = lignesManuelles[seanceType]
-                const enSave = chargementCarte === seanceType
-                if (!ligne) return null
-                return (
-                  <div
-                    key={seanceType}
-                    className="flex flex-col gap-3 rounded-xl border border-neutral-200 bg-neutral-50/80 p-3 dark:border-neutral-800 dark:bg-neutral-950/40"
-                  >
-                    <div className="flex flex-wrap items-center gap-2">
-                      <p className="text-sm font-semibold text-neutral-900 dark:text-neutral-50">
-                        {LABELS_PLANNING[seanceType].emoji}{' '}
-                        {meta?.titre ?? LABELS_PLANNING[seanceType].label}
-                      </p>
-                      {meta ? (
-                        <Badge variant="outline" className="text-[10px]">
-                          {LIBELLE_INTENSITE[meta.profilEffort.intensite]}
-                        </Badge>
-                      ) : null}
-                    </div>
-                    <div className="grid grid-cols-2 gap-2">
-                      {(
-                        [
-                          ['kcal', 'Kcal'],
-                          ['proteines', 'Prot. (g)'],
-                          ['glucides', 'Gluc. (g)'],
-                          ['lipides', 'Lip. (g)'],
-                        ] as const
-                      ).map(([champ, lib]) => (
-                        <div key={champ} className="space-y-1">
-                          <Label className="text-[10px] text-neutral-500">{lib}</Label>
-                          <Input
-                            type="number"
-                            min={0}
-                            disabled={enSave}
-                            value={ligne[champ]}
-                            onChange={(e) => majLigneManuelle(seanceType, champ, e.target.value)}
-                            className="h-8 bg-white dark:bg-neutral-950"
-                          />
-                        </div>
-                      ))}
-                    </div>
-                    <Button
-                      type="button"
-                      size="sm"
-                      className="w-full bg-amber-600 text-white hover:bg-amber-700 dark:bg-amber-600"
-                      disabled={enSave}
-                      onClick={() => void sauvegarderCarteManuelle(seanceType)}
-                    >
-                      {enSave ? (
-                        <>
-                          <Loader2 className="size-4 animate-spin" />
-                          Enregistrement…
-                        </>
-                      ) : (
-                        'Sauvegarder'
-                      )}
-                    </Button>
+      {erreur ? (
+        <p
+          role="alert"
+          className="text-sm text-destructive"
+        >
+          {erreur}
+        </p>
+      ) : null}
+
+      {mode === MACROS_MODE_MANUEL ? (
+        <div className="space-y-3">
+          <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+            {typesPlanning.map((seanceType) => {
+              const meta = recapPlanning?.find((c) => c.seanceType === seanceType)
+              const ligne = lignesManuelles[seanceType]
+              const enSave = chargementCarte === seanceType
+              if (!ligne) return null
+              return (
+                <div
+                  key={seanceType}
+                  className="flex flex-col gap-2 rounded-lg border border-neutral-200 p-3 dark:border-neutral-800"
+                >
+                  <p className="text-sm font-medium text-neutral-900 dark:text-neutral-50">
+                    {LABELS_PLANNING[seanceType].emoji}{' '}
+                    {meta?.titre ?? LABELS_PLANNING[seanceType].label}
+                  </p>
+                  <div className="grid grid-cols-4 gap-1.5">
+                    {(
+                      [
+                        ['kcal', 'kcal'],
+                        ['proteines', 'P'],
+                        ['glucides', 'G'],
+                        ['lipides', 'L'],
+                      ] as const
+                    ).map(([champ, lib]) => (
+                      <div key={champ} className="space-y-1">
+                        <Label className="text-[10px] text-muted-foreground">{lib}</Label>
+                        <Input
+                          type="number"
+                          min={0}
+                          disabled={enSave}
+                          value={ligne[champ]}
+                          onChange={(e) => majLigneManuelle(seanceType, champ, e.target.value)}
+                          className="h-8 px-1.5 text-xs dark:bg-neutral-950"
+                        />
+                      </div>
+                    ))}
                   </div>
-                )
-              })}
-            </div>
+                  <Button
+                    type="button"
+                    size="sm"
+                    variant="outline"
+                    disabled={enSave}
+                    onClick={() => void sauvegarderCarteManuelle(seanceType)}
+                  >
+                    {enSave ? (
+                      <>
+                        <Loader2 className="size-4 animate-spin" />
+                        …
+                      </>
+                    ) : (
+                      'Enregistrer'
+                    )}
+                  </Button>
+                </div>
+              )
+            })}
           </div>
-        ) : (
-          <>
+        </div>
+      ) : stepperOuvert ? (
+        <>
             <nav aria-label="Étapes du calculateur" className="flex gap-1">
               {ETAPES.map((label, i) => (
                 <div
@@ -904,8 +886,17 @@ export function SectionCalculateurMacros({
               ) : null}
             </div>
           </>
-        )}
-      </CardContent>
-    </Card>
+      ) : (
+        <Button
+          type="button"
+          variant="ghost"
+          className="h-auto justify-start gap-1 px-0 text-sm text-amber-700 hover:text-amber-800 dark:text-amber-400 dark:hover:text-amber-300"
+          onClick={() => setStepperOuvert(true)}
+        >
+          Recalculer mes macros
+          <ChevronRight className="size-4" />
+        </Button>
+      )}
+    </div>
   )
 }

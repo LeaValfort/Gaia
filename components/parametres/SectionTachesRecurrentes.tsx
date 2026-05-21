@@ -6,7 +6,6 @@ import { Trash2 } from 'lucide-react'
 import { toast } from 'sonner'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import {
@@ -54,6 +53,7 @@ export function SectionTachesRecurrentes({ userId, todosInitiales }: SectionTach
   const [joursSemaine, setJoursSemaine] = useState<number[]>([])
   const [jourMois, setJourMois] = useState('1')
   const [chargement, setChargement] = useState(false)
+  const [erreur, setErreur] = useState<string | null>(null)
 
   useEffect(() => {
     setTaches(todosInitiales)
@@ -65,6 +65,7 @@ export function SectionTachesRecurrentes({ userId, todosInitiales }: SectionTach
     setJoursSemaine([])
     setJourMois('1')
     setFormulaireOuvert(false)
+    setErreur(null)
   }
 
   function basculerJour(iso: number) {
@@ -90,6 +91,7 @@ export function SectionTachesRecurrentes({ userId, todosInitiales }: SectionTach
     }
 
     setChargement(true)
+    setErreur(null)
     try {
       const cree = await createRecurringTodo(userId, {
         text: libelle,
@@ -103,6 +105,7 @@ export function SectionTachesRecurrentes({ userId, todosInitiales }: SectionTach
       toast.success('Tâche récurrente ajoutée')
       router.refresh()
     } catch {
+      setErreur('Impossible d’ajouter la tâche.')
       toast.error('Impossible d’ajouter la tâche.')
     } finally {
       setChargement(false)
@@ -135,149 +138,132 @@ export function SectionTachesRecurrentes({ userId, todosInitiales }: SectionTach
   }
 
   return (
-    <Card>
-      <CardHeader>
-        <CardTitle className="text-base">Tâches récurrentes</CardTitle>
-        <CardDescription>
-          Tâches générées automatiquement sur ta page Aujourd&apos;hui selon leur fréquence.
-        </CardDescription>
-      </CardHeader>
-      <CardContent className="space-y-4">
-        {taches.length === 0 ? (
-          <p className="text-sm text-neutral-500 dark:text-neutral-400">Aucune tâche récurrente.</p>
-        ) : (
-          <ul className="divide-y divide-neutral-200 rounded-lg border border-neutral-200 dark:divide-neutral-800 dark:border-neutral-800">
-            {taches.map((tache) => (
-              <li
-                key={tache.id}
-                className="flex items-center gap-3 px-3 py-3 first:rounded-t-lg last:rounded-b-lg"
-              >
-                <div className="min-w-0 flex-1">
-                  <p
-                    className={`truncate text-sm font-medium ${
-                      tache.active
-                        ? 'text-neutral-900 dark:text-neutral-50'
-                        : 'text-neutral-400 line-through dark:text-neutral-500'
-                    }`}
-                  >
-                    {tache.text}
-                  </p>
-                  <Badge variant="outline" className="mt-1 text-[10px] font-normal">
-                    {LIBELLE_FREQUENCE[tache.frequency]}
-                  </Badge>
-                </div>
-                <Switch
-                  checked={tache.active}
-                  onCheckedChange={(checked) => void basculerActif(tache, checked)}
-                  aria-label={tache.active ? 'Désactiver la tâche' : 'Activer la tâche'}
-                />
-                <Button
-                  type="button"
-                  variant="ghost"
-                  size="icon-sm"
-                  className="shrink-0 text-neutral-500 hover:text-destructive dark:text-neutral-400 dark:hover:text-destructive"
-                  onClick={() => void supprimer(tache.id)}
-                  aria-label="Supprimer la tâche"
-                >
-                  <Trash2 className="size-4" />
-                </Button>
-              </li>
-            ))}
-          </ul>
-        )}
+    <div className="space-y-4">
+      {erreur ? (
+        <p role="alert" className="text-sm text-destructive">
+          {erreur}
+        </p>
+      ) : null}
 
-        {!formulaireOuvert ? (
-          <Button type="button" variant="outline" size="sm" onClick={() => setFormulaireOuvert(true)}>
-            Ajouter une tâche
-          </Button>
-        ) : (
-          <div className="space-y-4 rounded-lg border border-neutral-200 bg-neutral-50/50 p-4 dark:border-neutral-800 dark:bg-neutral-900/40">
+      {taches.length > 0 ? (
+        <ul className="divide-y divide-neutral-200 dark:divide-neutral-800">
+          {taches.map((tache) => (
+            <li key={tache.id} className="flex items-center gap-3 py-3 first:pt-0">
+              <div className="min-w-0 flex-1">
+                <p
+                  className={`truncate text-sm font-medium ${
+                    tache.active
+                      ? 'text-neutral-900 dark:text-neutral-50'
+                      : 'text-neutral-400 line-through dark:text-neutral-500'
+                  }`}
+                >
+                  {tache.text}
+                </p>
+                <Badge variant="outline" className="mt-1 text-[10px] font-normal">
+                  {LIBELLE_FREQUENCE[tache.frequency]}
+                </Badge>
+              </div>
+              <Switch
+                checked={tache.active}
+                onCheckedChange={(checked) => void basculerActif(tache, checked)}
+                aria-label={tache.active ? 'Désactiver la tâche' : 'Activer la tâche'}
+              />
+              <Button
+                type="button"
+                variant="ghost"
+                size="icon-sm"
+                className="shrink-0 text-muted-foreground hover:text-destructive"
+                onClick={() => void supprimer(tache.id)}
+                aria-label="Supprimer la tâche"
+              >
+                <Trash2 className="size-4" />
+              </Button>
+            </li>
+          ))}
+        </ul>
+      ) : null}
+
+      {!formulaireOuvert ? (
+        <Button type="button" variant="outline" size="sm" onClick={() => setFormulaireOuvert(true)}>
+          Ajouter une tâche
+        </Button>
+      ) : (
+        <div className="space-y-4 border-t border-neutral-200 pt-4 dark:border-neutral-800">
+          <div className="space-y-2">
+            <Label htmlFor="recurring-text">Nom de la tâche</Label>
+            <Input
+              id="recurring-text"
+              value={texte}
+              onChange={(e) => setTexte(e.target.value)}
+              placeholder="Ex. Prendre mes compléments"
+              className="dark:bg-neutral-950"
+            />
+          </div>
+
+          <div className="space-y-2">
+            <Label htmlFor="recurring-freq">Fréquence</Label>
+            <Select value={frequence} onValueChange={(v) => setFrequence(v as FrequenceRecurrence)}>
+              <SelectTrigger id="recurring-freq" className="dark:bg-neutral-950">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="daily">Quotidien</SelectItem>
+                <SelectItem value="weekly">Hebdomadaire</SelectItem>
+                <SelectItem value="monthly">Mensuel</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+
+          {frequence === 'weekly' ? (
             <div className="space-y-2">
-              <Label htmlFor="recurring-text">Nom de la tâche</Label>
+              <Label>Jours de la semaine</Label>
+              <div className="flex flex-wrap gap-1.5">
+                {JOURS_SEMAINE.map(({ iso, label }) => (
+                  <Button
+                    key={iso}
+                    type="button"
+                    size="sm"
+                    variant={joursSemaine.includes(iso) ? 'default' : 'outline'}
+                    className="min-w-11 px-2"
+                    onClick={() => basculerJour(iso)}
+                  >
+                    {label}
+                  </Button>
+                ))}
+              </div>
+            </div>
+          ) : null}
+
+          {frequence === 'monthly' ? (
+            <div className="space-y-2">
+              <Label htmlFor="recurring-month-day">Jour du mois (1–31)</Label>
               <Input
-                id="recurring-text"
-                value={texte}
-                onChange={(e) => setTexte(e.target.value)}
-                placeholder="Ex. Prendre mes compléments"
-                className="bg-white dark:bg-neutral-950"
+                id="recurring-month-day"
+                type="number"
+                min={1}
+                max={31}
+                value={jourMois}
+                onChange={(e) => setJourMois(e.target.value)}
+                className="w-24 dark:bg-neutral-950"
               />
             </div>
+          ) : null}
 
-            <div className="space-y-2">
-              <Label htmlFor="recurring-freq">Fréquence</Label>
-              <Select
-                value={frequence}
-                onValueChange={(v) => setFrequence(v as FrequenceRecurrence)}
-              >
-                <SelectTrigger id="recurring-freq" className="bg-white dark:bg-neutral-950">
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="daily">Quotidien</SelectItem>
-                  <SelectItem value="weekly">Hebdomadaire</SelectItem>
-                  <SelectItem value="monthly">Mensuel</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-
-            {frequence === 'weekly' ? (
-              <div className="space-y-2">
-                <Label>Jours de la semaine</Label>
-                <div className="flex flex-wrap gap-1.5">
-                  {JOURS_SEMAINE.map(({ iso, label }) => (
-                    <Button
-                      key={iso}
-                      type="button"
-                      size="sm"
-                      variant={joursSemaine.includes(iso) ? 'default' : 'outline'}
-                      className="min-w-11 px-2"
-                      onClick={() => basculerJour(iso)}
-                    >
-                      {label}
-                    </Button>
-                  ))}
-                </div>
-              </div>
-            ) : null}
-
-            {frequence === 'monthly' ? (
-              <div className="space-y-2">
-                <Label htmlFor="recurring-month-day">Jour du mois (1–31)</Label>
-                <Input
-                  id="recurring-month-day"
-                  type="number"
-                  min={1}
-                  max={31}
-                  value={jourMois}
-                  onChange={(e) => setJourMois(e.target.value)}
-                  className="w-24 bg-white dark:bg-neutral-950"
-                />
-              </div>
-            ) : null}
-
-            <div className="flex flex-wrap gap-2">
-              <Button
-                type="button"
-                size="sm"
-                disabled={chargement}
-                className="bg-amber-600 text-white hover:bg-amber-700 dark:bg-amber-600 dark:hover:bg-amber-700"
-                onClick={() => void enregistrer()}
-              >
-                Enregistrer
-              </Button>
-              <Button
-                type="button"
-                variant="outline"
-                size="sm"
-                disabled={chargement}
-                onClick={reinitialiserFormulaire}
-              >
-                Annuler
-              </Button>
-            </div>
+          <div className="flex flex-wrap gap-2">
+            <Button
+              type="button"
+              size="sm"
+              disabled={chargement}
+              onClick={() => void enregistrer()}
+            >
+              Enregistrer
+            </Button>
+            <Button type="button" variant="outline" size="sm" disabled={chargement} onClick={reinitialiserFormulaire}>
+              Annuler
+            </Button>
           </div>
-        )}
-      </CardContent>
-    </Card>
+        </div>
+      )}
+    </div>
   )
 }
