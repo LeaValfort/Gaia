@@ -1,7 +1,6 @@
 'use client'
 
 import { useCallback, useEffect, useMemo, useState } from 'react'
-import { Search } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import {
   Dialog,
@@ -62,7 +61,7 @@ export interface ModaleSaisieRepasProps {
   emoji: string
   libelleRepas: string
   onEnregistre: () => void
-  /** Ferme la modale et ouvre l’onglet Recettes / suggestions. */
+  /** Ferme la modale et ouvre l’onglet Recettes. */
   onVersRecettes?: () => void
 }
 
@@ -85,7 +84,6 @@ export function ModaleSaisieRepas({
     lipides: '0',
   })
   const [sourceRecipeId, setSourceRecipeId] = useState<string | null>(null)
-  const [recherche, setRecherche] = useState('')
   const [recettes, setRecettes] = useState<Recipe[]>([])
   const [chargementRecettes, setChargementRecettes] = useState(false)
   const [erreurRecettes, setErreurRecettes] = useState<string | null>(null)
@@ -96,12 +94,6 @@ export function ModaleSaisieRepas({
     () => sousTitreObjectifRepas(typeJournee, intake.type_repas),
     [typeJournee, intake.type_repas]
   )
-
-  const recettesFiltrees = useMemo(() => {
-    const q = recherche.trim().toLowerCase()
-    if (!q) return recettes
-    return recettes.filter((r) => r.nom.toLowerCase().includes(q))
-  }, [recherche, recettes])
 
   const chargerRecettes = useCallback(async () => {
     setChargementRecettes(true)
@@ -120,7 +112,6 @@ export function ModaleSaisieRepas({
   useEffect(() => {
     if (!ouvert) return
     setMode('manuel')
-    setRecherche('')
     setSourceRecipeId(intake.source_recipe_id ?? null)
     setValeurs({
       calories: String(intake.calories),
@@ -216,21 +207,6 @@ export function ModaleSaisieRepas({
 
         {mode === 'recette' ? (
           <div className="flex flex-col gap-3">
-            <div className="relative">
-              <Search
-                className="pointer-events-none absolute left-2.5 top-1/2 size-4 -translate-y-1/2 text-muted-foreground"
-                aria-hidden
-              />
-              <Input
-                type="search"
-                value={recherche}
-                onChange={(e) => setRecherche(e.target.value)}
-                placeholder="Rechercher une recette sauvegardée…"
-                className="h-10 pl-9"
-                aria-label="Rechercher une recette"
-              />
-            </div>
-
             {erreurRecettes ? (
               <p className="text-sm text-red-600 dark:text-red-400">{erreurRecettes}</p>
             ) : null}
@@ -241,12 +217,10 @@ export function ModaleSaisieRepas({
                   <Skeleton key={i} className="h-14 w-full rounded-lg" />
                 ))}
               </div>
-            ) : recettesFiltrees.length === 0 ? (
+            ) : recettes.length === 0 ? (
               <div className="flex flex-col items-start gap-2 py-2">
                 <p className="text-sm text-muted-foreground">
-                  {recettes.length === 0
-                    ? 'Aucune recette sauvegardée pour le moment.'
-                    : 'Aucun résultat pour cette recherche.'}
+                  Aucune recette enregistrée pour le moment.
                 </p>
                 {onVersRecettes ? (
                   <button
@@ -257,13 +231,13 @@ export function ModaleSaisieRepas({
                     }}
                     className="text-sm text-muted-foreground underline-offset-2 hover:text-neutral-900 hover:underline dark:hover:text-neutral-200"
                   >
-                    Chercher dans les suggestions →
+                    Aller à Recettes →
                   </button>
                 ) : null}
               </div>
             ) : (
               <ul className="max-h-52 overflow-y-auto rounded-lg border border-neutral-200 dark:border-neutral-800">
-                {recettesFiltrees.map((r) => (
+                {recettes.map((r) => (
                   <li
                     key={r.id}
                     className="flex items-center gap-2 border-b border-neutral-100 px-3 py-2.5 last:border-0 dark:border-neutral-800"

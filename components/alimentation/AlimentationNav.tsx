@@ -5,7 +5,7 @@ import { ChevronDown } from 'lucide-react'
 import { cn } from '@/lib/utils'
 
 export type OngletAlimentationPrincipal = 'aujourdhui' | 'recettes' | 'semaine'
-export type SectionAlimentationPlus = 'checklist' | 'courses' | 'recettes-perso'
+export type SectionAlimentationPlus = 'checklist' | 'courses'
 
 export type VueAlimentation = OngletAlimentationPrincipal | SectionAlimentationPlus
 
@@ -18,7 +18,6 @@ interface AlimentationNavProps {
 const PLUS_OPTIONS: { id: SectionAlimentationPlus; label: string }[] = [
   { id: 'checklist', label: 'Checklist anti-inflammatoire' },
   { id: 'courses', label: 'Liste de courses' },
-  { id: 'recettes-perso', label: 'Mes recettes perso' },
 ]
 
 export function AlimentationNav({ suiviCalorique, vue, onChange }: AlimentationNavProps) {
@@ -61,6 +60,7 @@ export function AlimentationNav({ suiviCalorique, vue, onChange }: AlimentationN
   const tabs: { id: OngletAlimentationPrincipal; label: string }[] = suiviCalorique
     ? [
         { id: 'aujourdhui', label: "Aujourd'hui" },
+        { id: 'recettes', label: 'Recettes' },
         { id: 'semaine', label: 'Semaine' },
       ]
     : [

@@ -144,7 +144,7 @@ export function RecettesSauvegardees({ userId, phase, masquerFiltrePhase }: Rece
           </p>
           {recettes.length === 0 && (
             <p className="text-xs text-neutral-400 dark:text-neutral-500 max-w-xs">
-              Utilise le bouton <span className="font-medium">Ajouter une recette</span> ci-dessus, ou l&apos;onglet <span className="font-medium">Suggestions</span> pour en découvrir d&apos;autres.
+              Utilise le bouton <span className="font-medium">Ajouter une recette</span> ci-dessus pour en créer une.
             </p>
           )}
         </div>
