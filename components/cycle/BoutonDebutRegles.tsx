@@ -19,7 +19,7 @@ import {
 import { cn } from '@/lib/utils'
 
 const CLASSES_BOUTON_DOUX =
-  'inline-flex h-9 items-center justify-center gap-2 rounded-md border border-teal-200 bg-teal-100 px-4 text-sm font-medium text-teal-800 transition-colors hover:bg-teal-200/90 dark:border-teal-800 dark:bg-teal-950/50 dark:text-teal-200 dark:hover:bg-teal-900/60'
+  'inline-flex h-9 items-center justify-center gap-2 rounded-md border border-rose-200 bg-rose-100 px-4 text-sm font-medium text-rose-800 transition-colors hover:bg-rose-200/90 dark:border-rose-800 dark:bg-rose-950/50 dark:text-rose-200 dark:hover:bg-rose-900/60'
 
 interface BoutonDebutReglesProps {
   /** Date ISO yyyy-MM-dd pré-remplie (ex. jour sélectionné au calendrier). */

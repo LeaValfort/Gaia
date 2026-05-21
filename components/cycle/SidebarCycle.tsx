@@ -70,12 +70,12 @@ export function SidebarCycle({
         onSucces={onCycleDebute}
       />
 
-      <div className="rounded-2xl border border-rose-200 bg-rose-50/90 p-4 dark:border-rose-900/50 dark:bg-rose-950/30">
-        <p className="mb-1 text-xs font-semibold uppercase tracking-wide text-rose-800 dark:text-rose-200">
+      <div className="rounded-2xl border border-teal-200 bg-teal-50/90 p-4 dark:border-teal-900/50 dark:bg-teal-950/30">
+        <p className="mb-1 text-xs font-semibold uppercase tracking-wide text-teal-800 dark:text-teal-200">
           Prochain cycle
         </p>
-        <p className="text-lg font-semibold text-rose-950 dark:text-rose-50">{datePrevueLabel}</p>
-        <p className="mt-1 text-xs text-rose-800/80 dark:text-rose-200/80">
+        <p className="text-lg font-semibold text-teal-950 dark:text-teal-50">{datePrevueLabel}</p>
+        <p className="mt-1 text-xs text-teal-800/80 dark:text-teal-200/80">
           Estimation à partir de ton dernier début et de la durée moyenne ({cycleLength} j.).
         </p>
       </div>
