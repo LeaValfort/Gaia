@@ -24,9 +24,9 @@ import { DailyLogForm } from '@/components/cycle/DailyLogForm'
 import { BoutonDebutRegles } from '@/components/cycle/BoutonDebutRegles'
 import { genererJoursCalendrier, getInfosJour } from '@/lib/cycle'
 import {
-  CALENDRIER_PREDICTION,
   CALENDRIER_RETARD,
   PHASES_CALENDRIER_CELL,
+  PHASES_CALENDRIER_CELL_PREDICTION,
 } from '@/lib/data/phases-design'
 import type { Cycle, DailyLog, Phase, PredictionPhase } from '@/types'
 
@@ -158,6 +158,10 @@ export function CycleCalendar({
               const retardVisuel = jourDansPeriodeRetardAffichee(dateStr, debutRetardISO, retardJours)
               const phaseJour = pred?.phase ?? getInfosJour(jour, lastStartDate, cycleLength).phase
 
+              const estPrediction = Boolean(pred?.estPrediction && !retardVisuel)
+              const cellConfirmee = PHASES_CALENDRIER_CELL[phaseJour]
+              const cellEstimee = PHASES_CALENDRIER_CELL_PREDICTION[phaseJour]
+
               let bg = 'transparent'
               let bordureInset = 'transparent'
               let color = '#9CA3AF'
@@ -167,31 +171,30 @@ export function CycleCalendar({
                   bg = CALENDRIER_RETARD.bg
                   bordureInset = CALENDRIER_RETARD.border
                   color = CALENDRIER_RETARD.texte
-                } else if (pred?.estPrediction) {
-                  bg = CALENDRIER_PREDICTION.bg
-                  bordureInset = CALENDRIER_PREDICTION.border
-                  color = CALENDRIER_PREDICTION.texte
+                } else if (estPrediction) {
+                  bg = cellEstimee.bg
+                  bordureInset = cellEstimee.border
+                  color = cellEstimee.texte
                 } else {
-                  const cell = PHASES_CALENDRIER_CELL[phaseJour]
-                  bg = cell.bg
-                  bordureInset = cell.border
-                  color = cell.texte
+                  bg = cellConfirmee.bg
+                  bordureInset = cellConfirmee.border
+                  color = cellConfirmee.texte
                 }
               }
 
               const dotColor = dansMois
                 ? retardVisuel
                   ? CALENDRIER_RETARD.border
-                  : pred?.estPrediction
-                    ? CALENDRIER_PREDICTION.border
-                    : PHASES_CALENDRIER_CELL[phaseJour].border
+                  : estPrediction
+                    ? cellEstimee.border
+                    : cellConfirmee.border
                 : '#D1D5DB'
 
               const ringPhase =
-                dansMois && !pred?.estPrediction && !retardVisuel
+                dansMois && !estPrediction && !retardVisuel
                   ? `inset 0 0 0 1.5px ${bordureInset}`
-                  : dansMois && pred?.estPrediction && !retardVisuel
-                    ? `inset 0 0 0 1px ${CALENDRIER_PREDICTION.border}`
+                  : dansMois && estPrediction
+                    ? `inset 0 0 0 1px ${cellEstimee.border}`
                     : dansMois && retardVisuel
                       ? `inset 0 0 0 2px ${CALENDRIER_RETARD.border}`
                       : undefined
@@ -213,15 +216,16 @@ export function CycleCalendar({
                     ${dansMois ? 'cursor-pointer hover:brightness-[0.97] dark:hover:brightness-110' : 'cursor-default opacity-60'}
                     ${selectionne ? 'z-[1] ring-2 ring-inset ring-neutral-900 dark:ring-white' : ''}
                     ${retardVisuel && dansMois ? 'motion-safe:animate-pulse motion-reduce:animate-none' : ''}
+                    ${estPrediction && dansMois ? 'opacity-90 saturate-[0.72]' : ''}
                   `}
                 >
-                  {pred?.estPrediction && dansMois && !retardVisuel ? (
+                  {estPrediction && dansMois ? (
                     <span
                       className="pointer-events-none absolute inset-1 rounded-md border md:inset-1.5"
                       style={{
                         borderWidth: 1.5,
                         borderStyle: 'dashed',
-                        borderColor: CALENDRIER_PREDICTION.border,
+                        borderColor: cellEstimee.border,
                       }}
                       aria-hidden
                     />
@@ -264,13 +268,13 @@ export function CycleCalendar({
         })}
         <div className="flex items-center gap-1.5">
           <span
-            className="h-3 w-3 shrink-0 rounded-sm border border-dashed"
+            className="h-3 w-3 shrink-0 rounded-sm border border-dashed opacity-90 saturate-[0.72]"
             style={{
-              backgroundColor: CALENDRIER_PREDICTION.bg,
-              borderColor: CALENDRIER_PREDICTION.border,
+              backgroundColor: PHASES_CALENDRIER_CELL_PREDICTION.folliculaire.bg,
+              borderColor: PHASES_CALENDRIER_CELL_PREDICTION.folliculaire.border,
             }}
           />
-          <span className="text-neutral-600 dark:text-neutral-300">Prédit</span>
+          <span className="text-neutral-600 dark:text-neutral-300">Estimé (à venir, teintes atténuées)</span>
         </div>
         <div className="flex items-center gap-1.5">
           <span

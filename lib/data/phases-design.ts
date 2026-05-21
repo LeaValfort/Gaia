@@ -97,8 +97,19 @@ export const PHASES_CALENDRIER_CELL: Record<
   luteale: { bg: '#DDD6FE', border: '#8B5CF6', texte: '#3B0764' },
 }
 
+/** Teintes atténuées par phase pour les jours futurs estimés (hypothétiques). */
+export const PHASES_CALENDRIER_CELL_PREDICTION: Record<
+  Phase,
+  { bg: string; border: string; texte: string }
+> = {
+  menstruation: { bg: '#F5E8EA', border: '#E8B4BC', texte: '#9A8588' },
+  folliculaire: { bg: '#F5F0DC', border: '#D9CF8E', texte: '#8A8060' },
+  ovulation: { bg: '#E2F0E8', border: '#9FD4B0', texte: '#6E8A78' },
+  luteale: { bg: '#EBE8F4', border: '#B8AEE0', texte: '#8578A0' },
+}
+
 export const CALENDRIER_PREDICTION = {
-  bg: '#FFFFFF',
+  bg: '#F3F4F6',
   border: '#D1D5DB',
   texte: '#9CA3AF',
 } as const
