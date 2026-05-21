@@ -628,6 +628,8 @@ export interface UserPreferences {
   lipides_defaut?: number | null
   /** Mode calculateur macros : auto (calcul) ou manuel (saisie par séance) */
   macros_mode?: MacrosMode
+  /** Afficher onglet Aujourd'hui (macros + repas) ; sinon onglet Recettes */
+  suivi_calorique?: boolean
 }
 
 export type MacrosMode = 'auto' | 'manuel'

@@ -1,35 +1,15 @@
 'use client'
 
 import { useEffect, type CSSProperties, type ReactNode } from 'react'
-import { MacrosCard } from '@/components/alimentation/MacrosCard'
-import { PageHeader } from '@/components/shared/PageHeader'
 import type { PhaseDesign } from '@/lib/data/phases-design'
-import type { TotauxConsommesJour } from '@/lib/recapManuel'
-import type { MacrosCiblesJour, Phase, TypeJournee } from '@/types'
 
 export interface AlimentationLayoutProps {
   design: PhaseDesign
-  weekStartLabel: string
-  todayIso: string
-  typeJournee: TypeJournee
-  phase: Phase
-  sansSuiviCycle: boolean
-  consoJour: TotauxConsommesJour
-  macrosCibles?: MacrosCiblesJour
   children: ReactNode
 }
 
-export function AlimentationLayout({
-  design,
-  weekStartLabel,
-  todayIso,
-  typeJournee,
-  phase,
-  sansSuiviCycle,
-  consoJour,
-  macrosCibles,
-  children,
-}: AlimentationLayoutProps) {
+/** Applique les variables CSS phase pour les boutons alimentation. */
+export function AlimentationLayout({ design, children }: AlimentationLayoutProps) {
   const vars: CSSProperties = {
     ['--alim-accent' as string]: design.accent,
     ['--alim-text' as string]: design.texte,
@@ -49,22 +29,8 @@ export function AlimentationLayout({
   }, [design.accent, design.texte, design.texteMuted])
 
   return (
-    <div className="alimentation-page w-full" style={vars}>
-      <PageHeader title="Alimentation" subtitle={weekStartLabel} className="mb-6" />
-
-      <div className="grid grid-cols-1 items-start gap-6 md:grid-cols-[1fr_280px]">
-        <div className="order-2 min-w-0 flex flex-col gap-4 md:order-1">{children}</div>
-        <aside className="order-1 w-full min-w-0 flex-shrink-0 md:order-2 md:sticky md:top-4 md:self-start">
-          <MacrosCard
-            phase={phase}
-            typeJournee={typeJournee}
-            date={todayIso}
-            sansSuiviCycle={sansSuiviCycle}
-            conso={consoJour}
-            macrosCibles={macrosCibles}
-          />
-        </aside>
-      </div>
+    <div className="alimentation-page w-full max-w-2xl" style={vars}>
+      {children}
     </div>
   )
 }

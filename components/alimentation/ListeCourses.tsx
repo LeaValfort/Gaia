@@ -1,15 +1,12 @@
 'use client'
 
 import { useState, useEffect } from 'react'
-import { format, parseISO } from 'date-fns'
-import { fr } from 'date-fns/locale'
 import { Plus, ShoppingCart, Trash2 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { Skeleton } from '@/components/ui/skeleton'
 import { supabase } from '@/lib/supabase'
 import { getShoppingItems, toggleShoppingItem, deleteShoppingItem, deleteAllShoppingItemsForWeek } from '@/lib/db/courses'
-import { ENSEIGNES_DEFAUT, getSemainesDisponibles } from '@/lib/data/courses'
+import { ENSEIGNES_DEFAUT } from '@/lib/data/courses'
 import { grouperArticlesCourses } from '@/lib/courses-consolidation'
 import { CarteEnseigne } from './CarteEnseigne'
 import { FormulaireArticle } from './FormulaireArticle'
@@ -17,9 +14,7 @@ import type { ShoppingItemComplet } from '@/types'
 
 interface ListeCoursesProps { userId: string; weekStart: string }
 
-export function ListeCourses({ userId, weekStart: weekStartInitial }: ListeCoursesProps) {
-  const semaines = getSemainesDisponibles()
-  const [semaine, setSemaine] = useState(weekStartInitial)
+export function ListeCourses({ userId, weekStart }: ListeCoursesProps) {
   const [articles, setArticles] = useState<ShoppingItemComplet[]>([])
   const [chargement, setChargement] = useState(true)
   const [enseigneActive, setEnseigneActive] = useState<string | null>(null)
@@ -28,11 +23,11 @@ export function ListeCourses({ userId, weekStart: weekStartInitial }: ListeCours
 
   useEffect(() => {
     setChargement(true)
-    getShoppingItems(supabase, userId, semaine).then((data) => {
+    getShoppingItems(supabase, userId, weekStart).then((data) => {
       setArticles(data)
       setChargement(false)
     })
-  }, [userId, semaine])
+  }, [userId, weekStart])
 
   function nbRestants(enseigneId: string) {
     const subset = articles.filter((a) => (a.enseigne ?? 'grande_surface') === enseigneId && !a.fait)
@@ -62,7 +57,7 @@ export function ListeCourses({ userId, weekStart: weekStartInitial }: ListeCours
     )
     if (!ok) return
     setVidage(true)
-    await deleteAllShoppingItemsForWeek(supabase, userId, semaine)
+    await deleteAllShoppingItemsForWeek(supabase, userId, weekStart)
     setArticles([])
     setEnseigneActive(null)
     setVidage(false)
@@ -72,21 +67,6 @@ export function ListeCourses({ userId, weekStart: weekStartInitial }: ListeCours
 
   return (
     <div className="flex flex-col gap-5">
-
-      {/* Sélecteur de semaine */}
-      <Select value={semaine} onValueChange={(v) => { if (v) setSemaine(v) }}>
-        <SelectTrigger className="w-full sm:w-72 text-sm">
-          <SelectValue />
-        </SelectTrigger>
-        <SelectContent>
-          {semaines.map((s) => (
-            <SelectItem key={s.value} value={s.value}>
-              {format(parseISO(`${s.value}T12:00:00`), 'd MMMM yyyy', { locale: fr })}
-            </SelectItem>
-          ))}
-        </SelectContent>
-      </Select>
-
       {chargement ? (
         <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
           {[1, 2, 3, 4].map((i) => <Skeleton key={i} className="h-20 rounded-2xl" />)}
@@ -154,7 +134,7 @@ export function ListeCourses({ userId, weekStart: weekStartInitial }: ListeCours
       {formulaireOuvert && (
         <FormulaireArticle
           enseignes={ENSEIGNES_DEFAUT}
-          weekStart={semaine}
+          weekStart={weekStart}
           userId={userId}
           onAjoute={(a) => setArticles((prev) => [...prev, a])}
           onFermer={() => setFormulaireOuvert(false)}

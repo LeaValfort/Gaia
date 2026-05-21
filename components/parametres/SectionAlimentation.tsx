@@ -8,6 +8,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Slider } from '@/components/ui/slider'
+import { Switch } from '@/components/ui/switch'
 import type { UserPreferences } from '@/types'
 
 interface SectionAlimentationProps {
@@ -87,13 +88,15 @@ export function SectionAlimentation({ prefs, onUpdate }: SectionAlimentationProp
   const [dislikes, setDislikes] = useState(prefs.food_dislikes)
   const [allergies, setAllergies] = useState(prefs.food_allergies)
   const [cook, setCook] = useState(prefs.cook_time_minutes)
+  const [suiviCalorique, setSuiviCalorique] = useState(prefs.suivi_calorique !== false)
 
   useEffect(() => {
     setLikes(prefs.food_likes)
     setDislikes(prefs.food_dislikes)
     setAllergies(prefs.food_allergies)
     setCook(prefs.cook_time_minutes)
-  }, [prefs.food_likes, prefs.food_dislikes, prefs.food_allergies, prefs.cook_time_minutes])
+    setSuiviCalorique(prefs.suivi_calorique !== false)
+  }, [prefs.food_likes, prefs.food_dislikes, prefs.food_allergies, prefs.cook_time_minutes, prefs.suivi_calorique])
 
   return (
     <Card>
@@ -105,6 +108,23 @@ export function SectionAlimentation({ prefs, onUpdate }: SectionAlimentationProp
         <CardDescription>Temps de cuisine et listes pour personnaliser les suggestions.</CardDescription>
       </CardHeader>
       <CardContent className="space-y-5">
+        <div className="flex items-center justify-between gap-4 rounded-lg border border-neutral-200 px-3 py-3 dark:border-neutral-800">
+          <div>
+            <Label htmlFor="suivi-calorique">Suivi calorique</Label>
+            <p className="text-xs text-muted-foreground mt-0.5">
+              Macros du jour et repas (sinon onglet Recettes uniquement).
+            </p>
+          </div>
+          <Switch
+            id="suivi-calorique"
+            checked={suiviCalorique}
+            onCheckedChange={(v) => {
+              setSuiviCalorique(v)
+              void onUpdate({ suivi_calorique: v })
+            }}
+          />
+        </div>
+
         <div className="space-y-2">
           <div className="flex justify-between text-sm">
             <Label>Temps de cuisine disponible</Label>

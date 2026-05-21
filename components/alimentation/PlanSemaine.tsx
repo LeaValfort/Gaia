@@ -156,7 +156,7 @@ export default function PlanSemaine({
 
       {recettes.length === 0 && !chargement && (
         <p className="text-xs text-amber-600 dark:text-amber-400 bg-amber-50 dark:bg-amber-900/20 rounded-lg px-3 py-2">
-          💡 Sauvegarde d&apos;abord quelques recettes dans l&apos;onglet &ldquo;Suggestions&rdquo; pour que la génération automatique puisse les utiliser. Les petit-déjeuners sont toujours générés automatiquement.
+          💡 Sauvegarde d&apos;abord quelques recettes dans &ldquo;Plus → Mes recettes perso&rdquo; pour que la génération automatique puisse les utiliser.
         </p>
       )}
 

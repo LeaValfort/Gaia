@@ -1,23 +1,18 @@
 'use client'
 
 import { useState } from 'react'
-import { TabsNav, type OngletNav } from '@/components/shared/TabsNav'
+import {
+  AlimentationNav,
+  type VueAlimentation,
+} from '@/components/alimentation/AlimentationNav'
 import { ChecklistHebdo } from '@/components/alimentation/ChecklistHebdo'
-import { SuggestionsRecettes } from '@/components/alimentation/SuggestionsRecettes'
 import { ListeCourses } from '@/components/alimentation/ListeCourses'
-import { RecettesSauvegardees } from '@/components/alimentation/RecettesSauvegardees'
-import { RecapMacrosJour } from '@/components/alimentation/RecapMacrosJour'
+import { ListeRecettesPhase } from '@/components/alimentation/ListeRecettesPhase'
+import { OngletAujourdhui } from '@/components/alimentation/OngletAujourdhui'
 import PlanSemaine from '@/components/alimentation/PlanSemaine'
+import { RecettesSauvegardees } from '@/components/alimentation/RecettesSauvegardees'
+import type { TotauxConsommesJour } from '@/lib/recapManuel'
 import type { CycleStats, MacrosCiblesJour, Phase, TypeJournee } from '@/types'
-
-const ONGL: OngletNav[] = [
-  { id: 'semaine', label: 'Plan', emoji: '📅' },
-  { id: 'jour', label: 'Jour', emoji: '📊' },
-  { id: 'checklist', label: 'Checklist', emoji: '✅' },
-  { id: 'suggestions', label: 'Suggestions', emoji: '🍽️' },
-  { id: 'courses', label: 'Courses', emoji: '🛒' },
-  { id: 'recettes', label: 'Recettes', emoji: '📖' },
-]
 
 export interface AlimentationOngletsProps {
   userId: string
@@ -27,30 +22,47 @@ export interface AlimentationOngletsProps {
   phase: Phase
   sansSuivi: boolean
   sansSuiviCycle: boolean
+  suiviCalorique: boolean
   effectiveStart: string | null
   cycleLength: number
   stats: CycleStats | null
   macrosTypeJournee: TypeJournee
-  macrosCibles?: MacrosCiblesJour
+  macrosCibles: MacrosCiblesJour
+  consoJour: TotauxConsommesJour
   allergies: string[]
   cookTimeMinutes: number
 }
 
 export function AlimentationOnglets(p: AlimentationOngletsProps) {
-  const [actif, setActif] = useState('semaine')
+  const vueInitiale: VueAlimentation = p.suiviCalorique ? 'aujourdhui' : 'recettes'
+  const [vue, setVue] = useState<VueAlimentation>(vueInitiale)
+
   return (
-    <div className="w-full min-w-0 overflow-hidden rounded-2xl border border-gray-200 bg-white shadow-sm dark:border-gray-800 dark:bg-gray-950/40">
-      <div className="border-b border-gray-100 bg-gray-50/80 p-1 dark:border-gray-800 dark:bg-gray-900/50">
-        <TabsNav
-          variant="embedded"
-          onglets={ONGL}
-          actif={actif}
-          onChange={setActif}
-          phase={p.sansSuivi ? null : p.phase}
-        />
-      </div>
-      <div className="min-h-0 w-full min-w-0 p-4 sm:p-5">
-        {actif === 'semaine' && (
+    <div className="flex min-w-0 flex-col gap-4">
+      <AlimentationNav suiviCalorique={p.suiviCalorique} vue={vue} onChange={setVue} />
+
+      <div className="min-w-0">
+        {vue === 'aujourdhui' && p.suiviCalorique ? (
+          <OngletAujourdhui
+            userId={p.userId}
+            todayIso={p.todayIso}
+            typeJournee={p.macrosCibles.typeJournee}
+            macrosCibles={p.macrosCibles}
+            consoJour={p.consoJour}
+          />
+        ) : null}
+
+        {vue === 'recettes' && !p.suiviCalorique ? (
+          <ListeRecettesPhase
+            phase={p.phase}
+            typeJournee={p.macrosTypeJournee}
+            allergies={p.allergies}
+            tempsMax={p.cookTimeMinutes}
+            sansSuiviCycle={p.sansSuiviCycle}
+          />
+        ) : null}
+
+        {vue === 'semaine' ? (
           <PlanSemaine
             userId={p.userId}
             weekStart={p.weekStart}
@@ -59,32 +71,23 @@ export function AlimentationOnglets(p: AlimentationOngletsProps) {
             cycleLength={p.cycleLength}
             stats={p.stats}
           />
-        )}
-        {actif === 'jour' && (
-          <RecapMacrosJour
+        ) : null}
+
+        {vue === 'checklist' ? (
+          <ChecklistHebdo userId={p.userId} weekStart={p.weekStart} />
+        ) : null}
+
+        {vue === 'courses' ? (
+          <ListeCourses userId={p.userId} weekStart={p.weekStart} />
+        ) : null}
+
+        {vue === 'recettes-perso' ? (
+          <RecettesSauvegardees
             userId={p.userId}
-            date={p.todayIso}
             phase={p.phase}
-            typeJournee={p.typeJournee}
-            weekStart={p.weekStart}
-            sansSuiviCycle={p.sansSuiviCycle}
-            macrosCibles={p.macrosCibles}
+            masquerFiltrePhase={p.sansSuivi}
           />
-        )}
-        {actif === 'checklist' && <ChecklistHebdo userId={p.userId} weekStart={p.weekStart} />}
-        {actif === 'suggestions' && (
-          <SuggestionsRecettes
-            phase={p.phase}
-            typeJournee={p.macrosTypeJournee}
-            allergies={p.allergies}
-            tempsMax={p.cookTimeMinutes}
-            sansSuiviCycle={p.sansSuiviCycle}
-          />
-        )}
-        {actif === 'courses' && <ListeCourses userId={p.userId} weekStart={p.weekStart} />}
-        {actif === 'recettes' && (
-          <RecettesSauvegardees userId={p.userId} phase={p.phase} masquerFiltrePhase={p.sansSuivi} />
-        )}
+        ) : null}
       </div>
     </div>
   )

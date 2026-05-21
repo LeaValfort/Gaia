@@ -6,8 +6,8 @@ import { fr } from 'date-fns/locale'
 import { ChevronDown, ChevronUp } from 'lucide-react'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
+import { MACROS_JOURNEE } from '@/lib/nutrition'
 import type { Phase, TypeJournee, MealPlan, MealPlanComplet, BudgetMacroJour, Recipe, OptionPetitDej } from '@/types'
-import { PHASE_STYLES, MACROS_JOURNEE } from '@/lib/nutrition'
 import SlotRepas from './SlotRepas'
 
 const LABELS_PHASE: Record<Phase, string> = {
@@ -46,13 +46,11 @@ export default function CartePlanJour({
   onDelete,
 }: CartePlanJourProps) {
   const [etendu, setEtendu] = useState(false)
-  const styles = sansSuiviCycle
-    ? {
-        border: 'border-emerald-200 dark:border-emerald-800',
-        bg: 'bg-emerald-50/60 dark:bg-emerald-950/25',
-        pill: 'bg-emerald-100 text-emerald-900 dark:bg-emerald-900/40 dark:text-emerald-100',
-      }
-    : PHASE_STYLES[phase]
+  const styles = {
+    border: 'border-neutral-200 dark:border-neutral-800',
+    bg: 'bg-neutral-50/70 dark:bg-neutral-900/40',
+    pill: 'bg-neutral-100 text-neutral-800 dark:bg-neutral-800 dark:text-neutral-200',
+  }
   const typeEffectif: TypeJournee =
     sansSuiviCycle ? typeJournee : phase === 'menstruation' ? 'regles' : typeJournee
   const cibles = MACROS_JOURNEE[typeEffectif]

@@ -21,6 +21,7 @@ function mapPrefs(row: Record<string, unknown>): UserPreferences {
     mode_utilisateur:
       r.mode_utilisateur === 'sans_cycle' ? 'sans_cycle' : DEFAULT_MODE_UTILISATEUR,
     google_calendar_enabled: r.google_calendar_enabled !== false,
+    suivi_calorique: r.suivi_calorique !== false,
     macros_mode,
   }
 }
@@ -71,6 +72,7 @@ export async function updateUserPreferences(
       theme: actuel?.theme ?? 'system',
       notifications: actuel?.notifications ?? true,
       google_calendar_enabled: actuel?.google_calendar_enabled !== false,
+      suivi_calorique: actuel?.suivi_calorique !== false,
       planning_sport: updates.planning_sport ?? actuel?.planning_sport ?? PLANNING_DEFAUT,
       ...updates,
       mode_utilisateur:
@@ -149,6 +151,7 @@ export async function initUserPreferences(): Promise<void> {
       notifications: true,
       google_calendar_enabled: true,
       macros_mode: MACROS_MODE_DEFAUT,
+      suivi_calorique: true,
     })
 
     if (error) throw error
