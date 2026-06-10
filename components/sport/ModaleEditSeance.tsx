@@ -7,7 +7,9 @@ import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, D
 import { Input } from '@/components/ui/input'
 import { ExerciceEditRow } from '@/components/sport/ExerciceEditRow'
 import { getExercicesParSeance } from '@/lib/data/exercises'
-import { actionResetSeanceCustom, actionSaveSeanceCustom } from '@/lib/db/seances-custom-actions'
+import { resetSeanceCustom, saveSeanceCustom } from '@/lib/db/seances-custom'
+import { supabase } from '@/lib/supabase'
+import { toast } from 'sonner'
 import { exerciceVersCustom, planningVersTypeMuscu, exercicesToCustom } from '@/lib/sport/muscuCustomMap'
 import type { Exercice, ExerciceCustom, Lieu, TypeSeanceMuscu } from '@/types'
 
@@ -72,9 +74,16 @@ export function ModaleEditSeance({
   async function defaut() {
     setChD(true)
     try {
-      await actionResetSeanceCustom(typeSeance, lieu)
+      const {
+        data: { user },
+      } = await supabase.auth.getUser()
+      if (!user) throw new Error('Connecte-toi pour modifier la séance.')
+      await resetSeanceCustom(supabase, user.id, typeSeance, lieu)
       setExo([...def])
       onReinitialise?.()
+    } catch (e) {
+      const msg = e instanceof Error ? e.message : 'Réinitialisation impossible.'
+      toast.error(msg)
     } finally {
       setChD(false)
     }
@@ -83,10 +92,18 @@ export function ModaleEditSeance({
     if (!exo.length) return
     setCh(true)
     try {
+      const {
+        data: { user },
+      } = await supabase.auth.getUser()
+      if (!user) throw new Error('Connecte-toi pour enregistrer.')
       const fin = reindex(exo)
-      await actionSaveSeanceCustom(typeSeance, lieu, fin)
+      await saveSeanceCustom(supabase, user.id, typeSeance, lieu, fin)
       onSauvegarde(fin)
       onFermer()
+      toast.success('Séance personnalisée enregistrée')
+    } catch (e) {
+      const msg = e instanceof Error ? e.message : 'Enregistrement impossible.'
+      toast.error(msg)
     } finally {
       setCh(false)
     }

@@ -43,7 +43,15 @@ function champ(c: ConfigChamp, f: ActivityLogFormData, set: (k: keyof ActivityLo
   )
 }
 
-export function OngletAutreSport({ userId, date }: { userId: string; date: string }) {
+export function OngletAutreSport({
+  userId,
+  date,
+  onEnregistre,
+}: {
+  userId: string
+  date: string
+  onEnregistre?: () => void
+}) {
   const r = useRouter()
   const [f, setF] = useState<ActivityLogFormData>(ACTIVITY_LOG_INITIAL)
   const [ch, setCh] = useState(false)
@@ -61,6 +69,7 @@ export function OngletAutreSport({ userId, date }: { userId: string; date: strin
       await loggerActivite({ ...f, date, feeling: f.feeling || '' })
       toast.success('Activité enregistrée ! 🎯')
       setF(ACTIVITY_LOG_INITIAL)
+      onEnregistre?.()
       r.refresh()
     } catch {
       toast.error('Enregistrement impossible')

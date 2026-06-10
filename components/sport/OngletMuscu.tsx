@@ -13,8 +13,9 @@ import { MuscuRessentiEmojis } from '@/components/sport/muscu/MuscuRessentiEmoji
 import { MuscuTypeLieu } from '@/components/sport/muscu/MuscuTypeLieu'
 import { Button } from '@/components/ui/button'
 import { EXERCICES, getExercicesParSeance } from '@/lib/data/exercises'
-import { actionDernieresCharges } from '@/lib/db/charges-actions'
-import { actionGetSeanceCustom } from '@/lib/db/seances-custom-actions'
+import { getDernieresCharges } from '@/lib/db/charges'
+import { getSeanceCustom } from '@/lib/db/seances-custom'
+import { supabase } from '@/lib/supabase'
 import { adapterSeancePhase } from '@/lib/planning-sport'
 import { enregistrerSeanceMuscuComplet } from '@/lib/sport/muscuEnregistrement'
 import {
@@ -35,12 +36,14 @@ export function OngletMuscu({
   date,
   planning: _planning,
   seanceExistante,
+  onEnregistre,
 }: {
   phase: Phase | null
   userId: string
   date: string
   planning: PlanningSport
   seanceExistante?: WorkoutMuscuComplet | null
+  onEnregistre?: () => void
 }) {
   const r = useRouter()
   const edit = !!seanceExistante
@@ -59,6 +62,25 @@ export function OngletMuscu({
   const [modale, setModale] = useState(false)
   const [ch, setCh] = useState(false)
   const pPh = phase ?? 'folliculaire'
+
+  useEffect(() => {
+    if (!seanceExistante) {
+      setExercicesFaits([])
+      setRessenti(null)
+      return
+    }
+    setTypeSeance(
+      seanceExistante.notes && NOTES[seanceExistante.notes] ? NOTES[seanceExistante.notes]! : 'full_body'
+    )
+    setLieu(seanceExistante.location ?? 'maison')
+    setExercicesFaits([...new Set(seanceExistante.sets.map((s) => s.exercise_name))])
+    setRessenti(seanceExistante.feeling ?? null)
+    const chMap: Record<string, number> = {}
+    seanceExistante.sets.forEach((s) => {
+      if (s.weight_kg != null) chMap[s.exercise_name] = Number(s.weight_kg)
+    })
+    setCharges((prev) => ({ ...prev, ...chMap }))
+  }, [seanceExistante, date])
 
   const list = useMemo(() => (custom?.length ? exercicesDepuisCustom(custom, typeSeance, lieu) : getExercicesParSeance(typeSeance, lieu)), [custom, typeSeance, lieu])
 
@@ -80,7 +102,14 @@ export function OngletMuscu({
     if (!userId) return
     let x = true
     void (async () => {
-      const [c, d] = await Promise.all([actionGetSeanceCustom(typeMuscuVersPlanning(typeSeance), lieu), actionDernieresCharges()])
+      const {
+        data: { user },
+      } = await supabase.auth.getUser()
+      if (!user || !x) return
+      const [c, d] = await Promise.all([
+        getSeanceCustom(supabase, user.id, typeMuscuVersPlanning(typeSeance), lieu),
+        getDernieresCharges(supabase, user.id),
+      ])
       if (!x) return
       setCustom(c?.length ? c : null)
       setDernieres(d)
@@ -143,10 +172,45 @@ export function OngletMuscu({
         <Button type="button" variant="outline" onClick={() => { const n = aff.find((e) => !exercicesFaits.includes(e.nom)); if (n) document.getElementById(`exo-${n.nom.replace(/\s/g, '-')}`)?.scrollIntoView({ block: 'center' }) }}>
           ▶ Mode guidé
         </Button>
-        <Button className="bg-rose-600 text-white hover:bg-rose-700" disabled={ch || !exercicesFaits.length} onClick={() => { setCh(true); void enregistrerSeanceMuscuComplet({ date, lieu, typeSeance, ressenti, afficher: aff, exercicesFaits, charges, edit, seanceExistante: seanceExistante ?? null }).then(() => { toast.success('Séance enregistrée ! 💪'); setExercicesFaits([]); r.refresh() }).finally(() => setCh(false)) }}>
-          {ch ? '…' : 'Enregistrer la séance'}
+        <Button
+          className="bg-rose-600 text-white hover:bg-rose-700"
+          disabled={ch || !exercicesFaits.length}
+          onClick={() => {
+            if (!exercicesFaits.length) {
+              toast.message('Coche au moins un exercice réalisé avant d’enregistrer.')
+              return
+            }
+            setCh(true)
+            void enregistrerSeanceMuscuComplet({
+              date,
+              lieu,
+              typeSeance,
+              ressenti,
+              afficher: aff,
+              exercicesFaits,
+              charges,
+              edit,
+              seanceExistante: seanceExistante ?? null,
+            })
+              .then(() => {
+                toast.success(edit ? 'Séance mise à jour ! 💪' : 'Séance enregistrée ! 💪')
+                setExercicesFaits([])
+                onEnregistre?.()
+                r.refresh()
+              })
+              .catch((e: unknown) => {
+                const msg = e instanceof Error ? e.message : 'Enregistrement impossible.'
+                toast.error(msg)
+              })
+              .finally(() => setCh(false))
+          }}
+        >
+          {ch ? '…' : edit ? 'Mettre à jour la séance' : 'Enregistrer la séance'}
         </Button>
       </div>
+      {!exercicesFaits.length ? (
+        <p className="text-xs text-muted-foreground">Coche les exercices que tu as faits pour activer l’enregistrement.</p>
+      ) : null}
       {modale && userId ? (
         <ModaleEditSeance
           typeSeance={typeMuscuVersPlanning(typeSeance)}
@@ -156,8 +220,13 @@ export function OngletMuscu({
           exercicesCatalogue={EXERCICES}
           onFermer={() => setModale(false)}
           onSauvegarde={async () => {
-            const c = await actionGetSeanceCustom(typeMuscuVersPlanning(typeSeance), lieu)
-            setCustom(c?.length ? c : null)
+            const {
+              data: { user },
+            } = await supabase.auth.getUser()
+            if (user) {
+              const c = await getSeanceCustom(supabase, user.id, typeMuscuVersPlanning(typeSeance), lieu)
+              setCustom(c?.length ? c : null)
+            }
             setModale(false)
             r.refresh()
           }}

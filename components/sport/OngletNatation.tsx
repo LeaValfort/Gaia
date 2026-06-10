@@ -1,14 +1,13 @@
 'use client'
 
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { Pencil } from 'lucide-react'
 import { toast } from 'sonner'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Textarea } from '@/components/ui/textarea'
-import { loggerSeanceNatation } from '@/lib/db/workouts'
-import { modifierSeanceNatation } from '@/lib/db/workoutsModifier'
+import { loggerSeanceNatationClient, modifierSeanceNatationClient } from '@/lib/sport/workouts-client'
 import { getNiveauDetail } from '@/lib/data/swimming'
 import { MacrosSeanceCard } from '@/components/sport/MacrosSeanceCard'
 import { SWIM_LEVEL_MAX, SWIM_LEVEL_MIN, type Phase, type WorkoutNatationComplet } from '@/types'
@@ -21,11 +20,13 @@ export function OngletNatation({
   userId: _u,
   date,
   seanceExistante,
+  onEnregistre,
 }: {
   phase: Phase | null
   userId: string
   date: string
   seanceExistante?: WorkoutNatationComplet | null
+  onEnregistre?: () => void
 }) {
   const router = useRouter()
   const edit = !!seanceExistante
@@ -36,6 +37,16 @@ export function OngletNatation({
   const [notes, setNotes] = useState(seanceExistante?.notes ?? '')
   const [res, setRes] = useState(seanceExistante?.feeling ?? 0)
   const [ch, setCh] = useState(false)
+
+  useEffect(() => {
+    setNiv(seanceExistante?.swim.level ?? 1)
+    setDistReelle(
+      seanceExistante?.swim.total_distance_m != null ? String(seanceExistante.swim.total_distance_m) : ''
+    )
+    setNotes(seanceExistante?.notes ?? '')
+    setRes(seanceExistante?.feeling ?? 0)
+  }, [seanceExistante, date])
+
   const info = getNiveauDetail(niv)
   const dist = parseInt(distReelle, 10)
   const totalM = Number.isFinite(dist) && dist > 0 ? dist : info.distanceTotale
@@ -54,12 +65,20 @@ export function OngletNatation({
         blockStructure: info.structure,
       }
       if (edit && seanceExistante) {
-        await modifierSeanceNatation(seanceExistante.id, { ...nat, feeling: res || null, notes: notes || null })
+        await modifierSeanceNatationClient(seanceExistante.id, {
+          ...nat,
+          feeling: res || null,
+          notes: notes || null,
+        })
       } else {
-        await loggerSeanceNatation({ date, feeling: res || null, notes: notes || null, natation: nat })
+        await loggerSeanceNatationClient({ date, feeling: res || null, notes: notes || null, natation: nat })
       }
       toast.success('Séance enregistrée ! 🏊')
+      onEnregistre?.()
       router.refresh()
+    } catch (e) {
+      const msg = e instanceof Error ? e.message : 'Enregistrement impossible.'
+      toast.error(msg)
     } finally {
       setCh(false)
     }
@@ -140,7 +159,7 @@ export function OngletNatation({
         />
       ) : null}
       <Button onClick={() => void save()} disabled={ch} className="w-full bg-[#059669] hover:bg-emerald-700">
-        {ch ? '…' : 'Enregistrer'}
+        {ch ? '…' : edit ? 'Mettre à jour' : 'Enregistrer'}
       </Button>
     </div>
   )

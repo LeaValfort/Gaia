@@ -11,8 +11,7 @@ import { YogaPostureLigne } from '@/components/sport/yoga/YogaPostureLigne'
 import { MacrosSeanceCard } from '@/components/sport/MacrosSeanceCard'
 import { MuscuRessentiEmojis } from '@/components/sport/muscu/MuscuRessentiEmojis'
 import { getSeanceParPhase, getSeanceYoga } from '@/lib/data/yoga'
-import { loggerSeanceYoga } from '@/lib/db/workouts'
-import { modifierSeanceYoga } from '@/lib/db/workoutsModifier'
+import { loggerSeanceYogaClient, modifierSeanceYogaClient } from '@/lib/sport/workouts-client'
 import type { Phase, SeanceYoga, TypeYoga, WorkoutYogaComplet } from '@/types'
 
 function parseType(n: string | null): TypeYoga | null {
@@ -34,11 +33,13 @@ export function OngletYoga({
   userId: _u,
   date,
   seanceExistante,
+  onEnregistre,
 }: {
   phase: Phase | null
   userId: string
   date: string
   seanceExistante?: WorkoutYogaComplet | null
+  onEnregistre?: () => void
 }) {
   const r = useRouter()
   const edit = !!seanceExistante
@@ -53,6 +54,14 @@ export function OngletYoga({
   useEffect(() => {
     setCoches(new Set())
   }, [type])
+
+  useEffect(() => {
+    const defLocal: SeanceYoga = phase ? getSeanceParPhase(phase) : getSeanceYoga('flow')
+    setType(parseType(seanceExistante?.notes ?? null) ?? defLocal.type)
+    setRes(seanceExistante?.feeling ?? 0)
+    setNotes((seanceExistante?.notes ?? '').replace(/^\[\w+\]\s*/, ''))
+    setTimer(false)
+  }, [seanceExistante, date, phase])
   const toggle = (i: number) =>
     setCoches((s) => {
       const n = new Set(s)
@@ -63,10 +72,14 @@ export function OngletYoga({
     setCh(true)
     try {
       const p = { type, dureeMin: seance.dureeMin, feeling: res > 0 ? res : null, notes: notes || null }
-      if (edit && seanceExistante) await modifierSeanceYoga(seanceExistante.id, p)
-      else await loggerSeanceYoga({ date, ...p })
-      toast.success('Séance yoga enregistrée ! 🧘')
+      if (edit && seanceExistante) await modifierSeanceYogaClient(seanceExistante.id, p)
+      else await loggerSeanceYogaClient({ date, ...p })
+      toast.success(edit ? 'Séance yoga mise à jour ! 🧘' : 'Séance yoga enregistrée ! 🧘')
+      onEnregistre?.()
       r.refresh()
+    } catch (e) {
+      const msg = e instanceof Error ? e.message : 'Enregistrement impossible.'
+      toast.error(msg)
     } finally {
       setCh(false)
     }
@@ -125,7 +138,7 @@ export function OngletYoga({
         />
       ) : null}
       <Button onClick={() => void save()} disabled={ch} className="w-full bg-[#7C3AED] hover:bg-violet-800">
-        {ch ? '…' : 'Enregistrer'}
+        {ch ? '…' : edit ? 'Mettre à jour' : 'Enregistrer'}
       </Button>
     </div>
   )

@@ -1,6 +1,8 @@
-import { actionUpdateChargesSeance } from '@/lib/db/charges-actions'
-import { loggerSeanceMuscu } from '@/lib/db/workouts'
-import { modifierSeanceMuscu } from '@/lib/db/workoutsModifier'
+import {
+  loggerSeanceMuscuClient,
+  modifierSeanceMuscuClient,
+  updateChargesSeanceClient,
+} from '@/lib/sport/workouts-client'
 import { exSansChargeDumbbell } from '@/lib/sport/muscuExerciceAdapte'
 import type { ExerciceAdapte, Lieu, TypeSeanceMuscle, WorkoutMuscuComplet } from '@/types'
 
@@ -35,7 +37,7 @@ export async function enregistrerSeanceMuscuComplet(opts: {
       sets: e.seriesAdaptees,
     }))
   const params = { location: lieu, feeling: ressenti ?? null, notes: LTYPE[typeSeance], exercices: ex }
-  if (edit && seanceExistante) await modifierSeanceMuscu(seanceExistante.id, params)
-  else await loggerSeanceMuscu({ date, ...params })
-  if (saisies.length) await actionUpdateChargesSeance(saisies, date)
+  if (edit && seanceExistante) await modifierSeanceMuscuClient(seanceExistante.id, params)
+  else await loggerSeanceMuscuClient({ date, ...params })
+  if (saisies.length) await updateChargesSeanceClient(saisies, date)
 }
