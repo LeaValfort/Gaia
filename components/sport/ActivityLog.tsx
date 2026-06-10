@@ -8,7 +8,7 @@ import { Textarea } from '@/components/ui/textarea'
 import { PillsSelector } from '@/components/cycle/PillsSelector'
 import { ChronoTimer } from './ChronoTimer'
 import { SPORTS_CONFIG, FEELINGS, ACTIVITY_LOG_INITIAL, getSportConfig, type ConfigChamp } from '@/lib/data/sportsConfig'
-import { loggerActivite } from '@/lib/db/activities'
+import { loggerActiviteClient } from '@/lib/sport/activities-client'
 import type { ActivityLogFormData, TypeActivite } from '@/types'
 import { format } from 'date-fns'
 
@@ -66,7 +66,7 @@ export function ActivityLog() {
     if (!sportType) return
     setChargement(true)
     try {
-      await loggerActivite({ ...formData, date: format(new Date(), 'yyyy-MM-dd') })
+      await loggerActiviteClient({ ...formData, date: format(new Date(), 'yyyy-MM-dd') })
       setSauvegarde(true)
       setFormData(ACTIVITY_LOG_INITIAL)
       setTimeout(() => setSauvegarde(false), 3000)

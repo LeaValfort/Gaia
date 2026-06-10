@@ -6,7 +6,7 @@ import { toast } from 'sonner'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Textarea } from '@/components/ui/textarea'
-import { loggerActivite } from '@/lib/db/activities'
+import { loggerActiviteClient } from '@/lib/sport/activities-client'
 import { ACTIVITY_LOG_INITIAL, getSportConfig, type ConfigChamp } from '@/lib/data/sportsConfig'
 import { cn } from '@/lib/utils'
 import type { ActivityLogFormData, TypeActivite } from '@/types'
@@ -66,13 +66,13 @@ export function OngletAutreSport({
     }
     setCh(true)
     try {
-      await loggerActivite({ ...f, date, feeling: f.feeling || '' })
+      await loggerActiviteClient({ ...f, date, feeling: f.feeling || '' })
       toast.success('Activité enregistrée ! 🎯')
       setF(ACTIVITY_LOG_INITIAL)
       onEnregistre?.()
       r.refresh()
-    } catch {
-      toast.error('Enregistrement impossible')
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : 'Enregistrement impossible')
     } finally {
       setCh(false)
     }
