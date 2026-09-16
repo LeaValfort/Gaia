@@ -37,12 +37,20 @@ export function JournalDuJour({ phase, sansCycle, date, jourDuCycle, logInitial 
         logInitial={logInitial}
         afficherDetailsEtendus={false}
       />
-      <Link
-        href="/progression"
-        className="mt-3 inline-block text-sm text-gray-500 transition-colors hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-300"
-      >
-        Voir ma progression →
-      </Link>
+      <div className="mt-3 flex flex-wrap items-center gap-x-4 gap-y-1">
+        <Link
+          href={`/cycle?ouvrir=${date}`}
+          className="inline-block text-sm text-gray-500 transition-colors hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-300"
+        >
+          Questionnaire complet →
+        </Link>
+        <Link
+          href="/progression"
+          className="inline-block text-sm text-gray-500 transition-colors hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-300"
+        >
+          Voir ma progression →
+        </Link>
+      </div>
     </div>
   )
 }

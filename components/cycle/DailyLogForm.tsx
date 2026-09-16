@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from 'react'
 import { useRouter } from 'next/navigation'
-import { ChevronDown } from 'lucide-react'
+import { ChevronDown, Star } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible'
 import { Input } from '@/components/ui/input'
@@ -41,6 +41,7 @@ export function DailyLogForm({
   const [energie, setEnergie] = useState<number>(logInitial?.energy ?? 0)
   const [douleur, setDouleur] = useState<number>(logInitial?.pain ?? 0)
   const [humeur, setHumeur] = useState<string>(logInitial?.mood ?? '')
+  const [rapport, setRapport] = useState<boolean>(logInitial?.rapport ?? false)
   const [extended, setExtended] = useState<ExtendedLogData>(
     logInitial ? extendedFromDailyLog(logInitial) : EXTENDED_LOG_INITIAL
   )
@@ -52,6 +53,7 @@ export function DailyLogForm({
     setEnergie(logInitial?.energy ?? 0)
     setDouleur(logInitial?.pain ?? 0)
     setHumeur(logInitial?.mood ?? '')
+    setRapport(logInitial?.rapport ?? false)
     setExtended(logInitial ? extendedFromDailyLog(logInitial) : EXTENDED_LOG_INITIAL)
     setDetailsOuvert(logAContenuEnrichi(logInitial))
     setErreur(null)
@@ -72,6 +74,7 @@ export function DailyLogForm({
         pain: douleur,
         mood: humeur.trim() || null,
         notes: null,
+        rapport,
         emotions: extended.emotions.length ? extended.emotions : null,
         symptoms: extended.symptoms.length ? extended.symptoms : null,
         libido: extended.libido,
@@ -137,15 +140,32 @@ export function DailyLogForm({
         </div>
       </div>
 
-      <div className="space-y-1.5">
-        <Label htmlFor="humeur-jour">Humeur</Label>
-        <Input
-          id="humeur-jour"
-          value={humeur}
-          onChange={(e) => setHumeur(e.target.value)}
-          placeholder="En un mot ou une phrase…"
-          className="dark:bg-neutral-950"
-        />
+      <div className="flex items-end gap-2">
+        <div className="flex-1 space-y-1.5">
+          <Label htmlFor="humeur-jour">Humeur</Label>
+          <Input
+            id="humeur-jour"
+            value={humeur}
+            onChange={(e) => setHumeur(e.target.value)}
+            placeholder="En un mot ou une phrase…"
+            className="dark:bg-neutral-950"
+          />
+        </div>
+        <button
+          type="button"
+          onClick={() => setRapport((v) => !v)}
+          aria-pressed={rapport}
+          aria-label={rapport ? 'Rapport signalé ce jour — cliquer pour retirer' : 'Signaler un rapport ce jour'}
+          title={rapport ? 'Rapport signalé ce jour' : 'Signaler un rapport'}
+          className={cn(
+            'flex h-10 w-10 shrink-0 items-center justify-center rounded-xl border transition-colors',
+            rapport
+              ? 'border-amber-300 bg-amber-100 text-amber-600 dark:border-amber-800 dark:bg-amber-900/40 dark:text-amber-400'
+              : 'border-neutral-200 bg-neutral-100 text-neutral-400 hover:bg-neutral-200 dark:border-neutral-700 dark:bg-neutral-800 dark:hover:bg-neutral-700'
+          )}
+        >
+          <Star className="size-4" fill={rapport ? 'currentColor' : 'none'} aria-hidden />
+        </button>
       </div>
 
       {afficherDetailsEtendus ? (

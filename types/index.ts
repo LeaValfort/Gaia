@@ -92,6 +92,7 @@ export interface DailyLog {
   appetite:      string[] | null
   flow_intensity: string | null
   free_note:     string | null
+  rapport:       boolean | null
 }
 
 /**

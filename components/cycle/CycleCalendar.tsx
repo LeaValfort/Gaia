@@ -12,7 +12,7 @@ import {
   startOfDay,
 } from 'date-fns'
 import { fr } from 'date-fns/locale'
-import { ChevronLeft, ChevronRight } from 'lucide-react'
+import { ChevronLeft, ChevronRight, Star } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import {
   Dialog,
@@ -47,6 +47,8 @@ export interface CycleCalendarProps {
   retardJours: number | null
   onJourClick?: (date: string) => void
   onMoisChange?: (delta: number) => void
+  /** Ouvre directement le formulaire de ce jour au chargement (ex. lien "Questionnaire" depuis l'accueil). */
+  ouvrirJourInitial?: string
 }
 
 function jourDansPeriodeRetardAffichee(
@@ -75,10 +77,13 @@ export function CycleCalendar({
   retardJours,
   onJourClick,
   onMoisChange,
+  ouvrirJourInitial,
 }: CycleCalendarProps) {
   void _dernierCycle
   const router = useRouter()
-  const [jourSelectionne, setJourSelectionne] = useState<string | null>(null)
+  const [jourSelectionne, setJourSelectionne] = useState<string | null>(
+    () => ouvrirJourInitial ?? null
+  )
 
   const dateRef = new Date(annee, mois)
   const semaines = genererJoursCalendrier(annee, mois)
@@ -154,6 +159,7 @@ export function CycleCalendar({
               const estAujourdhui = isToday(jour)
               const selectionne = jourSelectionne === dateStr
               const aLog = Boolean(logsParDate[dateStr])
+              const aRapport = Boolean(logsParDate[dateStr]?.rapport)
               const pred = predictionsParDate[dateStr]
               const retardVisuel = jourDansPeriodeRetardAffichee(dateStr, debutRetardISO, retardJours)
               const phaseJour = pred?.phase ?? getInfosJour(jour, lastStartDate, cycleLength).phase
@@ -219,6 +225,13 @@ export function CycleCalendar({
                     ${estPrediction && dansMois ? 'opacity-90 saturate-[0.72]' : ''}
                   `}
                 >
+                  {aRapport && dansMois ? (
+                    <Star
+                      className="pointer-events-none absolute right-1 top-1 z-[1] size-2.5 text-amber-500 md:size-3"
+                      fill="currentColor"
+                      aria-label="Rapport signalé ce jour"
+                    />
+                  ) : null}
                   {estPrediction && dansMois ? (
                     <span
                       className="pointer-events-none absolute inset-1 rounded-md border md:inset-1.5"

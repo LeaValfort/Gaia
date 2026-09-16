@@ -28,7 +28,7 @@ import type { Phase } from '@/types'
 export const dynamic = 'force-dynamic'
 
 interface PageProps {
-  searchParams: Promise<{ mois?: string }>
+  searchParams: Promise<{ mois?: string; ouvrir?: string }>
 }
 
 export default async function PageCycle({ searchParams }: PageProps) {
@@ -44,6 +44,7 @@ export default async function PageCycle({ searchParams }: PageProps) {
 
   const params = await searchParams
   const moisActuel = params.mois ?? format(new Date(), 'yyyy-MM')
+  const ouvrirJourInitial = params.ouvrir
   const [annee, mois] = moisActuel.split('-').map(Number)
   const moisIdx = mois - 1
 
@@ -130,6 +131,7 @@ export default async function PageCycle({ searchParams }: PageProps) {
                     predictionsParDate={predictionsParDate}
                     debutRetardISO={debutRetardISO}
                     retardJours={retardJours}
+                    ouvrirJourInitial={ouvrirJourInitial}
                   />
                 ) : null}
 
