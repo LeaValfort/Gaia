@@ -1,7 +1,8 @@
 import Link from 'next/link'
 import { Timer } from 'lucide-react'
 import { designPhaseAffichage, getInfosPhase } from '@/lib/cycle'
-import type { Phase } from '@/types'
+import { LABELS_PLANNING } from '@/lib/planning-sport'
+import type { Phase, TypePlanningJour } from '@/types'
 import { cn } from '@/lib/utils'
 
 const CARD =
@@ -10,12 +11,15 @@ const CARD =
 export interface SeanceDuJourProps {
   phase: Phase | null
   sansCycle?: boolean
+  /** Activité planifiée aujourd'hui (planning hebdo) — affichée à la place du libellé de phase. */
+  typeSeance?: TypePlanningJour
 }
 
-export function SeanceDuJour({ phase, sansCycle }: SeanceDuJourProps) {
+export function SeanceDuJour({ phase, sansCycle, typeSeance }: SeanceDuJourProps) {
   const d = designPhaseAffichage(phase, { sansCycle })
-  const titre =
-    phase && !sansCycle
+  const titre = typeSeance
+    ? `${LABELS_PLANNING[typeSeance].emoji} ${LABELS_PLANNING[typeSeance].label}`
+    : phase && !sansCycle
       ? `Séance conseillée — ${getInfosPhase(phase).label}`
       : 'Séance du jour'
   const duree = phase && !sansCycle && (phase === 'ovulation' || phase === 'folliculaire') ? '40–50 min' : '25–35 min'

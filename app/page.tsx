@@ -10,6 +10,7 @@ import { getDailyMealIntakesJour } from '@/lib/db/dailyMealIntake'
 import { getMacroProfile } from '@/lib/db/macro-profiles'
 import { getTodosParDatePourUtilisateur } from '@/lib/db/todo'
 import { getCycleDay, getPhaseAvecStats } from '@/lib/cycle'
+import { getActiviteduJour } from '@/lib/planning-sport'
 import {
   macrosCiblesPourJour,
   planningEffectif,
@@ -78,6 +79,8 @@ export default async function PageAujourdhui({
   const sansSuivi = mode === 'sans_cycle'
   const suiviCalorique = prefs?.suivi_calorique !== false
   const typeJournee = getTypeJournee(aujourdhui)
+  const planningSemaine = planningEffectif(prefs?.planning_sport)
+  const typeSeanceJour = getActiviteduJour(planningSemaine, aujourdhui)
 
   let phase: Phase = 'folliculaire'
   let jourDuCycle: number | null = null
@@ -90,7 +93,7 @@ export default async function PageAujourdhui({
   let macrosCibles: MacrosCiblesJour | null = null
 
   if (suiviCalorique && userId) {
-    const planningSport = planningEffectif(prefs?.planning_sport)
+    const planningSport = planningSemaine
     const [intakesJour, macroProfil, profilEffort] = await Promise.all([
       getDailyMealIntakesJour(supabase, userId, dateStr),
       getMacroProfile(userId),
@@ -161,7 +164,7 @@ export default async function PageAujourdhui({
               macrosCibles={macrosCibles}
             />
           ) : null}
-          <SeanceDuJour phase={phaseHeader} sansCycle={sansSuivi} />
+          <SeanceDuJour phase={phaseHeader} sansCycle={sansSuivi} typeSeance={typeSeanceJour} />
           <JournalDuJour
             phase={phaseHeader ?? 'folliculaire'}
             sansCycle={sansSuivi}
