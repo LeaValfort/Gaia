@@ -4,6 +4,7 @@ import { useCallback, useEffect, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { toast } from 'sonner'
 import {
+  BookOpen,
   Calendar,
   Database,
   Moon,
@@ -13,6 +14,7 @@ import {
 } from 'lucide-react'
 import { AccordeonSection } from '@/components/parametres/AccordeonSection'
 import { SectionAlimentation } from '@/components/parametres/SectionAlimentation'
+import { SectionBibliographie } from '@/components/parametres/SectionBibliographie'
 import { SectionApp } from '@/components/parametres/SectionApp'
 import { SectionCalculateurMacros } from '@/components/parametres/SectionCalculateurMacros'
 import { SectionDonneesCompte } from '@/components/parametres/SectionDonneesCompte'
@@ -20,9 +22,9 @@ import { SectionMonCycle } from '@/components/parametres/SectionMonCycle'
 import { SectionPlanningSport } from '@/components/parametres/SectionPlanningSport'
 import { SectionTachesRecurrentes } from '@/components/parametres/SectionTachesRecurrentes'
 import { setMacrosMode, updateUserPreferences } from '@/lib/db/parametres'
-import type { MacroProfile, MacrosMode, RecurringTodo, SeanceProfil, UserPreferences } from '@/types'
+import type { MacroProfile, MacrosMode, RecurringTodo, SeanceProfil, Source, UserPreferences } from '@/types'
 
-type SectionId = 'cycle' | 'sport' | 'nutrition' | 'taches' | 'app' | 'donnees'
+type SectionId = 'cycle' | 'sport' | 'nutrition' | 'taches' | 'app' | 'bibliographie' | 'donnees'
 
 interface ParametresClientProps {
   prefsInitiales: UserPreferences
@@ -30,6 +32,7 @@ interface ParametresClientProps {
   recurringTodosInitiales: RecurringTodo[]
   macroProfilInitial: MacroProfile | null
   seanceProfilsInitiales: SeanceProfil[]
+  sourcesInitiales: Source[]
   messageUrl?: string
 }
 
@@ -39,6 +42,7 @@ export function ParametresClient({
   recurringTodosInitiales,
   macroProfilInitial,
   seanceProfilsInitiales,
+  sourcesInitiales,
   messageUrl,
 }: ParametresClientProps) {
   const router = useRouter()
@@ -169,6 +173,16 @@ export function ParametresClient({
           onToggle={() => toggleSection('app')}
         >
           <SectionApp prefs={prefs} onUpdate={onUpdate} />
+        </AccordeonSection>
+
+        <AccordeonSection
+          id="bibliographie"
+          titre="Bibliographie"
+          icone={BookOpen}
+          ouvert={sectionOuverte === 'bibliographie'}
+          onToggle={() => toggleSection('bibliographie')}
+        >
+          <SectionBibliographie sources={sourcesInitiales} />
         </AccordeonSection>
 
         <AccordeonSection

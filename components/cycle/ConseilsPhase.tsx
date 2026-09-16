@@ -1,6 +1,6 @@
 'use client'
 
-import { getConseilsPhase } from '@/lib/cycle'
+import type { ConseilsPhaseDetail } from '@/lib/data/conseils-phase-cycle'
 import {
   ONGLET_CONSEIL_ACTIF,
   ONGLET_CONSEIL_INACTIF,
@@ -13,9 +13,11 @@ import { cn } from '@/lib/utils'
 
 interface ConseilsPhaseProps {
   phase: Phase
+  /** Conseils du jour (rotation en base + repli statique), calculés côté serveur. */
+  conseils: ConseilsPhaseDetail
 }
 
-const ONGLETS: { value: string; label: string; texte: (c: ReturnType<typeof getConseilsPhase>) => string }[] = [
+const ONGLETS: { value: string; label: string; texte: (c: ConseilsPhaseDetail) => string }[] = [
   { value: 'sport', label: '💪 Sport', texte: (c) => c.sport },
   { value: 'nutrition', label: '🥗 Nutrition', texte: (c) => c.nutrition },
   { value: 'sommeil', label: '😴 Sommeil', texte: (c) => c.sommeil },
@@ -23,9 +25,8 @@ const ONGLETS: { value: string; label: string; texte: (c: ReturnType<typeof getC
   { value: 'astuce', label: '💡 Astuce', texte: (c) => c.anecdote },
 ]
 
-export function ConseilsPhase({ phase }: ConseilsPhaseProps) {
+export function ConseilsPhase({ phase, conseils }: ConseilsPhaseProps) {
   const design = PHASES_DESIGN[phase]
-  const conseils = getConseilsPhase(phase)
   const accentOnglet = ONGLET_CONSEIL_ACTIF[phase]
 
   return (

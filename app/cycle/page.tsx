@@ -6,6 +6,8 @@ import { Nav } from '@/components/shared/Nav'
 import { PageHeader } from '@/components/shared/PageHeader'
 import { BoutonDebutRegles } from '@/components/cycle/BoutonDebutRegles'
 import { ConseilsPhase } from '@/components/cycle/ConseilsPhase'
+import { genererNouveauxConseilsSiNecessaire } from '@/lib/conseils-ia'
+import { getConseilsPhaseDuJour } from '@/lib/db/conseils'
 import { CycleCalendar } from '@/components/cycle/CycleCalendar'
 import { SidebarCycle } from '@/components/cycle/SidebarCycle'
 import { Button } from '@/components/ui/button'
@@ -75,6 +77,13 @@ export default async function PageCycle({ searchParams }: PageProps) {
     ? getPhaseEtConseilAvecApprentissage(prefs, stats, effectiveStart, cycleLength)
     : null
 
+  if (conseilAujourdhui) {
+    await genererNouveauxConseilsSiNecessaire()
+  }
+  const conseilsDuJour = conseilAujourdhui
+    ? await getConseilsPhaseDuJour(conseilAujourdhui.phase, new Date())
+    : null
+
   const bandeauApprentissage =
     stats && stats.fiabilite !== 'haute' && (stats.nb_cycles_utilise ?? 0) < 5
 
@@ -135,7 +144,9 @@ export default async function PageCycle({ searchParams }: PageProps) {
                   />
                 ) : null}
 
-                {conseilAujourdhui ? <ConseilsPhase phase={conseilAujourdhui.phase} /> : null}
+                {conseilAujourdhui && conseilsDuJour ? (
+                  <ConseilsPhase phase={conseilAujourdhui.phase} conseils={conseilsDuJour} />
+                ) : null}
               </div>
 
               {conseilAujourdhui ? (

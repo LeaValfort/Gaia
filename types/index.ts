@@ -671,9 +671,36 @@ export interface UserPreferences {
   macros_mode?: MacrosMode
   /** Afficher onglet Aujourd'hui (macros + repas) ; sinon onglet Recettes */
   suivi_calorique?: boolean
+  /** Date (ISO) de la dernière génération automatique de conseils via l'IA */
+  conseils_generes_le?: string | null
 }
 
 export type MacrosMode = 'auto' | 'manuel'
+
+// ------------------------------------------------------------
+// Conseils enrichis (table `conseils`) + Bibliographie (table `sources`)
+// ------------------------------------------------------------
+
+export type CategorieConseil = 'sport' | 'nutrition' | 'sommeil' | 'bien_etre' | 'astuce'
+
+export interface Source {
+  id: string
+  titre: string
+  url: string
+  created_at: string
+}
+
+export interface Conseil {
+  id: string
+  phase: Phase
+  categorie: CategorieConseil
+  texte: string
+  source_id: string | null
+  genere_ia: boolean
+  created_at: string
+  /** Jointure Supabase `sources(titre,url)` quand demandée */
+  sources?: Pick<Source, 'titre' | 'url'> | null
+}
 
 // ------------------------------------------------------------
 // Constantes métier
