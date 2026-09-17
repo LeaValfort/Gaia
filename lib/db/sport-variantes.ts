@@ -1,10 +1,19 @@
 import type { SupabaseClient } from '@supabase/supabase-js'
-import type { ExerciceCustom, LieuVariante, SportVariante, TypeVarianteSport } from '@/types'
+import type {
+  BlocNatation,
+  ExerciceCustom,
+  LieuVariante,
+  PostureYoga,
+  SportVariante,
+  TypeVarianteSport,
+} from '@/types'
 
 /** Contenu initial ou mis à jour d'une variante (selon le sport concerné). */
 export interface ContenuVariante {
   exercices?: ExerciceCustom[]
   niveauNatation?: number
+  blocsNatation?: BlocNatation[]
+  postures?: PostureYoga[]
 }
 
 function parseVariante(row: Record<string, unknown>): SportVariante {
@@ -17,6 +26,8 @@ function parseVariante(row: Record<string, unknown>): SportVariante {
     est_active: row.est_active === true,
     exercices: Array.isArray(row.exercices) ? (row.exercices as ExerciceCustom[]) : null,
     niveau_natation: typeof row.niveau_natation === 'number' ? row.niveau_natation : null,
+    blocs_natation: Array.isArray(row.blocs_natation) ? (row.blocs_natation as BlocNatation[]) : null,
+    postures: Array.isArray(row.postures) ? (row.postures as PostureYoga[]) : null,
     created_at: String(row.created_at),
     updated_at: String(row.updated_at),
   }
@@ -71,6 +82,8 @@ export async function creerVariante(
         est_active: true,
         exercices: contenu.exercices ?? null,
         niveau_natation: contenu.niveauNatation ?? null,
+        blocs_natation: contenu.blocsNatation ?? null,
+        postures: contenu.postures ?? null,
       })
       .select('*')
       .single()
@@ -134,7 +147,7 @@ export async function supprimerVariante(supabase: SupabaseClient, varianteId: st
   }
 }
 
-/** Met à jour le contenu d'une variante existante (exercices ou niveau natation). */
+/** Met à jour le contenu d'une variante existante (exercices, niveau/blocs natation, postures yoga). */
 export async function mettreAJourContenuVariante(
   supabase: SupabaseClient,
   varianteId: string,
@@ -144,6 +157,8 @@ export async function mettreAJourContenuVariante(
     const patch: Record<string, unknown> = { updated_at: new Date().toISOString() }
     if (contenu.exercices) patch.exercices = contenu.exercices
     if (contenu.niveauNatation != null) patch.niveau_natation = contenu.niveauNatation
+    if (contenu.blocsNatation) patch.blocs_natation = contenu.blocsNatation
+    if (contenu.postures) patch.postures = contenu.postures
     const { error } = await supabase.from('sport_variantes').update(patch).eq('id', varianteId)
     if (error) throw error
     return true

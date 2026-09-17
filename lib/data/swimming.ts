@@ -1,4 +1,5 @@
-import type { NiveauNatationDetail } from '@/types'
+import { ECHAUFFEMENT_M } from '@/types'
+import type { BlocNatation, NiveauNatationDetail, TypeNage } from '@/types'
 
 // Échauffement commun : 150 m (50B lente + 50C lent + 50 dos)
 // Drill technique : 100 m (4×25m) spécifique à chaque niveau
@@ -65,4 +66,35 @@ export const NIVEAUX_DETAIL: NiveauNatationDetail[] = [
 /** Retourne les détails d'un niveau (replie sur le niveau 1 si invalide) */
 export function getNiveauDetail(level: number): NiveauNatationDetail {
   return NIVEAUX_DETAIL.find((n) => n.level === level) ?? NIVEAUX_DETAIL[0]
+}
+
+export const LABELS_NAGE: Record<TypeNage, string> = {
+  echauffement: 'Échauffement',
+  crawl: 'Crawl',
+  brasse: 'Brasse',
+  recuperation: 'Récupération',
+}
+
+/** Blocs de départ dérivés d'un niveau du catalogue — simple point de départ à éditer. */
+export function blocsDefautPourNiveau(level: number): BlocNatation[] {
+  const n = getNiveauDetail(level)
+  return [
+    { nage: 'echauffement', distanceM: ECHAUFFEMENT_M },
+    { nage: 'crawl', distanceM: Math.max(0, n.crawlM - ECHAUFFEMENT_M) },
+    { nage: 'brasse', distanceM: Math.max(0, n.brasseM) },
+  ]
+}
+
+/** Totaux (distance, crawl, brasse) et texte de structure calculés à partir de blocs personnalisés. */
+export function totauxDepuisBlocs(blocs: BlocNatation[]): {
+  distanceTotale: number
+  crawlM: number
+  brasseM: number
+  structureTexte: string
+} {
+  const distanceTotale = blocs.reduce((s, b) => s + b.distanceM, 0)
+  const crawlM = blocs.filter((b) => b.nage === 'crawl').reduce((s, b) => s + b.distanceM, 0)
+  const brasseM = blocs.filter((b) => b.nage === 'brasse').reduce((s, b) => s + b.distanceM, 0)
+  const structureTexte = blocs.map((b) => `${b.distanceM}m ${LABELS_NAGE[b.nage].toLowerCase()}`).join(' + ')
+  return { distanceTotale, crawlM, brasseM, structureTexte }
 }

@@ -904,10 +904,23 @@ export interface SportVariante {
   est_active: boolean
   /** Muscu uniquement */
   exercices: ExerciceCustom[] | null
-  /** Natation uniquement */
+  /** Natation uniquement — niveau de base (utilisé si aucun bloc personnalisé) */
   niveau_natation: number | null
+  /** Natation uniquement — blocs ordonnés personnalisés (prioritaires sur le niveau) */
+  blocs_natation: BlocNatation[] | null
+  /** Yoga uniquement — postures personnalisées (ordre + sélection) */
+  postures: PostureYoga[] | null
   created_at: string
   updated_at: string
+}
+
+/** Type de nage d'un bloc de séance natation personnalisée */
+export type TypeNage = 'echauffement' | 'crawl' | 'brasse' | 'recuperation'
+
+/** Un bloc ordonné dans une séance natation personnalisée (variante) */
+export interface BlocNatation {
+  nage: TypeNage
+  distanceM: number
 }
 
 // ------------------------------------------------------------

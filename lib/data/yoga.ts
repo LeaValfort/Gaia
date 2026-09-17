@@ -1,4 +1,4 @@
-import type { SeanceYoga, TypeYoga, Phase } from '@/types'
+import type { PostureYoga, SeanceYoga, TypeYoga, Phase } from '@/types'
 
 export const SEANCES_YOGA: SeanceYoga[] = [
   {
@@ -58,6 +58,20 @@ export const SEANCES_YOGA: SeanceYoga[] = [
 export function getSeanceYoga(type: TypeYoga): SeanceYoga {
   return SEANCES_YOGA.find((s) => s.type === type) ?? SEANCES_YOGA[0]
 }
+
+/** Catalogue de postures (dédoublonné) pour composer une séance personnalisée. */
+export const POSTURES_CATALOGUE: PostureYoga[] = (() => {
+  const vus = new Set<string>()
+  const out: PostureYoga[] = []
+  for (const s of SEANCES_YOGA) {
+    for (const p of s.postures) {
+      if (vus.has(p.nom)) continue
+      vus.add(p.nom)
+      out.push(p)
+    }
+  }
+  return out
+})()
 
 /**
  * Retourne la séance recommandée selon la phase du cycle.

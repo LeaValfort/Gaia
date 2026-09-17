@@ -8,10 +8,11 @@ import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Textarea } from '@/components/ui/textarea'
 import { loggerSeanceNatationClient, modifierSeanceNatationClient } from '@/lib/sport/workouts-client'
-import { getNiveauDetail } from '@/lib/data/swimming'
+import { getNiveauDetail, LABELS_NAGE, totauxDepuisBlocs } from '@/lib/data/swimming'
 import { MacrosSeanceCard } from '@/components/sport/MacrosSeanceCard'
 import { BannerSuggestionGaia } from '@/components/sport/BannerSuggestionGaia'
 import { SelecteurVariante } from '@/components/sport/SelecteurVariante'
+import { ModaleEditBlocsNatation } from '@/components/sport/ModaleEditBlocsNatation'
 import { appliquerPourcentage, messagePourcentageGaia } from '@/lib/planning-sport'
 import {
   activerVariante,
@@ -26,6 +27,7 @@ import {
   POURCENTAGES_GAIA_DEFAUT,
   SWIM_LEVEL_MAX,
   SWIM_LEVEL_MIN,
+  type BlocNatation,
   type Phase,
   type PourcentagesGaia,
   type SportVariante,
@@ -65,6 +67,8 @@ export function OngletNatation({
   const [mode, setMode] = useState<'normale' | 'gaia'>('normale')
   const [variantes, setVariantes] = useState<SportVariante[]>([])
   const [varianteActiveId, setVarianteActiveId] = useState<string | null>(null)
+  const [blocs, setBlocs] = useState<BlocNatation[] | null>(null)
+  const [modaleBlocs, setModaleBlocs] = useState(false)
 
   useEffect(() => {
     setNiv(seanceExistante?.swim.level ?? 1)
@@ -81,16 +85,18 @@ export function OngletNatation({
       const vs = await getVariantes(supabase, userId, 'natation', 'na')
       if (!actif) return
       setVariantes(vs)
-      setVarianteActiveId(vs.find((v) => v.est_active)?.id ?? null)
+      const active = vs.find((v) => v.est_active) ?? null
+      setVarianteActiveId(active?.id ?? null)
+      setBlocs(active?.blocs_natation?.length ? active.blocs_natation : null)
     })()
     return () => {
       actif = false
     }
   }, [userId])
 
-  // Garde le niveau de la variante active synchronisé avec ses derniers réglages.
+  // Garde le niveau de base synchronisé, sauf si des blocs personnalisés priment déjà.
   useEffect(() => {
-    if (!varianteActiveId) return
+    if (!varianteActiveId || blocs) return
     void mettreAJourContenuVariante(supabase, varianteActiveId, { niveauNatation: niv })
     setVariantes((prev) => prev.map((v) => (v.id === varianteActiveId ? { ...v, niveau_natation: niv } : v)))
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -103,12 +109,16 @@ export function OngletNatation({
       return
     }
     setVarianteActiveId(id)
-    const v = id ? variantes.find((x) => x.id === id) : null
+    const v = id ? variantes.find((x) => x.id === id) ?? null : null
     if (v?.niveau_natation) setNiv(v.niveau_natation)
+    setBlocs(v?.blocs_natation?.length ? v.blocs_natation : null)
   }
 
   async function creerVarianteNatation(nom: string) {
-    const v = await creerVariante(supabase, userId, 'natation', 'na', nom, { niveauNatation: niv })
+    const v = await creerVariante(supabase, userId, 'natation', 'na', nom, {
+      niveauNatation: niv,
+      ...(blocs ? { blocsNatation: blocs } : {}),
+    })
     if (!v) {
       toast.error('Création de la variante impossible.')
       return
@@ -130,16 +140,47 @@ export function OngletNatation({
       return
     }
     setVariantes((prev) => prev.filter((v) => v.id !== id))
-    if (varianteActiveId === id) setVarianteActiveId(null)
+    if (varianteActiveId === id) {
+      setVarianteActiveId(null)
+      setBlocs(null)
+    }
+  }
+
+  async function sauvegarderBlocsNatation(nouveauxBlocs: BlocNatation[]) {
+    if (!varianteActiveId) {
+      const v = await creerVariante(supabase, userId, 'natation', 'na', 'Séance par défaut', {
+        niveauNatation: niv,
+        blocsNatation: nouveauxBlocs,
+      })
+      if (!v) {
+        toast.error('Enregistrement impossible.')
+        throw new Error('creation-variante')
+      }
+      setVariantes((prev) => [...prev, v])
+      setVarianteActiveId(v.id)
+    } else {
+      const ok = await mettreAJourContenuVariante(supabase, varianteActiveId, { blocsNatation: nouveauxBlocs })
+      if (!ok) {
+        toast.error('Enregistrement impossible.')
+        throw new Error('maj-variante')
+      }
+      const id = varianteActiveId
+      setVariantes((prev) => prev.map((v) => (v.id === id ? { ...v, blocs_natation: nouveauxBlocs } : v)))
+    }
+    setBlocs(nouveauxBlocs)
+    toast.success('Blocs enregistrés')
   }
 
   const info = getNiveauDetail(niv)
+  const effectif = blocs
+    ? totauxDepuisBlocs(blocs)
+    : { distanceTotale: info.distanceTotale, crawlM: info.crawlM, brasseM: info.brasseM, structureTexte: info.structure }
   const distanceCible = phase && mode === 'gaia'
-    ? appliquerPourcentage(info.distanceTotale, pourcentages[phase], ARRONDI_DISTANCE_M)
-    : info.distanceTotale
+    ? appliquerPourcentage(effectif.distanceTotale, pourcentages[phase], ARRONDI_DISTANCE_M)
+    : effectif.distanceTotale
   const dist = parseInt(distReelle, 10)
   const totalM = Number.isFinite(dist) && dist > 0 ? dist : distanceCible
-  const rCrawl = info.distanceTotale > 0 ? info.crawlM / info.distanceTotale : 0.7
+  const rCrawl = effectif.distanceTotale > 0 ? effectif.crawlM / effectif.distanceTotale : 0.7
   const crawlM = Math.round(totalM * rCrawl)
   const breaststrokeM = Math.max(0, totalM - crawlM)
 
@@ -151,7 +192,7 @@ export function OngletNatation({
         totalDistance: totalM,
         crawlM,
         breaststrokeM,
-        blockStructure: info.structure,
+        blockStructure: effectif.structureTexte,
       }
       if (edit && seanceExistante) {
         await modifierSeanceNatationClient(seanceExistante.id, {
@@ -189,7 +230,7 @@ export function OngletNatation({
         onSupprimer={(id) => void supprimerVarianteNatation(id)}
         couleurActif="bg-[#059669] text-white"
       />
-      <p className="text-xs font-semibold uppercase text-[#059669] dark:text-emerald-300">Niveau actuel</p>
+      <p className="text-xs font-semibold uppercase text-[#059669] dark:text-emerald-300">Niveau de base</p>
       <div className="flex flex-wrap gap-2">
         {Array.from({ length: SWIM_LEVEL_MAX - SWIM_LEVEL_MIN + 1 }, (_, i) => i + SWIM_LEVEL_MIN).map((n) => (
           <button
@@ -205,11 +246,28 @@ export function OngletNatation({
           </button>
         ))}
       </div>
-      <div className="rounded-lg border border-emerald-200/60 bg-white/60 p-3 text-sm dark:border-emerald-800 dark:bg-emerald-950/30">
-        <p className="font-medium text-neutral-900 dark:text-neutral-50">{getNiveauDetail(niv).description}</p>
-        <p className="mt-1 font-mono text-[#059669] dark:text-emerald-300">
-          {info.structure} = {info.distanceTotale} m
-        </p>
+      <div className="flex items-start justify-between gap-2 rounded-lg border border-emerald-200/60 bg-white/60 p-3 text-sm dark:border-emerald-800 dark:bg-emerald-950/30">
+        <div className="min-w-0 flex-1">
+          {blocs ? (
+            <div className="flex flex-wrap gap-1.5">
+              {blocs.map((b, i) => (
+                <span key={i} className="rounded-full bg-emerald-100 px-2 py-0.5 text-xs font-medium text-emerald-900 dark:bg-emerald-900/50 dark:text-emerald-100">
+                  {b.distanceM}m {LABELS_NAGE[b.nage].toLowerCase()}
+                </span>
+              ))}
+            </div>
+          ) : (
+            <>
+              <p className="font-medium text-neutral-900 dark:text-neutral-50">{info.description}</p>
+              <p className="mt-1 font-mono text-[#059669] dark:text-emerald-300">
+                {info.structure} = {info.distanceTotale} m
+              </p>
+            </>
+          )}
+        </div>
+        <Button type="button" size="sm" variant="outline" onClick={() => setModaleBlocs(true)} className="shrink-0">
+          <Pencil className="mr-1 size-3" /> Modifier
+        </Button>
       </div>
       {phase ? (
         <BannerSuggestionGaia
@@ -252,7 +310,7 @@ export function OngletNatation({
       <div className="rounded-xl border border-[#059669]/30 bg-[#ECFDF5] px-4 py-3 text-sm text-[#065F46] dark:border-emerald-800 dark:bg-emerald-950/40 dark:text-emerald-100">
         <p className="font-semibold">Bilan</p>
         <p>
-          Niveau {niv} · {totalM} m prévus{mode === 'gaia' && totalM !== info.distanceTotale ? ' (ajusté)' : ''} · Nage libre + Brasse
+          Niveau {niv} · {totalM} m prévus{mode === 'gaia' && totalM !== effectif.distanceTotale ? ' (ajusté)' : ''} · Nage libre + Brasse
         </p>
       </div>
       {userId ? (
@@ -267,6 +325,14 @@ export function OngletNatation({
       <Button onClick={() => void save()} disabled={ch} className="w-full bg-[#059669] hover:bg-emerald-700">
         {ch ? '…' : edit ? 'Mettre à jour' : 'Enregistrer'}
       </Button>
+      {modaleBlocs ? (
+        <ModaleEditBlocsNatation
+          niveauActuel={niv}
+          blocsActuels={blocs ?? []}
+          onFermer={() => setModaleBlocs(false)}
+          onSauvegarde={sauvegarderBlocsNatation}
+        />
+      ) : null}
     </div>
   )
 }
