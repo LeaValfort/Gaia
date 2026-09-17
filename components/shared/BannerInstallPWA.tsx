@@ -67,7 +67,10 @@ export function BannerInstallPWA() {
   return (
     <div
       className={cn(
-        "fixed bottom-0 inset-x-0 z-50 p-3 sm:p-4",
+        // bottom-16 sur mobile : la barre de nav mobile (Nav.tsx) est aussi fixed bottom-0,
+        // les deux superposées provoquaient un chevauchement et un contenu masqué en bas
+        // de page sur mobile (cause du "rebond" observé en bas des pages sport).
+        "fixed bottom-16 md:bottom-0 inset-x-0 z-40 p-3 sm:p-4",
         "border-t border-violet-200/80 dark:border-violet-900/50",
         "bg-[#F8F7FF]/95 dark:bg-neutral-950/95 backdrop-blur supports-[backdrop-filter]:bg-[#F8F7FF]/80",
         "shadow-[0_-4px_24px_rgba(124,58,237,0.12)]"

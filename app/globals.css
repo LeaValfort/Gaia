@@ -131,11 +131,15 @@
   body {
     @apply bg-background text-foreground;
     font-family: var(--font-inter), ui-sans-serif, system-ui, sans-serif;
+    /* Evite le rebond ("bounce") de la page en bout de scroll sur mobile, qui pouvait
+       donner l'impression que la page remonte/redescend en boucle en bas des pages. */
+    overscroll-behavior-y: contain;
   }
   html {
     @apply font-sans;
     scrollbar-width: thin;
     scrollbar-color: color-mix(in srgb, var(--phase-accent) 55%, transparent) transparent;
+    overscroll-behavior-y: contain;
   }
 }
 
