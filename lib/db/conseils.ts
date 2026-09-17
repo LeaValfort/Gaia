@@ -5,8 +5,6 @@ import { getConseilsPhase } from '@/lib/cycle'
 import type { ConseilsPhaseDetail } from '@/lib/data/conseils-phase-cycle'
 import type { CategorieConseil, Conseil, Phase } from '@/types'
 
-const CATEGORIES: CategorieConseil[] = ['sport', 'nutrition', 'sommeil', 'bien_etre', 'astuce']
-
 /** Tous les conseils enregistrés pour une phase (toutes catégories confondues). */
 export async function getConseilsBrutsParPhase(phase: Phase): Promise<Conseil[]> {
   try {
@@ -90,5 +88,3 @@ export async function getConseilsPhaseDuJour(phase: Phase, date: Date): Promise<
     anecdote: choisirTexte(parCategorie, 'astuce', seed, 4, repli.anecdote),
   }
 }
-
-export { CATEGORIES }
