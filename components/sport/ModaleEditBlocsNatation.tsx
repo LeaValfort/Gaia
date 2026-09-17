@@ -5,10 +5,11 @@ import { ArrowDown, ArrowUp, Plus, RefreshCw, Trash2 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog'
 import { Input } from '@/components/ui/input'
-import { blocsDefautPourNiveau, LABELS_NAGE } from '@/lib/data/swimming'
+import { blocsDefautPourNiveau, LABELS_NAGE, PRESETS_NAGE } from '@/lib/data/swimming'
 import type { BlocNatation, TypeNage } from '@/types'
 
-const NAGES: TypeNage[] = ['echauffement', 'crawl', 'brasse', 'recuperation']
+/** Valeur du <select> déclenchant l'affichage du champ texte libre pour une nage personnalisée. */
+const NAGE_AUTRE = '__autre__'
 
 function deplacer<T>(liste: T[], i: number, sens: -1 | 1): T[] {
   const j = i + sens
@@ -71,41 +72,56 @@ export function ModaleEditBlocsNatation({
           </DialogHeader>
         </div>
         <div className="max-h-[50vh] space-y-2 overflow-y-auto border-y px-4 py-2">
-          {blocs.map((b, i) => (
-            <div key={i} className="flex items-center gap-2 rounded-lg border border-neutral-200 p-2 dark:border-neutral-700">
-              <div className="flex flex-col gap-0.5">
-                <Button type="button" size="icon-sm" variant="ghost" className="h-6 w-6" disabled={i === 0} onClick={() => monter(i)}>
-                  <ArrowUp className="size-3.5" />
-                </Button>
-                <Button type="button" size="icon-sm" variant="ghost" className="h-6 w-6" disabled={i === blocs.length - 1} onClick={() => descendre(i)}>
-                  <ArrowDown className="size-3.5" />
-                </Button>
+          {blocs.map((b, i) => {
+            const estPreset = PRESETS_NAGE.includes(b.nage as TypeNage)
+            return (
+              <div key={i} className="flex flex-col gap-1.5 rounded-lg border border-neutral-200 p-2 dark:border-neutral-700">
+                <div className="flex items-center gap-2">
+                  <div className="flex flex-col gap-0.5">
+                    <Button type="button" size="icon-sm" variant="ghost" className="h-6 w-6" disabled={i === 0} onClick={() => monter(i)}>
+                      <ArrowUp className="size-3.5" />
+                    </Button>
+                    <Button type="button" size="icon-sm" variant="ghost" className="h-6 w-6" disabled={i === blocs.length - 1} onClick={() => descendre(i)}>
+                      <ArrowDown className="size-3.5" />
+                    </Button>
+                  </div>
+                  <select
+                    value={estPreset ? b.nage : NAGE_AUTRE}
+                    onChange={(e) => maj(i, { nage: e.target.value === NAGE_AUTRE ? '' : e.target.value })}
+                    className="h-9 flex-1 rounded-md border border-neutral-200 bg-transparent px-2 text-sm dark:border-neutral-700"
+                  >
+                    {PRESETS_NAGE.map((n) => (
+                      <option key={n} value={n}>
+                        {LABELS_NAGE[n as TypeNage]}
+                      </option>
+                    ))}
+                    <option value={NAGE_AUTRE}>Autre…</option>
+                  </select>
+                  <Input
+                    type="number"
+                    min={0}
+                    step={25}
+                    value={b.distanceM}
+                    onChange={(e) => maj(i, { distanceM: parseInt(e.target.value, 10) || 0 })}
+                    className="h-9 w-20"
+                  />
+                  <span className="text-xs text-neutral-400">m</span>
+                  <Button type="button" size="icon-sm" variant="secondary" className="h-8 w-8 shrink-0" onClick={() => sup(i)}>
+                    <Trash2 className="size-4" />
+                  </Button>
+                </div>
+                {!estPreset ? (
+                  <Input
+                    autoFocus
+                    value={b.nage}
+                    onChange={(e) => maj(i, { nage: e.target.value })}
+                    placeholder="Nom de la nage (ex. dos crawlé)…"
+                    className="ml-8 h-8 text-sm"
+                  />
+                ) : null}
               </div>
-              <select
-                value={b.nage}
-                onChange={(e) => maj(i, { nage: e.target.value as TypeNage })}
-                className="h-9 flex-1 rounded-md border border-neutral-200 bg-transparent px-2 text-sm dark:border-neutral-700"
-              >
-                {NAGES.map((n) => (
-                  <option key={n} value={n}>
-                    {LABELS_NAGE[n]}
-                  </option>
-                ))}
-              </select>
-              <Input
-                type="number"
-                min={0}
-                step={25}
-                value={b.distanceM}
-                onChange={(e) => maj(i, { distanceM: parseInt(e.target.value, 10) || 0 })}
-                className="h-9 w-20"
-              />
-              <span className="text-xs text-neutral-400">m</span>
-              <Button type="button" size="icon-sm" variant="secondary" className="h-8 w-8 shrink-0" onClick={() => sup(i)}>
-                <Trash2 className="size-4" />
-              </Button>
-            </div>
-          ))}
+            )
+          })}
           <Button type="button" variant="outline" size="sm" onClick={ajouter} className="w-full">
             <Plus className="mr-1 size-4" /> Ajouter un bloc
           </Button>

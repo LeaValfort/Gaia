@@ -914,12 +914,16 @@ export interface SportVariante {
   updated_at: string
 }
 
-/** Type de nage d'un bloc de séance natation personnalisée */
-export type TypeNage = 'echauffement' | 'crawl' | 'brasse' | 'recuperation'
+/** Types de nage prédéfinis proposés pour un bloc de séance natation personnalisée */
+export type TypeNage = 'echauffement' | 'crawl' | 'dos' | 'papillon' | 'mixte' | 'brasse' | 'recuperation'
 
-/** Un bloc ordonné dans une séance natation personnalisée (variante) */
+/**
+ * Un bloc ordonné dans une séance natation personnalisée (variante).
+ * `nage` est soit une valeur prédéfinie de TypeNage, soit un libellé
+ * personnalisé libre saisi via l'option « Autre » de l'éditeur de blocs.
+ */
 export interface BlocNatation {
-  nage: TypeNage
+  nage: string
   distanceM: number
 }
 

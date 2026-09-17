@@ -71,8 +71,19 @@ export function getNiveauDetail(level: number): NiveauNatationDetail {
 export const LABELS_NAGE: Record<TypeNage, string> = {
   echauffement: 'Échauffement',
   crawl: 'Crawl',
+  dos: 'Dos',
+  papillon: 'Papillon',
+  mixte: 'Mixte',
   brasse: 'Brasse',
   recuperation: 'Récupération',
+}
+
+/** Nages prédéfinies proposées dans l'éditeur de blocs (voir aussi l'option « Autre » pour un libellé libre). */
+export const PRESETS_NAGE: TypeNage[] = ['echauffement', 'crawl', 'dos', 'papillon', 'mixte', 'brasse', 'recuperation']
+
+/** Libellé affiché pour une nage : celui du catalogue si connu, sinon le libellé personnalisé tel quel. */
+export function libelleNage(nage: string): string {
+  return LABELS_NAGE[nage as TypeNage] ?? nage
 }
 
 /** Blocs de départ dérivés d'un niveau du catalogue — simple point de départ à éditer. */
@@ -95,6 +106,6 @@ export function totauxDepuisBlocs(blocs: BlocNatation[]): {
   const distanceTotale = blocs.reduce((s, b) => s + b.distanceM, 0)
   const crawlM = blocs.filter((b) => b.nage === 'crawl').reduce((s, b) => s + b.distanceM, 0)
   const brasseM = blocs.filter((b) => b.nage === 'brasse').reduce((s, b) => s + b.distanceM, 0)
-  const structureTexte = blocs.map((b) => `${b.distanceM}m ${LABELS_NAGE[b.nage].toLowerCase()}`).join(' + ')
+  const structureTexte = blocs.map((b) => `${b.distanceM}m ${libelleNage(b.nage).toLowerCase()}`).join(' + ')
   return { distanceTotale, crawlM, brasseM, structureTexte }
 }

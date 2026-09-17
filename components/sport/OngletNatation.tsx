@@ -8,11 +8,12 @@ import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Textarea } from '@/components/ui/textarea'
 import { loggerSeanceNatationClient, modifierSeanceNatationClient } from '@/lib/sport/workouts-client'
-import { getNiveauDetail, LABELS_NAGE, totauxDepuisBlocs } from '@/lib/data/swimming'
+import { getNiveauDetail, totauxDepuisBlocs } from '@/lib/data/swimming'
 import { MacrosSeanceCard } from '@/components/sport/MacrosSeanceCard'
 import { BannerSuggestionGaia } from '@/components/sport/BannerSuggestionGaia'
 import { SelecteurVariante, type OngletFixeVariante } from '@/components/sport/SelecteurVariante'
 import { ModaleEditBlocsNatation } from '@/components/sport/ModaleEditBlocsNatation'
+import { BlocNatationLigne } from '@/components/sport/natation/BlocNatationLigne'
 import { appliquerPourcentage, messagePourcentageGaia } from '@/lib/planning-sport'
 import {
   activerVariante,
@@ -250,28 +251,26 @@ export function OngletNatation({
         onglets={NIVEAUX_ONGLETS}
         couleurActif="bg-[#059669] text-white"
       />
-      <div className="flex items-start justify-between gap-2 rounded-lg border border-emerald-200/60 bg-white/60 p-3 text-sm dark:border-emerald-800 dark:bg-emerald-950/30">
-        <div className="min-w-0 flex-1">
-          {blocs ? (
-            <div className="flex flex-wrap gap-1.5">
-              {blocs.map((b, i) => (
-                <span key={i} className="rounded-full bg-emerald-100 px-2 py-0.5 text-xs font-medium text-emerald-900 dark:bg-emerald-900/50 dark:text-emerald-100">
-                  {b.distanceM}m {LABELS_NAGE[b.nage].toLowerCase()}
-                </span>
-              ))}
-            </div>
-          ) : (
-            <>
-              <p className="font-medium text-neutral-900 dark:text-neutral-50">{info.description}</p>
-              <p className="mt-1 font-mono text-[#059669] dark:text-emerald-300">
-                {info.structure} = {info.distanceTotale} m
-              </p>
-            </>
-          )}
+      <div className="flex flex-col gap-2 rounded-lg border border-emerald-200/60 bg-white/60 p-3 text-sm dark:border-emerald-800 dark:bg-emerald-950/30">
+        <div className="flex items-center justify-between gap-2">
+          <p className="min-w-0 flex-1 font-medium text-neutral-900 dark:text-neutral-50">
+            {blocs ? 'Blocs personnalisés' : info.description}
+          </p>
+          <Button type="button" size="sm" variant="outline" onClick={() => setModaleBlocs(true)} className="shrink-0">
+            <Pencil className="mr-1 size-3" /> Modifier
+          </Button>
         </div>
-        <Button type="button" size="sm" variant="outline" onClick={() => setModaleBlocs(true)} className="shrink-0">
-          <Pencil className="mr-1 size-3" /> Modifier
-        </Button>
+        {blocs ? (
+          <div className="flex flex-col gap-1.5">
+            {blocs.map((b, i) => (
+              <BlocNatationLigne key={i} bloc={b} />
+            ))}
+          </div>
+        ) : (
+          <p className="font-mono text-[#059669] dark:text-emerald-300">
+            {info.structure} = {info.distanceTotale} m
+          </p>
+        )}
       </div>
       {phase ? (
         <BannerSuggestionGaia
