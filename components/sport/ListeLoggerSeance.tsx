@@ -8,24 +8,23 @@ import {
   sousTitreCarteLogger,
   type SportLoggerId,
 } from '@/lib/sport-page'
-import { getActiviteduJour } from '@/lib/planning-sport'
-import type { PlanningSport, SeanceProfil } from '@/types'
+import type { SeanceProfil, TypePlanningJour } from '@/types'
 import { cn } from '@/lib/utils'
 
 interface ListeLoggerSeanceProps {
-  planning: PlanningSport
+  /** Activité effective du jour (planning hebdo, ou substitution ponctuelle si active) */
+  typeJour: TypePlanningJour
   seanceProfils: SeanceProfil[]
   formOuvert: SportLoggerId | 'autre' | null
   onOuvrir: (id: SportLoggerId | 'autre') => void
 }
 
 export function ListeLoggerSeance({
-  planning,
+  typeJour,
   seanceProfils,
   formOuvert,
   onOuvrir,
 }: ListeLoggerSeanceProps) {
-  const typeJour = getActiviteduJour(planning, new Date())
   const suggeree = carteSuggereePourTypeJour(typeJour)
   const autreSuggere = ouvrirAutrePourTypeJour(typeJour)
   const cartes = ordreCartesLogger(typeJour)

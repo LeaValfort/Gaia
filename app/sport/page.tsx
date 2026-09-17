@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useMemo, useState } from 'react'
 import { format, parseISO } from 'date-fns'
+import { toast } from 'sonner'
 import { supabase } from '@/lib/supabase'
 import { Nav } from '@/components/shared/Nav'
 import { PageHeader } from '@/components/shared/PageHeader'
@@ -14,12 +15,14 @@ import { OngletNatation } from '@/components/sport/OngletNatation'
 import { OngletYoga } from '@/components/sport/OngletYoga'
 import { PlanningSemaineStrip } from '@/components/sport/PlanningSemaineStrip'
 import { SelecteurDateSeance } from '@/components/sport/SelecteurDateSeance'
+import { SelecteurSeanceJour } from '@/components/sport/SelecteurSeanceJour'
 import { getCycleDay, getPhaseForDay } from '@/lib/cycle'
 import { getSeancesDuJourClient } from '@/lib/sport/workouts-client'
 import { typeSeanceVersForm } from '@/lib/sport/type-seance-form'
 import { BADGE_PHASE_CYCLE } from '@/lib/cycle-affichage'
 import { PHASES_DESIGN } from '@/lib/data/phases-design'
-import { PLANNING_DEFAUT } from '@/lib/planning-sport'
+import { getActiviteduJourEffectif, PLANNING_DEFAUT } from '@/lib/planning-sport'
+import { getOverrideJour, setOverrideJour, supprimerOverrideJour } from '@/lib/db/planning-overrides'
 import { type SportLoggerId } from '@/lib/sport-page'
 import { Button } from '@/components/ui/button'
 import { cn } from '@/lib/utils'
@@ -29,6 +32,7 @@ import type {
   PlanningSport,
   PourcentagesGaia,
   SeanceProfil,
+  TypePlanningJour,
   TypeSeance,
   WorkoutMuscuComplet,
   WorkoutNatationComplet,
@@ -61,6 +65,8 @@ export default function SportPage() {
   const [jourDuCycle, setJourDuCycle] = useState(1)
   const [userId, setUserId] = useState<string | null>(null)
   const [planning, setPlanning] = useState<PlanningSport>(PLANNING_DEFAUT)
+  const [overrideAuj, setOverrideAuj] = useState<TypePlanningJour | null>(null)
+  const [chOverride, setChOverride] = useState(false)
   const [pourcentages, setPourcentages] = useState<PourcentagesGaia>(POURCENTAGES_GAIA_DEFAUT)
   const [seanceProfils, setSeanceProfils] = useState<SeanceProfil[]>([])
   const [prenom, setPrenom] = useState<string | null>(null)
@@ -162,6 +168,7 @@ export default function SportPage() {
         setPlanning(pMerge)
         setPourcentages(pourcentagesEffectifs(prefs?.pourcentages_gaia as PourcentagesGaia | undefined))
         setSeanceProfils((profils ?? []) as SeanceProfil[])
+        setOverrideAuj(await getOverrideJour(today))
       } catch (e) {
         setErreur(e instanceof Error ? e.message : 'Erreur de chargement.')
       } finally {
@@ -170,7 +177,28 @@ export default function SportPage() {
     }
 
     void chargerDonnees()
-  }, [])
+  }, [today])
+
+  const typeJourEffectif = useMemo(
+    () => getActiviteduJourEffectif(planning, new Date(), overrideAuj),
+    [planning, overrideAuj]
+  )
+
+  async function changerSeanceJour(type: TypePlanningJour) {
+    setChOverride(true)
+    const ok = await setOverrideJour(today, type)
+    if (ok) setOverrideAuj(type)
+    else toast.error('Impossible de changer la séance du jour.')
+    setChOverride(false)
+  }
+
+  async function revenirPlanning() {
+    setChOverride(true)
+    const ok = await supprimerOverrideJour(today)
+    if (ok) setOverrideAuj(null)
+    else toast.error('Impossible de revenir au planning.')
+    setChOverride(false)
+  }
 
   useEffect(() => {
     if (!userId || !formOuvert) return
@@ -248,8 +276,16 @@ export default function SportPage() {
 
         <PlanningSemaineStrip planning={planning} />
 
+        <SelecteurSeanceJour
+          typeEffectif={typeJourEffectif}
+          overrideActif={overrideAuj != null}
+          onChanger={(t) => void changerSeanceJour(t)}
+          onRevenir={() => void revenirPlanning()}
+          chargement={chOverride}
+        />
+
         <ListeLoggerSeance
-          planning={planning}
+          typeJour={typeJourEffectif}
           seanceProfils={seanceProfils}
           formOuvert={formOuvert}
           onOuvrir={setFormOuvert}

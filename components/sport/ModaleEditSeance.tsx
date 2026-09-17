@@ -1,15 +1,12 @@
 'use client'
 
-import { useCallback, useEffect, useMemo, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import { Plus, RefreshCw, Search } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog'
 import { Input } from '@/components/ui/input'
 import { ExerciceEditRow } from '@/components/sport/ExerciceEditRow'
 import { getExercicesParSeance } from '@/lib/data/exercises'
-import { resetSeanceCustom, saveSeanceCustom } from '@/lib/db/seances-custom'
-import { supabase } from '@/lib/supabase'
-import { toast } from 'sonner'
 import { exerciceVersCustom, planningVersTypeMuscu, exercicesToCustom } from '@/lib/sport/muscuCustomMap'
 import type { Exercice, ExerciceCustom, Lieu, TypeSeanceMuscu } from '@/types'
 
@@ -20,27 +17,29 @@ function reindex(list: ExerciceCustom[]): ExerciceCustom[] {
 export interface ModaleEditSeanceProps {
   typeSeance: string
   lieu: Lieu
-  userId: string
   exercicesActuels: ExerciceCustom[]
   exercicesCatalogue: Exercice[]
-  onSauvegarde: (exercices: ExerciceCustom[]) => void
+  /** Persistance déléguée au parent (variante active ou nouvelle variante) — rejette en cas d'échec. */
+  onSauvegarde: (exercices: ExerciceCustom[]) => Promise<void>
   onFermer: () => void
-  onReinitialise?: () => void
 }
 
 function filtre(ex: Exercice, seance: ReturnType<typeof planningVersTypeMuscu>, lieu: Lieu) {
   return ex.seance === seance && (ex.lieu === 'both' || ex.lieu === lieu)
 }
 
+/**
+ * Éditeur d'exercices purement contrôlé : aucun appel Supabase ici (voir
+ * .cursorrules — "les composants reçoivent des props, ne fetchent jamais").
+ * La sauvegarde et la réinitialisation par défaut sont déléguées au parent.
+ */
 export function ModaleEditSeance({
   typeSeance: ts,
   lieu,
-  userId: _u,
   exercicesActuels,
   exercicesCatalogue,
   onSauvegarde,
   onFermer,
-  onReinitialise,
 }: ModaleEditSeanceProps) {
   const typeSeance = ts as TypeSeanceMuscu
   const sm = useMemo(() => planningVersTypeMuscu(typeSeance), [typeSeance])
@@ -48,7 +47,6 @@ export function ModaleEditSeance({
   const [exo, setExo] = useState(() => reindex(exercicesActuels))
   const [q, setQ] = useState('')
   const [ch, setCh] = useState(false)
-  const [chD, setChD] = useState(false)
   useEffect(() => setExo(reindex(exercicesActuels)), [exercicesActuels, typeSeance, lieu])
   const res = useMemo(() => {
     const t = q.trim().toLowerCase()
@@ -59,55 +57,33 @@ export function ModaleEditSeance({
       .filter((e) => !t || e.nom.toLowerCase().includes(t))
       .slice(0, 30)
   }, [q, exo, exercicesCatalogue, sm, lieu])
-  const maj = useCallback((i: number, u: Partial<ExerciceCustom>) => {
+  const maj = (i: number, u: Partial<ExerciceCustom>) =>
     setExo((p) => {
       const n = [...p]
       n[i] = { ...n[i], ...u } as ExerciceCustom
       return n
     })
-  }, [])
-  const sup = useCallback((i: number) => setExo((p) => reindex(p.filter((_, j) => j !== i))), [])
-  const aj = useCallback(
-    (e: Exercice) => setExo((p) => reindex([...p, exerciceVersCustom(e, p.length)])),
-    []
-  )
-  async function defaut() {
-    setChD(true)
-    try {
-      const {
-        data: { user },
-      } = await supabase.auth.getUser()
-      if (!user) throw new Error('Connecte-toi pour modifier la séance.')
-      await resetSeanceCustom(supabase, user.id, typeSeance, lieu)
-      setExo([...def])
-      onReinitialise?.()
-    } catch (e) {
-      const msg = e instanceof Error ? e.message : 'Réinitialisation impossible.'
-      toast.error(msg)
-    } finally {
-      setChD(false)
-    }
+  const sup = (i: number) => setExo((p) => reindex(p.filter((_, j) => j !== i)))
+  const aj = (e: Exercice) => setExo((p) => reindex([...p, exerciceVersCustom(e, p.length)]))
+
+  /** Réinitialisation locale uniquement — il faut cliquer "Sauvegarder" pour la persister. */
+  function defaut() {
+    setExo([...def])
   }
+
   async function save() {
     if (!exo.length) return
     setCh(true)
     try {
-      const {
-        data: { user },
-      } = await supabase.auth.getUser()
-      if (!user) throw new Error('Connecte-toi pour enregistrer.')
-      const fin = reindex(exo)
-      await saveSeanceCustom(supabase, user.id, typeSeance, lieu, fin)
-      onSauvegarde(fin)
+      await onSauvegarde(reindex(exo))
       onFermer()
-      toast.success('Séance personnalisée enregistrée')
-    } catch (e) {
-      const msg = e instanceof Error ? e.message : 'Enregistrement impossible.'
-      toast.error(msg)
+    } catch {
+      // L'erreur est déjà signalée par le parent (toast) — on laisse la modale ouverte.
     } finally {
       setCh(false)
     }
   }
+
   return (
     <Dialog open onOpenChange={(o) => !o && onFermer()}>
       <DialogContent className="flex max-h-[min(90vh,560px)] flex-col gap-0 p-0 sm:max-w-lg" showCloseButton>
@@ -139,9 +115,9 @@ export function ModaleEditSeance({
           </ul>
         </div>
         <DialogFooter className="flex-col gap-2 p-4 sm:flex-row sm:justify-between">
-          <Button type="button" variant="outline" disabled={ch || chD} onClick={() => void defaut()}>
+          <Button type="button" variant="outline" disabled={ch} onClick={defaut}>
             <RefreshCw className="mr-1 size-4" />
-            {chD ? '…' : 'Remettre par défaut'}
+            Remettre par défaut
           </Button>
           <div className="flex gap-2">
             <Button type="button" variant="secondary" onClick={onFermer} disabled={ch}>

@@ -9,12 +9,20 @@ import { MacrosSeanceCard } from '@/components/sport/MacrosSeanceCard'
 import { BannerSuggestionGaia } from '@/components/sport/BannerSuggestionGaia'
 import { ExerciceItem } from '@/components/sport/ExerciceItem'
 import { ModaleEditSeance } from '@/components/sport/ModaleEditSeance'
+import { SelecteurVariante } from '@/components/sport/SelecteurVariante'
 import { MuscuRessentiEmojis } from '@/components/sport/muscu/MuscuRessentiEmojis'
 import { MuscuTypeLieu } from '@/components/sport/muscu/MuscuTypeLieu'
 import { Button } from '@/components/ui/button'
 import { EXERCICES, getExercicesParSeance } from '@/lib/data/exercises'
 import { getDernieresCharges } from '@/lib/db/charges'
-import { getSeanceCustom } from '@/lib/db/seances-custom'
+import {
+  activerVariante,
+  creerVariante,
+  getVariantes,
+  mettreAJourContenuVariante,
+  renommerVariante,
+  supprimerVariante,
+} from '@/lib/db/sport-variantes'
 import { supabase } from '@/lib/supabase'
 import { adapterSeancePhase } from '@/lib/planning-sport'
 import { enregistrerSeanceMuscuComplet } from '@/lib/sport/muscuEnregistrement'
@@ -25,7 +33,18 @@ import {
 } from '@/lib/sport/muscuExerciceAdapte'
 import { exercicesDepuisCustom, exercicesToCustom, typeMuscuVersPlanning } from '@/lib/sport/muscuCustomMap'
 import { POURCENTAGES_GAIA_DEFAUT } from '@/types'
-import type { DerniereCharge, ExerciceCustom, Lieu, Phase, PlanningSport, PourcentagesGaia, SeanceAdaptee, TypeSeanceMuscle, WorkoutMuscuComplet } from '@/types'
+import type {
+  DerniereCharge,
+  ExerciceCustom,
+  Lieu,
+  Phase,
+  PlanningSport,
+  PourcentagesGaia,
+  SeanceAdaptee,
+  SportVariante,
+  TypeSeanceMuscle,
+  WorkoutMuscuComplet,
+} from '@/types'
 
 const NOTES: Record<string, TypeSeanceMuscle> = { 'Full body': 'full_body', 'Upper / Lower': 'upper_lower' }
 const LBL: Record<TypeSeanceMuscle, string> = { full_body: 'Full body', upper_lower: 'Upper / Lower' }
@@ -61,6 +80,8 @@ export function OngletMuscu({
   )
   const [charges, setCharges] = useState<Record<string, number>>({})
   const [dernieres, setDernieres] = useState<DerniereCharge[]>([])
+  const [variantes, setVariantes] = useState<SportVariante[]>([])
+  const [varianteActiveId, setVarianteActiveId] = useState<string | null>(null)
   const [custom, setCustom] = useState<ExerciceCustom[] | null>(null)
   const [ressenti, setRessenti] = useState<number | null>(seanceExistante?.feeling ?? null)
   const [modale, setModale] = useState(false)
@@ -103,19 +124,18 @@ export function OngletMuscu({
   const enCours = useMemo(() => aff.find((e) => !exercicesFaits.includes(e.nom))?.nom, [aff, exercicesFaits])
 
   useEffect(() => {
-    if (!userId) return
-    let x = true
+    let actif = true
     void (async () => {
-      const {
-        data: { user },
-      } = await supabase.auth.getUser()
-      if (!user || !x) return
-      const [c, d] = await Promise.all([
-        getSeanceCustom(supabase, user.id, typeMuscuVersPlanning(typeSeance), lieu),
-        getDernieresCharges(supabase, user.id),
+      const typePlanning = typeMuscuVersPlanning(typeSeance)
+      const [vs, d] = await Promise.all([
+        getVariantes(supabase, userId, typePlanning, lieu),
+        getDernieresCharges(supabase, userId),
       ])
-      if (!x) return
-      setCustom(c?.length ? c : null)
+      if (!actif) return
+      setVariantes(vs)
+      const active = vs.find((v) => v.est_active) ?? null
+      setVarianteActiveId(active?.id ?? null)
+      setCustom(active?.exercices?.length ? active.exercices : null)
       setDernieres(d)
       const o: Record<string, number> = {}
       d.forEach((e) => {
@@ -124,7 +144,7 @@ export function OngletMuscu({
       setCharges((s) => ({ ...o, ...s }))
     })()
     return () => {
-      x = false
+      actif = false
     }
   }, [userId, typeSeance, lieu])
 
@@ -132,16 +152,89 @@ export function OngletMuscu({
     setExercicesFaits((f) => (f.includes(n) ? f.filter((y) => y !== n) : [...f, n]))
   }, [])
 
+  async function selectionnerVariante(id: string | null) {
+    const typePlanning = typeMuscuVersPlanning(typeSeance)
+    const ok = await activerVariante(supabase, userId, typePlanning, lieu, id)
+    if (!ok) {
+      toast.error('Impossible de changer de variante.')
+      return
+    }
+    setVarianteActiveId(id)
+    const v = id ? variantes.find((x) => x.id === id) ?? null : null
+    setCustom(v?.exercices?.length ? v.exercices : null)
+  }
+
+  async function creerVarianteMuscu(nom: string) {
+    const typePlanning = typeMuscuVersPlanning(typeSeance)
+    const contenuBase = custom?.length ? custom : exercicesToCustom(list)
+    const v = await creerVariante(supabase, userId, typePlanning, lieu, nom, { exercices: contenuBase })
+    if (!v) {
+      toast.error('Création de la variante impossible.')
+      return
+    }
+    setVariantes((prev) => [...prev, v])
+    setVarianteActiveId(v.id)
+    setCustom(v.exercices)
+  }
+
+  async function renommerVarianteMuscu(id: string, nom: string) {
+    const ok = await renommerVariante(supabase, id, nom)
+    if (ok) setVariantes((prev) => prev.map((v) => (v.id === id ? { ...v, nom } : v)))
+    else toast.error('Renommage impossible.')
+  }
+
+  async function supprimerVarianteMuscu(id: string) {
+    const ok = await supprimerVariante(supabase, id)
+    if (!ok) {
+      toast.error('Suppression impossible.')
+      return
+    }
+    setVariantes((prev) => prev.filter((v) => v.id !== id))
+    if (varianteActiveId === id) {
+      setVarianteActiveId(null)
+      setCustom(null)
+    }
+  }
+
+  async function sauvegarderContenuMuscu(exercices: ExerciceCustom[]) {
+    const typePlanning = typeMuscuVersPlanning(typeSeance)
+    if (!varianteActiveId) {
+      const v = await creerVariante(supabase, userId, typePlanning, lieu, 'Séance par défaut', { exercices })
+      if (!v) {
+        toast.error('Enregistrement impossible.')
+        throw new Error('creation-variante')
+      }
+      setVariantes((prev) => [...prev, v])
+      setVarianteActiveId(v.id)
+    } else {
+      const ok = await mettreAJourContenuVariante(supabase, varianteActiveId, { exercices })
+      if (!ok) {
+        toast.error('Enregistrement impossible.')
+        throw new Error('maj-variante')
+      }
+      const id = varianteActiveId
+      setVariantes((prev) => prev.map((v) => (v.id === id ? { ...v, exercices } : v)))
+    }
+    setCustom(exercices)
+    toast.success('Séance personnalisée enregistrée')
+  }
+
   return (
     <div className="flex flex-col gap-4">
       <MuscuTypeLieu type={typeSeance} lieu={lieu} phase={phase} onType={setTypeSeance} onLieu={setLieu} />
+      <SelecteurVariante
+        variantes={variantes}
+        activeId={varianteActiveId}
+        onSelect={(id) => void selectionnerVariante(id)}
+        onCreer={(nom) => void creerVarianteMuscu(nom)}
+        onRenommer={(id, nom) => void renommerVarianteMuscu(id, nom)}
+        onSupprimer={(id) => void supprimerVarianteMuscu(id)}
+      />
       <div className="flex flex-wrap items-center justify-between gap-2">
         <p className="text-sm font-semibold text-neutral-800 dark:text-neutral-100">💪 {LBL[typeSeance]} — {lieu === 'maison' ? '🏠' : '🏋️'}</p>
-        {userId ? (
-          <Button type="button" size="sm" variant="outline" onClick={() => setModale(true)} className="shrink-0">
-            <Pencil className="mr-1 size-3" /> Modifier
-          </Button>
-        ) : null}
+        <Button type="button" size="sm" variant="outline" onClick={() => setModale(true)} className="shrink-0">
+          <Pencil className="mr-1 size-3" /> Modifier
+        </Button>
       </div>
       {phase && seanceA ? (
         <BannerSuggestionGaia phase={phase} message={seanceA.messageAdaptation} modeActif={mode} onChangerMode={setMode} />
@@ -215,26 +308,14 @@ export function OngletMuscu({
       {!exercicesFaits.length ? (
         <p className="text-xs text-muted-foreground">Coche les exercices que tu as faits pour activer l’enregistrement.</p>
       ) : null}
-      {modale && userId ? (
+      {modale ? (
         <ModaleEditSeance
           typeSeance={typeMuscuVersPlanning(typeSeance)}
           lieu={lieu}
-          userId={userId}
           exercicesActuels={custom?.length ? custom : exercicesToCustom(list)}
           exercicesCatalogue={EXERCICES}
           onFermer={() => setModale(false)}
-          onSauvegarde={async () => {
-            const {
-              data: { user },
-            } = await supabase.auth.getUser()
-            if (user) {
-              const c = await getSeanceCustom(supabase, user.id, typeMuscuVersPlanning(typeSeance), lieu)
-              setCustom(c?.length ? c : null)
-            }
-            setModale(false)
-            r.refresh()
-          }}
-          onReinitialise={() => setCustom(null)}
+          onSauvegarde={sauvegarderContenuMuscu}
         />
       ) : null}
     </div>

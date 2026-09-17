@@ -11,13 +11,24 @@ import { loggerSeanceNatationClient, modifierSeanceNatationClient } from '@/lib/
 import { getNiveauDetail } from '@/lib/data/swimming'
 import { MacrosSeanceCard } from '@/components/sport/MacrosSeanceCard'
 import { BannerSuggestionGaia } from '@/components/sport/BannerSuggestionGaia'
+import { SelecteurVariante } from '@/components/sport/SelecteurVariante'
 import { appliquerPourcentage, messagePourcentageGaia } from '@/lib/planning-sport'
+import {
+  activerVariante,
+  creerVariante,
+  getVariantes,
+  mettreAJourContenuVariante,
+  renommerVariante,
+  supprimerVariante,
+} from '@/lib/db/sport-variantes'
+import { supabase } from '@/lib/supabase'
 import {
   POURCENTAGES_GAIA_DEFAUT,
   SWIM_LEVEL_MAX,
   SWIM_LEVEL_MIN,
   type Phase,
   type PourcentagesGaia,
+  type SportVariante,
   type WorkoutNatationComplet,
 } from '@/types'
 import { cn } from '@/lib/utils'
@@ -52,6 +63,8 @@ export function OngletNatation({
   const [res, setRes] = useState(seanceExistante?.feeling ?? 0)
   const [ch, setCh] = useState(false)
   const [mode, setMode] = useState<'normale' | 'gaia'>('normale')
+  const [variantes, setVariantes] = useState<SportVariante[]>([])
+  const [varianteActiveId, setVarianteActiveId] = useState<string | null>(null)
 
   useEffect(() => {
     setNiv(seanceExistante?.swim.level ?? 1)
@@ -62,11 +75,68 @@ export function OngletNatation({
     setRes(seanceExistante?.feeling ?? 0)
   }, [seanceExistante, date])
 
+  useEffect(() => {
+    let actif = true
+    void (async () => {
+      const vs = await getVariantes(supabase, userId, 'natation', 'na')
+      if (!actif) return
+      setVariantes(vs)
+      setVarianteActiveId(vs.find((v) => v.est_active)?.id ?? null)
+    })()
+    return () => {
+      actif = false
+    }
+  }, [userId])
+
+  // Garde le niveau de la variante active synchronisé avec ses derniers réglages.
+  useEffect(() => {
+    if (!varianteActiveId) return
+    void mettreAJourContenuVariante(supabase, varianteActiveId, { niveauNatation: niv })
+    setVariantes((prev) => prev.map((v) => (v.id === varianteActiveId ? { ...v, niveau_natation: niv } : v)))
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [niv])
+
+  async function selectionnerVarianteNatation(id: string | null) {
+    const ok = await activerVariante(supabase, userId, 'natation', 'na', id)
+    if (!ok) {
+      toast.error('Impossible de changer de variante.')
+      return
+    }
+    setVarianteActiveId(id)
+    const v = id ? variantes.find((x) => x.id === id) : null
+    if (v?.niveau_natation) setNiv(v.niveau_natation)
+  }
+
+  async function creerVarianteNatation(nom: string) {
+    const v = await creerVariante(supabase, userId, 'natation', 'na', nom, { niveauNatation: niv })
+    if (!v) {
+      toast.error('Création de la variante impossible.')
+      return
+    }
+    setVariantes((prev) => [...prev, v])
+    setVarianteActiveId(v.id)
+  }
+
+  async function renommerVarianteNatation(id: string, nom: string) {
+    const ok = await renommerVariante(supabase, id, nom)
+    if (ok) setVariantes((prev) => prev.map((v) => (v.id === id ? { ...v, nom } : v)))
+    else toast.error('Renommage impossible.')
+  }
+
+  async function supprimerVarianteNatation(id: string) {
+    const ok = await supprimerVariante(supabase, id)
+    if (!ok) {
+      toast.error('Suppression impossible.')
+      return
+    }
+    setVariantes((prev) => prev.filter((v) => v.id !== id))
+    if (varianteActiveId === id) setVarianteActiveId(null)
+  }
+
   const info = getNiveauDetail(niv)
-  const distanceCible =
-    phase && mode === 'gaia'
-      ? appliquerPourcentage(info.distanceTotale, pourcentages[phase], ARRONDI_DISTANCE_M)
-      : info.distanceTotale
+  const distanceCible = phase && mode === 'gaia'
+    ? appliquerPourcentage(info.distanceTotale, pourcentages[phase], ARRONDI_DISTANCE_M)
+    : info.distanceTotale
   const dist = parseInt(distReelle, 10)
   const totalM = Number.isFinite(dist) && dist > 0 ? dist : distanceCible
   const rCrawl = info.distanceTotale > 0 ? info.crawlM / info.distanceTotale : 0.7
@@ -110,6 +180,15 @@ export function OngletNatation({
           <Pencil className="size-4" /> Modification
         </div>
       ) : null}
+      <SelecteurVariante
+        variantes={variantes}
+        activeId={varianteActiveId}
+        onSelect={(id) => void selectionnerVarianteNatation(id)}
+        onCreer={(nom) => void creerVarianteNatation(nom)}
+        onRenommer={(id, nom) => void renommerVarianteNatation(id, nom)}
+        onSupprimer={(id) => void supprimerVarianteNatation(id)}
+        couleurActif="bg-[#059669] text-white"
+      />
       <p className="text-xs font-semibold uppercase text-[#059669] dark:text-emerald-300">Niveau actuel</p>
       <div className="flex flex-wrap gap-2">
         {Array.from({ length: SWIM_LEVEL_MAX - SWIM_LEVEL_MIN + 1 }, (_, i) => i + SWIM_LEVEL_MIN).map((n) => (

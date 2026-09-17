@@ -54,6 +54,18 @@ export function getActiviteduJour(planning: PlanningSport, date: Date): TypePlan
 }
 
 /**
+ * Activité effective d'un jour : la substitution ponctuelle (`planning_overrides`)
+ * si elle existe pour cette date, sinon le planning hebdo normal.
+ */
+export function getActiviteduJourEffectif(
+  planning: PlanningSport,
+  date: Date,
+  override: TypePlanningJour | null
+): TypePlanningJour {
+  return override ?? getActiviteduJour(planning, date)
+}
+
+/**
  * Applique un pourcentage d'ajustement (+/-) à une valeur numérique (charge en
  * muscu, distance en natation...), avec un arrondi adapté à l'unité utilisée.
  * Le pourcentage vient des réglages de l'utilisatrice (Paramètres > Planning

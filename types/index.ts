@@ -794,6 +794,19 @@ export interface PlanningSport {
   dimanche: TypePlanningJour
 }
 
+/**
+ * Substitution ponctuelle de l'activité prévue pour UNE date précise
+ * (table `planning_overrides`) — ne modifie jamais le planning hebdo lui-même.
+ * Utilisé par le bouton "Changer la séance d'aujourd'hui".
+ */
+export interface PlanningOverride {
+  id: string
+  user_id: string
+  date: string
+  type_planning: TypePlanningJour
+  created_at: string
+}
+
 /** Cibles nutritionnelles par type d’activité (planning sport) */
 export interface MacrosSeance {
   id: string
@@ -863,6 +876,36 @@ export interface SeanceCustom {
   type_seance: TypeSeanceMuscu
   lieu: Lieu
   exercices: ExerciceCustom[]
+  created_at: string
+  updated_at: string
+}
+
+// ------------------------------------------------------------
+// Sport — variantes nommées (onglets Muscu / Natation / Yoga)
+// ------------------------------------------------------------
+
+/** Sports pour lesquels une séance peut être enregistrée en plusieurs variantes nommées */
+export type TypeVarianteSport = 'muscu_full' | 'muscu_upper' | 'natation' | 'yoga'
+
+/** Lieu d'une variante ; 'na' = non applicable (natation, yoga) */
+export type LieuVariante = Lieu | 'na'
+
+/**
+ * Une variante nommée d'une séance (ligne `sport_variantes`), affichée en onglet.
+ * Une seule variante par (user, type_seance, lieu) peut être `est_active` à la fois ;
+ * aucune variante active = utiliser les réglages par défaut (catalogue / niveau de base).
+ */
+export interface SportVariante {
+  id: string
+  user_id: string
+  type_seance: TypeVarianteSport
+  lieu: LieuVariante
+  nom: string
+  est_active: boolean
+  /** Muscu uniquement */
+  exercices: ExerciceCustom[] | null
+  /** Natation uniquement */
+  niveau_natation: number | null
   created_at: string
   updated_at: string
 }

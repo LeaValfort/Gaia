@@ -10,7 +10,8 @@ import { getDailyMealIntakesJour } from '@/lib/db/dailyMealIntake'
 import { getMacroProfile } from '@/lib/db/macro-profiles'
 import { getTodosParDatePourUtilisateur } from '@/lib/db/todo'
 import { getCycleDay, getPhaseAvecStats } from '@/lib/cycle'
-import { getActiviteduJour } from '@/lib/planning-sport'
+import { getActiviteduJourEffectif } from '@/lib/planning-sport'
+import { getOverrideJour } from '@/lib/db/planning-overrides'
 import {
   macrosCiblesPourJour,
   planningEffectif,
@@ -68,9 +69,10 @@ export default async function PageAujourdhui({
     await generateTodosForToday(userId, aujourdhui)
   }
 
-  const [donnees, logDuJour] = await Promise.all([
+  const [donnees, logDuJour, overrideJour] = await Promise.all([
     getDonneesCyclePourAffichage(),
     getDailyLogParDate(dateStr),
+    getOverrideJour(dateStr),
   ])
   const todos = userId ? await getTodosParDatePourUtilisateur(userId, dateStr) : []
 
@@ -80,7 +82,7 @@ export default async function PageAujourdhui({
   const suiviCalorique = prefs?.suivi_calorique !== false
   const typeJournee = getTypeJournee(aujourdhui)
   const planningSemaine = planningEffectif(prefs?.planning_sport)
-  const typeSeanceJour = getActiviteduJour(planningSemaine, aujourdhui)
+  const typeSeanceJour = getActiviteduJourEffectif(planningSemaine, aujourdhui, overrideJour)
 
   let phase: Phase = 'folliculaire'
   let jourDuCycle: number | null = null
