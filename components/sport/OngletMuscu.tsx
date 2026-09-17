@@ -24,7 +24,8 @@ import {
   exCatalogVersAdapte,
 } from '@/lib/sport/muscuExerciceAdapte'
 import { exercicesDepuisCustom, exercicesToCustom, typeMuscuVersPlanning } from '@/lib/sport/muscuCustomMap'
-import type { DerniereCharge, ExerciceCustom, Lieu, Phase, PlanningSport, SeanceAdaptee, TypeSeanceMuscle, WorkoutMuscuComplet } from '@/types'
+import { POURCENTAGES_GAIA_DEFAUT } from '@/types'
+import type { DerniereCharge, ExerciceCustom, Lieu, Phase, PlanningSport, PourcentagesGaia, SeanceAdaptee, TypeSeanceMuscle, WorkoutMuscuComplet } from '@/types'
 
 const NOTES: Record<string, TypeSeanceMuscle> = { 'Full body': 'full_body', 'Upper / Lower': 'upper_lower' }
 const LBL: Record<TypeSeanceMuscle, string> = { full_body: 'Full body', upper_lower: 'Upper / Lower' }
@@ -37,6 +38,7 @@ export function OngletMuscu({
   planning: _planning,
   seanceExistante,
   onEnregistre,
+  pourcentages = POURCENTAGES_GAIA_DEFAUT,
 }: {
   phase: Phase | null
   userId: string
@@ -44,6 +46,8 @@ export function OngletMuscu({
   planning: PlanningSport
   seanceExistante?: WorkoutMuscuComplet | null
   onEnregistre?: () => void
+  /** Pourcentages d'ajustement par phase, réglables dans Paramètres > Planning sport */
+  pourcentages?: PourcentagesGaia
 }) {
   const r = useRouter()
   const edit = !!seanceExistante
@@ -87,9 +91,9 @@ export function OngletMuscu({
   const seanceA = useMemo((): SeanceAdaptee | null => {
     if (!list.length) return null
     const b = custom?.length ? custom : exercicesToCustom(list)
-    const a = adapterSeancePhase(b, dernieres, pPh)
+    const a = adapterSeancePhase(b, dernieres, pPh, pourcentages)
     return { ...a, exercices: enrichirDepuisCatalog(a.exercices, list) }
-  }, [custom, list, dernieres, pPh])
+  }, [custom, list, dernieres, pPh, pourcentages])
 
   const normaux = useMemo(() => {
     const m = new Map(dernieres.map((d) => [d.exercise_name, d]))
@@ -140,7 +144,7 @@ export function OngletMuscu({
         ) : null}
       </div>
       {phase && seanceA ? (
-        <BannerSuggestionGaia phase={phase} suggestion={seanceA} modeActif={mode} onChangerMode={setMode} />
+        <BannerSuggestionGaia phase={phase} message={seanceA.messageAdaptation} modeActif={mode} onChangerMode={setMode} />
       ) : null}
       <div className="flex flex-col gap-3">
         {aff.map((e) => (

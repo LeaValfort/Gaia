@@ -2,19 +2,20 @@
 
 import { PHASES_DESIGN } from '@/lib/data/phases-design'
 import { Button } from '@/components/ui/button'
-import type { Phase, SeanceAdaptee } from '@/types'
+import type { Phase } from '@/types'
 import { cn } from '@/lib/utils'
 
 export interface BannerSuggestionGaiaProps {
   phase: Phase
-  suggestion: SeanceAdaptee
+  /** Texte d'explication de l'ajustement (voir messagePourcentageGaia dans lib/planning-sport.ts) */
+  message: string
   modeActif: 'normale' | 'gaia'
   onChangerMode: (mode: 'normale' | 'gaia') => void
 }
 
 export function BannerSuggestionGaia({
   phase,
-  suggestion,
+  message,
   modeActif,
   onChangerMode,
 }: BannerSuggestionGaiaProps) {
@@ -27,7 +28,7 @@ export function BannerSuggestionGaia({
       )}
     >
       <p className="font-semibold">💡 Suggestion Gaia — Phase {d.label}</p>
-      <p className="mt-1 text-amber-900/90 dark:text-amber-200/90">{suggestion.messageAdaptation}</p>
+      <p className="mt-1 text-amber-900/90 dark:text-amber-200/90">{message}</p>
       <div className="mt-3 flex flex-wrap gap-2">
         <Button
           type="button"

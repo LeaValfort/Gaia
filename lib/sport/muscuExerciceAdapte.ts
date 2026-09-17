@@ -31,12 +31,13 @@ export function exSansChargeDumbbell(nom: string): boolean {
   return SANS_REGlageCharge.has(nom)
 }
 
+/** Pourcentage réellement appliqué sur la charge (masse), affiché en badge. */
 export function pctAdapte(ex: ExerciceAdapte): number | null {
   if (!ex.estAdapte) return null
-  if (ex.repsDefaut > 0 && ex.repsAdaptees !== ex.repsDefaut) {
-    return Math.round((1 - ex.repsAdaptees / ex.repsDefaut) * 100)
+  if (ex.chargeOriginale != null && ex.chargeOriginale > 0 && ex.chargeProposee != null) {
+    return Math.round((ex.chargeProposee / ex.chargeOriginale - 1) * 100)
   }
-  return -30
+  return null
 }
 
 export function enrichirDepuisCatalog(ad: ExerciceAdapte[], cat: Exercice[]): ExerciceAdapte[] {

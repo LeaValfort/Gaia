@@ -23,15 +23,21 @@ import { PLANNING_DEFAUT } from '@/lib/planning-sport'
 import { type SportLoggerId } from '@/lib/sport-page'
 import { Button } from '@/components/ui/button'
 import { cn } from '@/lib/utils'
+import { POURCENTAGES_GAIA_DEFAUT } from '@/types'
 import type {
   Phase,
   PlanningSport,
+  PourcentagesGaia,
   SeanceProfil,
   TypeSeance,
   WorkoutMuscuComplet,
   WorkoutNatationComplet,
   WorkoutYogaComplet,
 } from '@/types'
+
+function pourcentagesEffectifs(p: PourcentagesGaia | null | undefined): PourcentagesGaia {
+  return { ...POURCENTAGES_GAIA_DEFAUT, ...(p ?? {}) }
+}
 
 type FormSport = SportLoggerId | 'autre'
 
@@ -55,6 +61,7 @@ export default function SportPage() {
   const [jourDuCycle, setJourDuCycle] = useState(1)
   const [userId, setUserId] = useState<string | null>(null)
   const [planning, setPlanning] = useState<PlanningSport>(PLANNING_DEFAUT)
+  const [pourcentages, setPourcentages] = useState<PourcentagesGaia>(POURCENTAGES_GAIA_DEFAUT)
   const [seanceProfils, setSeanceProfils] = useState<SeanceProfil[]>([])
   const [prenom, setPrenom] = useState<string | null>(null)
   const [loading, setLoading] = useState(true)
@@ -123,7 +130,7 @@ export default function SportPage() {
           await Promise.all([
             supabase
               .from('user_preferences')
-              .select('last_cycle_start, cycle_length, planning_sport, mode_utilisateur')
+              .select('last_cycle_start, cycle_length, planning_sport, mode_utilisateur, pourcentages_gaia')
               .eq('user_id', user.id)
               .maybeSingle(),
             supabase.from('seance_profils').select('*').eq('user_id', user.id),
@@ -153,6 +160,7 @@ export default function SportPage() {
 
         const pMerge = planningComplet(prefs?.planning_sport as PlanningSport | undefined)
         setPlanning(pMerge)
+        setPourcentages(pourcentagesEffectifs(prefs?.pourcentages_gaia as PourcentagesGaia | undefined))
         setSeanceProfils((profils ?? []) as SeanceProfil[])
       } catch (e) {
         setErreur(e instanceof Error ? e.message : 'Erreur de chargement.')
@@ -273,6 +281,7 @@ export default function SportPage() {
                 planning={planning}
                 seanceExistante={seancesJour.muscu}
                 onEnregistre={apresEnregistrement}
+                pourcentages={pourcentages}
               />
             ) : null}
             {formOuvert === 'natation' && !chargementSeances ? (
@@ -282,6 +291,7 @@ export default function SportPage() {
                 date={dateSeance}
                 seanceExistante={seancesJour.natation}
                 onEnregistre={apresEnregistrement}
+                pourcentages={pourcentages}
               />
             ) : null}
             {formOuvert === 'yoga' && !chargementSeances ? (

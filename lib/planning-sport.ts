@@ -1,4 +1,5 @@
 import { getISODay } from 'date-fns'
+import { PHASES_DESIGN } from '@/lib/data/phases-design'
 import type {
   CategorieExercice,
   DerniereCharge,
@@ -6,37 +7,10 @@ import type {
   ExerciceCustom,
   Phase,
   PlanningSport,
+  PourcentagesGaia,
   SeanceAdaptee,
   TypePlanningJour,
 } from '@/types'
-
-export const COEFFICIENTS_PHASE = {
-  menstruation: {
-    charges: 0.7,
-    reps: 0.7,
-    series: 0.67,
-    message:
-      'Phase de règles — séance allégée : -30% charges et reps, 2 séries au lieu de 3',
-  },
-  folliculaire: {
-    charges: 1.05,
-    reps: 1.0,
-    series: 1.0,
-    message: 'Énergie en hausse ! +5% sur les charges si tu te sens bien',
-  },
-  ovulation: {
-    charges: 1.1,
-    reps: 1.0,
-    series: 1.0,
-    message: "Pic d'énergie ! Tu peux pousser plus fort aujourd'hui +10%",
-  },
-  luteale: {
-    charges: 0.9,
-    reps: 0.8,
-    series: 1.0,
-    message: 'Phase lutéale — réduis progressivement : -10% charges, -20% reps',
-  },
-} as const
 
 export const LABELS_PLANNING: Record<
   TypePlanningJour,
@@ -79,19 +53,41 @@ export function getActiviteduJour(planning: PlanningSport, date: Date): TypePlan
   return planning[getJourSemaine(date)]
 }
 
-export function calculerChargeProposee(
-  derniereCharge: number | null,
-  coefficient: number
-): number | null {
-  if (derniereCharge == null || !Number.isFinite(derniereCharge)) return null
-  const v = derniereCharge * coefficient
-  return Math.round(v * 2) / 2
+/**
+ * Applique un pourcentage d'ajustement (+/-) à une valeur numérique (charge en
+ * muscu, distance en natation...), avec un arrondi adapté à l'unité utilisée.
+ * Le pourcentage vient des réglages de l'utilisatrice (Paramètres > Planning
+ * sport) — voir POURCENTAGES_GAIA_DEFAUT dans types/index.ts.
+ */
+export function appliquerPourcentage(valeur: number, pourcentage: number, arrondi = 1): number {
+  if (!Number.isFinite(valeur)) return valeur
+  const v = valeur * (1 + pourcentage / 100)
+  return Math.round(v / arrondi) * arrondi
 }
 
-function typeAdaptationPourPhase(phase: Phase): SeanceAdaptee['typeAdaptation'] {
-  if (phase === 'menstruation' || phase === 'luteale') return 'reduite'
-  if (phase === 'ovulation') return 'alternative'
+export function calculerChargeProposee(
+  derniereCharge: number | null,
+  pourcentage: number
+): number | null {
+  if (derniereCharge == null || !Number.isFinite(derniereCharge)) return null
+  return appliquerPourcentage(derniereCharge, pourcentage, 0.5)
+}
+
+function typeAdaptationPourPourcentage(pourcentage: number): SeanceAdaptee['typeAdaptation'] {
+  if (pourcentage < 0) return 'reduite'
+  if (pourcentage > 0) return 'alternative'
   return 'normale'
+}
+
+/**
+ * Message affiché dans la bannière "Suggestion Gaia", basé sur le pourcentage
+ * réglé par l'utilisatrice pour la phase (pas une valeur figée en dur).
+ */
+export function messagePourcentageGaia(phase: Phase, pourcentage: number): string {
+  const label = PHASES_DESIGN[phase].label
+  if (pourcentage === 0) return `${label} — pas d'ajustement particulier aujourd'hui.`
+  const signe = pourcentage > 0 ? '+' : ''
+  return `${label} — charge/distance ajustée de ${signe}${pourcentage}% (réglable dans Paramètres).`
 }
 
 function catDefaut(): CategorieExercice {
@@ -101,22 +97,20 @@ function catDefaut(): CategorieExercice {
 export function adapterSeancePhase(
   exercices: ExerciceCustom[],
   dernieresCharges: DerniereCharge[],
-  phase: Phase
+  phase: Phase,
+  pourcentages: PourcentagesGaia
 ): SeanceAdaptee {
-  const coeff = COEFFICIENTS_PHASE[phase]
+  const pourcentage = pourcentages[phase]
   const parNom = new Map(dernieresCharges.map((d) => [d.exercise_name, d]))
   const sortis: ExerciceAdapte[] = []
 
   for (const ex of [...exercices].sort((a, b) => a.ordre - b.ordre)) {
     const d = parNom.get(ex.nom)
-    const seriesAdaptees = Math.max(1, Math.round(ex.seriesDefaut * coeff.series))
-    const repsAdaptees = Math.max(1, Math.round(ex.repsDefaut * coeff.reps))
     const chargeOrig = d?.weight_kg ?? null
-    const chargeProposee = calculerChargeProposee(chargeOrig, coeff.charges)
-    const estAdapte =
-      seriesAdaptees !== ex.seriesDefaut ||
-      repsAdaptees !== ex.repsDefaut ||
-      (chargeProposee != null && chargeProposee !== chargeOrig)
+    const chargeProposee = calculerChargeProposee(chargeOrig, pourcentage)
+    // Seule la masse (charge) est ajustée selon la phase — le nombre de reps
+    // et de séries reste identique quelle que soit la phase (choix de Léa).
+    const estAdapte = chargeProposee != null && chargeProposee !== chargeOrig
 
     sortis.push({
       nom: ex.nom,
@@ -128,8 +122,8 @@ export function adapterSeancePhase(
       reposSecondes: ex.reposSecondes,
       description: '',
       conseil: '',
-      seriesAdaptees,
-      repsAdaptees,
+      seriesAdaptees: ex.seriesDefaut,
+      repsAdaptees: ex.repsDefaut,
       chargeProposee,
       chargeOriginale: chargeOrig,
       estAdapte,
@@ -138,7 +132,7 @@ export function adapterSeancePhase(
 
   return {
     exercices: sortis,
-    messageAdaptation: coeff.message,
-    typeAdaptation: typeAdaptationPourPhase(phase),
+    messageAdaptation: messagePourcentageGaia(phase, pourcentage),
+    typeAdaptation: typeAdaptationPourPourcentage(pourcentage),
   }
 }

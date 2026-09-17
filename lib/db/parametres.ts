@@ -1,15 +1,21 @@
 'use server'
 
 import { creerClientServeur } from '@/lib/supabase-server'
-import type { MacrosMode, UserPreferences } from '@/types'
+import type { MacrosMode, PourcentagesGaia, UserPreferences } from '@/types'
 import { PLANNING_DEFAUT } from '@/lib/planning-sport'
 import {
   DEFAULT_CYCLE_LENGTH,
   DEFAULT_COOK_TIME,
   DEFAULT_MODE_UTILISATEUR,
+  POURCENTAGES_GAIA_DEFAUT,
 } from '@/types'
 
 const MACROS_MODE_DEFAUT: MacrosMode = 'auto'
+
+/** Fusionne avec les valeurs par défaut (colonne absente avant migration, ou phase manquante). */
+function pourcentagesEffectifs(p: PourcentagesGaia | null | undefined): PourcentagesGaia {
+  return { ...POURCENTAGES_GAIA_DEFAUT, ...(p ?? {}) }
+}
 
 function mapPrefs(row: Record<string, unknown>): UserPreferences {
   const r = row as unknown as UserPreferences
@@ -23,6 +29,7 @@ function mapPrefs(row: Record<string, unknown>): UserPreferences {
     google_calendar_enabled: r.google_calendar_enabled !== false,
     suivi_calorique: r.suivi_calorique !== false,
     macros_mode,
+    pourcentages_gaia: pourcentagesEffectifs(r.pourcentages_gaia),
   }
 }
 
@@ -74,6 +81,7 @@ export async function updateUserPreferences(
       google_calendar_enabled: actuel?.google_calendar_enabled !== false,
       suivi_calorique: actuel?.suivi_calorique !== false,
       planning_sport: updates.planning_sport ?? actuel?.planning_sport ?? PLANNING_DEFAUT,
+      pourcentages_gaia: pourcentagesEffectifs(updates.pourcentages_gaia ?? actuel?.pourcentages_gaia),
       ...updates,
       mode_utilisateur:
         updates.mode_utilisateur ?? actuel?.mode_utilisateur ?? DEFAULT_MODE_UTILISATEUR,
@@ -152,6 +160,7 @@ export async function initUserPreferences(): Promise<void> {
       google_calendar_enabled: true,
       macros_mode: MACROS_MODE_DEFAUT,
       suivi_calorique: true,
+      pourcentages_gaia: POURCENTAGES_GAIA_DEFAUT,
     })
 
     if (error) throw error

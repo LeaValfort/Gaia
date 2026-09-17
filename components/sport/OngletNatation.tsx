@@ -10,23 +10,37 @@ import { Textarea } from '@/components/ui/textarea'
 import { loggerSeanceNatationClient, modifierSeanceNatationClient } from '@/lib/sport/workouts-client'
 import { getNiveauDetail } from '@/lib/data/swimming'
 import { MacrosSeanceCard } from '@/components/sport/MacrosSeanceCard'
-import { SWIM_LEVEL_MAX, SWIM_LEVEL_MIN, type Phase, type WorkoutNatationComplet } from '@/types'
+import { BannerSuggestionGaia } from '@/components/sport/BannerSuggestionGaia'
+import { appliquerPourcentage, messagePourcentageGaia } from '@/lib/planning-sport'
+import {
+  POURCENTAGES_GAIA_DEFAUT,
+  SWIM_LEVEL_MAX,
+  SWIM_LEVEL_MIN,
+  type Phase,
+  type PourcentagesGaia,
+  type WorkoutNatationComplet,
+} from '@/types'
 import { cn } from '@/lib/utils'
 
 const RESS = ['😴', '😕', '😊', '⚡', '🚀'] as const
+/** Distance en natation arrondie au 25m le plus proche (usage courant en piscine). */
+const ARRONDI_DISTANCE_M = 25
 
 export function OngletNatation({
-  phase: _p,
-  userId: _u,
+  phase,
+  userId,
   date,
   seanceExistante,
   onEnregistre,
+  pourcentages = POURCENTAGES_GAIA_DEFAUT,
 }: {
   phase: Phase | null
   userId: string
   date: string
   seanceExistante?: WorkoutNatationComplet | null
   onEnregistre?: () => void
+  /** Pourcentages d'ajustement par phase, réglables dans Paramètres > Planning sport */
+  pourcentages?: PourcentagesGaia
 }) {
   const router = useRouter()
   const edit = !!seanceExistante
@@ -37,6 +51,7 @@ export function OngletNatation({
   const [notes, setNotes] = useState(seanceExistante?.notes ?? '')
   const [res, setRes] = useState(seanceExistante?.feeling ?? 0)
   const [ch, setCh] = useState(false)
+  const [mode, setMode] = useState<'normale' | 'gaia'>('normale')
 
   useEffect(() => {
     setNiv(seanceExistante?.swim.level ?? 1)
@@ -48,8 +63,12 @@ export function OngletNatation({
   }, [seanceExistante, date])
 
   const info = getNiveauDetail(niv)
+  const distanceCible =
+    phase && mode === 'gaia'
+      ? appliquerPourcentage(info.distanceTotale, pourcentages[phase], ARRONDI_DISTANCE_M)
+      : info.distanceTotale
   const dist = parseInt(distReelle, 10)
-  const totalM = Number.isFinite(dist) && dist > 0 ? dist : info.distanceTotale
+  const totalM = Number.isFinite(dist) && dist > 0 ? dist : distanceCible
   const rCrawl = info.distanceTotale > 0 ? info.crawlM / info.distanceTotale : 0.7
   const crawlM = Math.round(totalM * rCrawl)
   const breaststrokeM = Math.max(0, totalM - crawlM)
@@ -113,6 +132,14 @@ export function OngletNatation({
           {info.structure} = {info.distanceTotale} m
         </p>
       </div>
+      {phase ? (
+        <BannerSuggestionGaia
+          phase={phase}
+          message={messagePourcentageGaia(phase, pourcentages[phase])}
+          modeActif={mode}
+          onChangerMode={setMode}
+        />
+      ) : null}
       <div>
         <p className="text-xs text-neutral-500">Distance réelle nagée (m)</p>
         <Input
@@ -121,7 +148,7 @@ export function OngletNatation({
           value={distReelle}
           onChange={(e) => setDistReelle(e.target.value)}
           className="border-emerald-200 dark:border-emerald-800"
-          placeholder={`ex. ${info.distanceTotale}`}
+          placeholder={`ex. ${distanceCible}`}
         />
       </div>
       <Textarea value={notes} onChange={(e) => setNotes(e.target.value)} rows={2} className="border-emerald-200 text-sm dark:border-emerald-800" placeholder="Notes (optionnel)" />
@@ -146,14 +173,14 @@ export function OngletNatation({
       <div className="rounded-xl border border-[#059669]/30 bg-[#ECFDF5] px-4 py-3 text-sm text-[#065F46] dark:border-emerald-800 dark:bg-emerald-950/40 dark:text-emerald-100">
         <p className="font-semibold">Bilan</p>
         <p>
-          Niveau {niv} · {info.distanceTotale} m prévus · Nage libre + Brasse
+          Niveau {niv} · {totalM} m prévus{mode === 'gaia' && totalM !== info.distanceTotale ? ' (ajusté)' : ''} · Nage libre + Brasse
         </p>
       </div>
-      {_u ? (
+      {userId ? (
         <MacrosSeanceCard
           typeSeance="natation"
-          userId={_u}
-          phase={_p ?? 'folliculaire'}
+          userId={userId}
+          phase={phase ?? 'folliculaire'}
           workoutId={seanceExistante?.id}
           seanceExistante={seanceExistante ?? null}
         />

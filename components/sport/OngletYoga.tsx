@@ -12,6 +12,7 @@ import { MacrosSeanceCard } from '@/components/sport/MacrosSeanceCard'
 import { MuscuRessentiEmojis } from '@/components/sport/muscu/MuscuRessentiEmojis'
 import { getSeanceParPhase, getSeanceYoga } from '@/lib/data/yoga'
 import { loggerSeanceYogaClient, modifierSeanceYogaClient } from '@/lib/sport/workouts-client'
+import { PHASES_DESIGN } from '@/lib/data/phases-design'
 import type { Phase, SeanceYoga, TypeYoga, WorkoutYogaComplet } from '@/types'
 
 function parseType(n: string | null): TypeYoga | null {
@@ -97,21 +98,31 @@ export function OngletYoga({
         </p>
       ) : null}
       <div className="flex flex-wrap gap-2">
-        {MODES.map((m) => (
-          <button
-            key={m.t}
-            type="button"
-            onClick={() => {
-              setType(m.t)
-              setTimer(false)
-            }}
-            className={`min-w-0 flex-1 rounded-lg px-2 py-2 text-sm sm:px-3 ${
-              type === m.t ? 'bg-[#7C3AED] text-white' : 'bg-white/90 dark:bg-neutral-800/90'
-            }`}
-          >
-            {m.e} {m.label}
-          </button>
-        ))}
+        {MODES.map((m) => {
+          const phasesConseillees = getSeanceYoga(m.t)
+            .phaseCycle.map((p) => PHASES_DESIGN[p].label)
+            .join(' · ')
+          return (
+            <button
+              key={m.t}
+              type="button"
+              onClick={() => {
+                setType(m.t)
+                setTimer(false)
+              }}
+              className={`min-w-0 flex-1 rounded-lg px-2 py-2 text-center text-sm sm:px-3 ${
+                type === m.t ? 'bg-[#7C3AED] text-white' : 'bg-white/90 dark:bg-neutral-800/90'
+              }`}
+            >
+              <span className="block">
+                {m.e} {m.label}
+              </span>
+              <span className={`block text-[9px] font-normal ${type === m.t ? 'text-white/80' : 'text-neutral-500 dark:text-neutral-400'}`}>
+                {phasesConseillees}
+              </span>
+            </button>
+          )
+        })}
       </div>
       <p className="text-sm text-neutral-600 dark:text-neutral-400">{seance.description}</p>
       <div className="flex flex-col gap-2">

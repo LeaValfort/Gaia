@@ -646,6 +646,16 @@ export type Theme = 'light' | 'dark' | 'system'
 /** Mode d’affichage : suivi cycle complet ou nutrition générale sans cycle */
 export type ModeUtilisateur = 'cycle' | 'sans_cycle'
 
+/**
+ * Pourcentage d'ajustement (+/-) appliqué selon la phase du cycle, réglable
+ * dans Paramètres > Planning sport. S'applique à la charge en muscu et à la
+ * distance en natation (et à toute nouvelle séance ajoutée plus tard).
+ * Valeurs par défaut : voir POURCENTAGES_GAIA_DEFAUT. Ce sont des réglages de
+ * confort personnalisables, pas une prescription scientifique validée — la
+ * littérature ne fixe pas de chiffre précis (voir Bibliographie).
+ */
+export type PourcentagesGaia = Record<Phase, number>
+
 export interface UserPreferences {
   id: string
   user_id: string
@@ -673,6 +683,8 @@ export interface UserPreferences {
   suivi_calorique?: boolean
   /** Date (ISO) de la dernière génération automatique de conseils via l'IA */
   conseils_generes_le?: string | null
+  /** Pourcentages d'ajustement par phase (charge muscu, distance natation...) */
+  pourcentages_gaia?: PourcentagesGaia | null
 }
 
 export type MacrosMode = 'auto' | 'manuel'
@@ -718,6 +730,17 @@ export const SWIM_LEVEL_MAX = 5
 export const DEFAULT_CYCLE_LENGTH = 26
 export const DEFAULT_COOK_TIME = 30
 export const DEFAULT_MODE_UTILISATEUR: ModeUtilisateur = 'cycle'
+/**
+ * Valeurs par défaut des pourcentages Gaia par phase — réglage de confort
+ * personnalisable (Paramètres > Planning sport), pas une prescription
+ * scientifique stricte (voir Bibliographie, revues 2021-2025 sur le sujet).
+ */
+export const POURCENTAGES_GAIA_DEFAUT: PourcentagesGaia = {
+  menstruation: -15,
+  folliculaire: 5,
+  ovulation: 10,
+  luteale: -10,
+}
 
 // ------------------------------------------------------------
 // Sport — exercices muscu
