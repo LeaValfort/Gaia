@@ -3,7 +3,27 @@
 // Chaque sport définit les champs à afficher dans le formulaire.
 // ============================================================
 
-import { Mountain, Bike, Timer, Activity, Music, Map, Plus } from 'lucide-react'
+import {
+  Mountain,
+  Bike,
+  Timer,
+  Activity,
+  Music,
+  Map,
+  Plus,
+  Waves,
+  Snowflake,
+  Swords,
+  Dumbbell,
+  Sailboat,
+  Flag,
+  Footprints,
+  Target,
+  Trophy,
+  Zap,
+  PersonStanding,
+  HeartPulse,
+} from 'lucide-react'
 import type { LucideIcon } from 'lucide-react'
 import type { ActivityLogFormData, TypeActivite } from '@/types'
 
@@ -89,6 +109,120 @@ export const SPORTS_CONFIG: ConfigSport[] = [
       { cle: 'elevation_m',    label: 'Dénivelé +', type: 'nombre', unite: 'm',   optionnel: true },
       { cle: 'calories',       label: 'Calories',   type: 'nombre', unite: 'kcal', optionnel: true },
       { cle: 'heart_rate_avg', label: 'FC moyenne', type: 'nombre', unite: 'bpm',  optionnel: true },
+    ],
+  },
+  {
+    type: 'natation_libre',
+    nom: 'Natation libre',
+    Icone: Waves,
+    champs: [
+      { cle: 'duration_min', label: 'Durée',    type: 'duree',  unite: 'min' },
+      { cle: 'distance_km',  label: 'Distance', type: 'nombre', unite: 'km',   optionnel: true },
+      { cle: 'calories',     label: 'Calories', type: 'nombre', unite: 'kcal', optionnel: true },
+    ],
+  },
+  {
+    type: 'ski',
+    nom: 'Ski / Snowboard',
+    Icone: Snowflake,
+    champs: [
+      { cle: 'duration_min', label: 'Durée',      type: 'duree',  unite: 'min' },
+      { cle: 'distance_km',  label: 'Distance',   type: 'nombre', unite: 'km',   optionnel: true },
+      { cle: 'elevation_m',  label: 'Dénivelé',   type: 'nombre', unite: 'm',    optionnel: true },
+      { cle: 'calories',     label: 'Calories',   type: 'nombre', unite: 'kcal', optionnel: true },
+    ],
+  },
+  {
+    type: 'boxe',
+    nom: 'Boxe / Arts martiaux',
+    Icone: Swords,
+    champs: [
+      { cle: 'duration_min', label: 'Durée',    type: 'duree',  unite: 'min' },
+      { cle: 'sport_style',  label: 'Type',     type: 'texte',  placeholder: 'boxe anglaise, judo, MMA...', optionnel: true },
+      { cle: 'calories',     label: 'Calories', type: 'nombre', unite: 'kcal', optionnel: true },
+    ],
+  },
+  {
+    type: 'muscu_libre',
+    nom: 'Muscu libre / Crossfit',
+    Icone: Dumbbell,
+    champs: [
+      { cle: 'duration_min', label: 'Durée',    type: 'duree',  unite: 'min' },
+      { cle: 'calories',     label: 'Calories', type: 'nombre', unite: 'kcal', optionnel: true },
+    ],
+  },
+  {
+    type: 'voile',
+    nom: 'Voile / Paddle',
+    Icone: Sailboat,
+    champs: [
+      { cle: 'duration_min', label: 'Durée',    type: 'duree',  unite: 'min' },
+      { cle: 'distance_km',  label: 'Distance', type: 'nombre', unite: 'km', optionnel: true },
+    ],
+  },
+  {
+    type: 'golf',
+    nom: 'Golf',
+    Icone: Flag,
+    champs: [
+      { cle: 'duration_min', label: 'Durée',    type: 'duree',  unite: 'min' },
+      { cle: 'distance_km',  label: 'Distance parcourue', type: 'nombre', unite: 'km', optionnel: true },
+      { cle: 'calories',     label: 'Calories', type: 'nombre', unite: 'kcal', optionnel: true },
+    ],
+  },
+  {
+    type: 'marche',
+    nom: 'Marche',
+    Icone: Footprints,
+    champs: [
+      { cle: 'distance_km',  label: 'Distance', type: 'nombre', unite: 'km' },
+      { cle: 'duration_min', label: 'Durée',    type: 'duree',  unite: 'min' },
+      { cle: 'calories',     label: 'Calories', type: 'nombre', unite: 'kcal', optionnel: true },
+    ],
+  },
+  {
+    type: 'football',
+    nom: 'Football',
+    Icone: Target,
+    champs: [
+      { cle: 'duration_min', label: 'Durée',    type: 'duree',  unite: 'min' },
+      { cle: 'calories',     label: 'Calories', type: 'nombre', unite: 'kcal', optionnel: true },
+    ],
+  },
+  {
+    type: 'basket',
+    nom: 'Basketball',
+    Icone: Trophy,
+    champs: [
+      { cle: 'duration_min', label: 'Durée',    type: 'duree',  unite: 'min' },
+      { cle: 'calories',     label: 'Calories', type: 'nombre', unite: 'kcal', optionnel: true },
+    ],
+  },
+  {
+    type: 'raquette',
+    nom: 'Tennis / Badminton / Squash',
+    Icone: Zap,
+    champs: [
+      { cle: 'duration_min', label: 'Durée',    type: 'duree',  unite: 'min' },
+      { cle: 'calories',     label: 'Calories', type: 'nombre', unite: 'kcal', optionnel: true },
+    ],
+  },
+  {
+    type: 'equitation',
+    nom: 'Équitation',
+    Icone: PersonStanding,
+    champs: [
+      { cle: 'duration_min', label: 'Durée', type: 'duree', unite: 'min' },
+    ],
+  },
+  {
+    type: 'fitness',
+    nom: 'Fitness / Cours collectif',
+    Icone: HeartPulse,
+    champs: [
+      { cle: 'duration_min', label: 'Durée',    type: 'duree',  unite: 'min' },
+      { cle: 'sport_style',  label: 'Type',     type: 'texte',  placeholder: 'HIIT, Body Pump, step...', optionnel: true },
+      { cle: 'calories',     label: 'Calories', type: 'nombre', unite: 'kcal', optionnel: true },
     ],
   },
   {

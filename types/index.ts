@@ -441,7 +441,26 @@ export interface ShoppingItem {
 // ------------------------------------------------------------
 
 /** Type d'activité pour l'onglet "Autre sport" */
-export type TypeActivite = 'escalade' | 'velo' | 'course' | 'pilates' | 'danse' | 'rando' | 'autre'
+export type TypeActivite =
+  | 'escalade'
+  | 'velo'
+  | 'course'
+  | 'pilates'
+  | 'danse'
+  | 'rando'
+  | 'natation_libre'
+  | 'ski'
+  | 'boxe'
+  | 'muscu_libre'
+  | 'voile'
+  | 'golf'
+  | 'marche'
+  | 'football'
+  | 'basket'
+  | 'raquette'
+  | 'equitation'
+  | 'fitness'
+  | 'autre'
 
 /** Une entrée dans activity_logs */
 export interface ActivityLog {

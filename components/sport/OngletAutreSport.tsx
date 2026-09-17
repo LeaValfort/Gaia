@@ -7,19 +7,10 @@ import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Textarea } from '@/components/ui/textarea'
 import { loggerActiviteClient } from '@/lib/sport/activities-client'
-import { ACTIVITY_LOG_INITIAL, getSportConfig, type ConfigChamp } from '@/lib/data/sportsConfig'
+import { ACTIVITY_LOG_INITIAL, getSportConfig, SPORTS_CONFIG, type ConfigChamp } from '@/lib/data/sportsConfig'
 import { cn } from '@/lib/utils'
-import type { ActivityLogFormData, TypeActivite } from '@/types'
+import type { ActivityLogFormData } from '@/types'
 
-const CHIPS: { type: TypeActivite; label: string }[] = [
-  { type: 'escalade', label: '🧗 Escalade' },
-  { type: 'velo', label: '🚴 Vélo' },
-  { type: 'course', label: '🏃 Course' },
-  { type: 'pilates', label: '🩰 Pilates' },
-  { type: 'danse', label: '💃 Danse' },
-  { type: 'rando', label: '🥾 Rando' },
-  { type: 'autre', label: '➕ Autre' },
-]
 const EMOJIS = ['😴', '😕', '😊', '⚡', '🚀'] as const
 
 function champ(c: ConfigChamp, f: ActivityLogFormData, set: (k: keyof ActivityLogFormData, v: string) => void) {
@@ -82,17 +73,18 @@ export function OngletAutreSport({
     <div className="space-y-4 rounded-xl border border-amber-200/90 bg-[#FFFBEB]/90 p-4 dark:border-amber-900/50 dark:bg-amber-950/20">
       <p className="text-xs font-semibold text-[#D97706]">Type d’activité</p>
       <div className="flex flex-wrap gap-2">
-        {CHIPS.map((c) => (
+        {SPORTS_CONFIG.map((c) => (
           <button
             key={c.type}
             type="button"
             onClick={() => setF({ ...ACTIVITY_LOG_INITIAL, sport_type: c.type })}
             className={cn(
-              'rounded-full border px-3 py-1.5 text-sm',
+              'flex items-center gap-1.5 rounded-full border px-3 py-1.5 text-sm',
               t === c.type ? 'border-[#D97706] bg-amber-100 font-medium dark:bg-amber-900/50' : 'border-amber-200/80 dark:border-amber-800'
             )}
           >
-            {c.label}
+            <c.Icone className="size-4" />
+            {c.nom}
           </button>
         ))}
       </div>
