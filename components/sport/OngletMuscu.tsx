@@ -9,7 +9,7 @@ import { MacrosSeanceCard } from '@/components/sport/MacrosSeanceCard'
 import { BannerSuggestionGaia } from '@/components/sport/BannerSuggestionGaia'
 import { ExerciceItem } from '@/components/sport/ExerciceItem'
 import { ModaleEditSeance } from '@/components/sport/ModaleEditSeance'
-import { SelecteurVariante } from '@/components/sport/SelecteurVariante'
+import { ONGLET_DEFAUT_ID, SelecteurVariante } from '@/components/sport/SelecteurVariante'
 import { MuscuRessentiEmojis } from '@/components/sport/muscu/MuscuRessentiEmojis'
 import { MuscuTypeLieu } from '@/components/sport/muscu/MuscuTypeLieu'
 import { Button } from '@/components/ui/button'
@@ -224,8 +224,8 @@ export function OngletMuscu({
       <MuscuTypeLieu type={typeSeance} lieu={lieu} phase={phase} onType={setTypeSeance} onLieu={setLieu} />
       <SelecteurVariante
         variantes={variantes}
-        activeId={varianteActiveId}
-        onSelect={(id) => void selectionnerVariante(id)}
+        activeId={varianteActiveId ?? ONGLET_DEFAUT_ID}
+        onSelect={(id) => void selectionnerVariante(id === ONGLET_DEFAUT_ID ? null : id)}
         onCreer={(nom) => void creerVarianteMuscu(nom)}
         onRenommer={(id, nom) => void renommerVarianteMuscu(id, nom)}
         onSupprimer={(id) => void supprimerVarianteMuscu(id)}

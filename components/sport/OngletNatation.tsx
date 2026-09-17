@@ -11,7 +11,7 @@ import { loggerSeanceNatationClient, modifierSeanceNatationClient } from '@/lib/
 import { getNiveauDetail, LABELS_NAGE, totauxDepuisBlocs } from '@/lib/data/swimming'
 import { MacrosSeanceCard } from '@/components/sport/MacrosSeanceCard'
 import { BannerSuggestionGaia } from '@/components/sport/BannerSuggestionGaia'
-import { SelecteurVariante } from '@/components/sport/SelecteurVariante'
+import { SelecteurVariante, type OngletFixeVariante } from '@/components/sport/SelecteurVariante'
 import { ModaleEditBlocsNatation } from '@/components/sport/ModaleEditBlocsNatation'
 import { appliquerPourcentage, messagePourcentageGaia } from '@/lib/planning-sport'
 import {
@@ -38,6 +38,13 @@ import { cn } from '@/lib/utils'
 const RESS = ['😴', '😕', '😊', '⚡', '🚀'] as const
 /** Distance en natation arrondie au 25m le plus proche (usage courant en piscine). */
 const ARRONDI_DISTANCE_M = 25
+
+/** Préfixe des ids d'onglets fixes représentant un niveau du catalogue (ex. "niveau:3"). */
+const PREFIXE_NIVEAU = 'niveau:'
+const NIVEAUX_ONGLETS: OngletFixeVariante[] = Array.from(
+  { length: SWIM_LEVEL_MAX - SWIM_LEVEL_MIN + 1 },
+  (_, i) => i + SWIM_LEVEL_MIN
+).map((n) => ({ id: `${PREFIXE_NIVEAU}${n}`, label: `Niveau ${n}` }))
 
 export function OngletNatation({
   phase,
@@ -112,6 +119,18 @@ export function OngletNatation({
     const v = id ? variantes.find((x) => x.id === id) ?? null : null
     if (v?.niveau_natation) setNiv(v.niveau_natation)
     setBlocs(v?.blocs_natation?.length ? v.blocs_natation : null)
+  }
+
+  /** Gère la sélection dans la rangée d'onglets fusionnée : niveaux fixes du catalogue + variantes perso. */
+  async function choisirOnglet(id: string) {
+    if (id.startsWith(PREFIXE_NIVEAU)) {
+      const n = parseInt(id.slice(PREFIXE_NIVEAU.length), 10)
+      if (!Number.isFinite(n)) return
+      if (varianteActiveId) await selectionnerVarianteNatation(null)
+      setNiv(n)
+      return
+    }
+    await selectionnerVarianteNatation(id)
   }
 
   async function creerVarianteNatation(nom: string) {
@@ -223,29 +242,14 @@ export function OngletNatation({
       ) : null}
       <SelecteurVariante
         variantes={variantes}
-        activeId={varianteActiveId}
-        onSelect={(id) => void selectionnerVarianteNatation(id)}
+        activeId={varianteActiveId ?? `${PREFIXE_NIVEAU}${niv}`}
+        onSelect={(id) => void choisirOnglet(id)}
         onCreer={(nom) => void creerVarianteNatation(nom)}
         onRenommer={(id, nom) => void renommerVarianteNatation(id, nom)}
         onSupprimer={(id) => void supprimerVarianteNatation(id)}
+        onglets={NIVEAUX_ONGLETS}
         couleurActif="bg-[#059669] text-white"
       />
-      <p className="text-xs font-semibold uppercase text-[#059669] dark:text-emerald-300">Niveau de base</p>
-      <div className="flex flex-wrap gap-2">
-        {Array.from({ length: SWIM_LEVEL_MAX - SWIM_LEVEL_MIN + 1 }, (_, i) => i + SWIM_LEVEL_MIN).map((n) => (
-          <button
-            key={n}
-            type="button"
-            onClick={() => setNiv(n)}
-            className={cn(
-              'min-w-[2.5rem] rounded-lg px-3 py-2 text-sm font-semibold transition-colors',
-              niv === n ? 'bg-[#059669] text-white shadow' : 'bg-white/90 text-neutral-800 dark:bg-neutral-800 dark:text-neutral-100'
-            )}
-          >
-            {n}
-          </button>
-        ))}
-      </div>
       <div className="flex items-start justify-between gap-2 rounded-lg border border-emerald-200/60 bg-white/60 p-3 text-sm dark:border-emerald-800 dark:bg-emerald-950/30">
         <div className="min-w-0 flex-1">
           {blocs ? (

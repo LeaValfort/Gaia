@@ -10,7 +10,7 @@ import { TimerYoga } from '@/components/sport/TimerYoga'
 import { YogaPostureLigne } from '@/components/sport/yoga/YogaPostureLigne'
 import { MacrosSeanceCard } from '@/components/sport/MacrosSeanceCard'
 import { MuscuRessentiEmojis } from '@/components/sport/muscu/MuscuRessentiEmojis'
-import { SelecteurVariante } from '@/components/sport/SelecteurVariante'
+import { ONGLET_DEFAUT_ID, SelecteurVariante } from '@/components/sport/SelecteurVariante'
 import { ModaleEditPosturesYoga } from '@/components/sport/ModaleEditPosturesYoga'
 import { getSeanceParPhase, getSeanceYoga } from '@/lib/data/yoga'
 import { loggerSeanceYogaClient, modifierSeanceYogaClient } from '@/lib/sport/workouts-client'
@@ -222,8 +222,8 @@ export function OngletYoga({
       </div>
       <SelecteurVariante
         variantes={variantes}
-        activeId={varianteActiveId}
-        onSelect={(id) => void selectionnerVarianteYoga(id)}
+        activeId={varianteActiveId ?? ONGLET_DEFAUT_ID}
+        onSelect={(id) => void selectionnerVarianteYoga(id === ONGLET_DEFAUT_ID ? null : id)}
         onCreer={(nom) => void creerVarianteYoga(nom)}
         onRenommer={(id, nom) => void renommerVarianteYoga(id, nom)}
         onSupprimer={(id) => void supprimerVarianteYoga(id)}
