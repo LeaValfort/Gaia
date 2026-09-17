@@ -8,7 +8,7 @@ import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Textarea } from '@/components/ui/textarea'
 import { loggerSeanceNatationClient, modifierSeanceNatationClient } from '@/lib/sport/workouts-client'
-import { getNiveauDetail, totauxDepuisBlocs } from '@/lib/data/swimming'
+import { blocsDefautPourNiveau, totauxDepuisBlocs } from '@/lib/data/swimming'
 import { MacrosSeanceCard } from '@/components/sport/MacrosSeanceCard'
 import { BannerSuggestionGaia } from '@/components/sport/BannerSuggestionGaia'
 import { SelecteurVariante, type OngletFixeVariante } from '@/components/sport/SelecteurVariante'
@@ -191,10 +191,10 @@ export function OngletNatation({
     toast.success('Blocs enregistrés')
   }
 
-  const info = getNiveauDetail(niv)
-  const effectif = blocs
-    ? totauxDepuisBlocs(blocs)
-    : { distanceTotale: info.distanceTotale, crawlM: info.crawlM, brasseM: info.brasseM, structureTexte: info.structure }
+  // Blocs affichés/utilisés pour les calculs : les blocs perso s'ils existent, sinon le
+  // point de départ dérivé du niveau — toujours affichés en lignes séparées (une par exercice).
+  const blocsAffiches = blocs ?? blocsDefautPourNiveau(niv)
+  const effectif = totauxDepuisBlocs(blocsAffiches)
   const distanceCible = phase && mode === 'gaia'
     ? appliquerPourcentage(effectif.distanceTotale, pourcentages[phase], ARRONDI_DISTANCE_M)
     : effectif.distanceTotale
@@ -254,23 +254,17 @@ export function OngletNatation({
       <div className="flex flex-col gap-2 rounded-lg border border-emerald-200/60 bg-white/60 p-3 text-sm dark:border-emerald-800 dark:bg-emerald-950/30">
         <div className="flex items-center justify-between gap-2">
           <p className="min-w-0 flex-1 font-medium text-neutral-900 dark:text-neutral-50">
-            {blocs ? 'Blocs personnalisés' : info.description}
+            {blocs ? 'Blocs personnalisés' : 'Structure de la séance'}
           </p>
           <Button type="button" size="sm" variant="outline" onClick={() => setModaleBlocs(true)} className="shrink-0">
             <Pencil className="mr-1 size-3" /> Modifier
           </Button>
         </div>
-        {blocs ? (
-          <div className="flex flex-col gap-1.5">
-            {blocs.map((b, i) => (
-              <BlocNatationLigne key={i} bloc={b} />
-            ))}
-          </div>
-        ) : (
-          <p className="font-mono text-[#059669] dark:text-emerald-300">
-            {info.structure} = {info.distanceTotale} m
-          </p>
-        )}
+        <div className="flex flex-col gap-1.5">
+          {blocsAffiches.map((b, i) => (
+            <BlocNatationLigne key={i} bloc={b} />
+          ))}
+        </div>
       </div>
       {phase ? (
         <BannerSuggestionGaia

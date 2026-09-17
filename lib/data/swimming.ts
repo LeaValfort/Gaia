@@ -86,13 +86,20 @@ export function libelleNage(nage: string): string {
   return LABELS_NAGE[nage as TypeNage] ?? nage
 }
 
-/** Blocs de départ dérivés d'un niveau du catalogue — simple point de départ à éditer. */
+/**
+ * Blocs de départ dérivés d'un niveau du catalogue — simple point de départ à éditer.
+ * Le bloc brasse absorbe l'écart d'arrondi pour que la somme des blocs corresponde
+ * toujours exactement à la distance totale officielle du niveau (voir NIVEAUX_DETAIL).
+ */
 export function blocsDefautPourNiveau(level: number): BlocNatation[] {
   const n = getNiveauDetail(level)
+  const echauffement = ECHAUFFEMENT_M
+  const crawl = Math.max(0, n.crawlM - ECHAUFFEMENT_M)
+  const brasse = Math.max(0, n.distanceTotale - echauffement - crawl)
   return [
-    { nage: 'echauffement', distanceM: ECHAUFFEMENT_M },
-    { nage: 'crawl', distanceM: Math.max(0, n.crawlM - ECHAUFFEMENT_M) },
-    { nage: 'brasse', distanceM: Math.max(0, n.brasseM) },
+    { nage: 'echauffement', distanceM: echauffement },
+    { nage: 'crawl', distanceM: crawl },
+    { nage: 'brasse', distanceM: brasse },
   ]
 }
 
