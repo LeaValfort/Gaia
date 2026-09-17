@@ -974,11 +974,23 @@ export const ECHAUFFEMENT_M = 150
 /** Type de séance yoga */
 export type TypeYoga = 'yin' | 'flow' | 'power'
 
+/** Catégories du grand catalogue de postures (filtrage dans l'éditeur) */
+export type CategoriePosture =
+  | 'debout'
+  | 'assise'
+  | 'torsion'
+  | 'equilibre'
+  | 'etirement'
+  | 'renforcement'
+  | 'relaxation'
+
 /** Une posture dans une séance yoga */
 export interface PostureYoga {
   nom: string
   dureeSec: number
   benefice: string
+  /** Optionnel — utilisé uniquement pour le filtrage dans le catalogue */
+  categorie?: CategoriePosture
 }
 
 /** Une séance yoga complète avec ses postures */

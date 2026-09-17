@@ -1,11 +1,11 @@
 'use client'
 
 import { useMemo, useState } from 'react'
-import { ArrowDown, ArrowUp, Plus, RefreshCw, Search, Trash2 } from 'lucide-react'
+import { ArrowDown, ArrowUp, RefreshCw, Trash2 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog'
 import { Input } from '@/components/ui/input'
-import { POSTURES_CATALOGUE } from '@/lib/data/yoga'
+import { SelecteurCataloguePostures } from '@/components/sport/yoga/SelecteurCataloguePostures'
 import type { PostureYoga } from '@/types'
 
 function deplacer<T>(liste: T[], i: number, sens: -1 | 1): T[] {
@@ -34,7 +34,6 @@ export function ModaleEditPosturesYoga({
   onFermer,
 }: ModaleEditPosturesYogaProps) {
   const [postures, setPostures] = useState<PostureYoga[]>(posturesActuelles)
-  const [q, setQ] = useState('')
   const [ch, setCh] = useState(false)
 
   const sup = (i: number) => setPostures((p) => p.filter((_, j) => j !== i))
@@ -45,13 +44,7 @@ export function ModaleEditPosturesYoga({
   const ajouter = (p: PostureYoga) => setPostures((prev) => [...prev, p])
   const defaut = () => setPostures([...posturesDefaut])
 
-  const res = useMemo(() => {
-    const t = q.trim().toLowerCase()
-    const pris = new Set(postures.map((p) => p.nom))
-    return POSTURES_CATALOGUE.filter((p) => !pris.has(p.nom))
-      .filter((p) => !t || p.nom.toLowerCase().includes(t))
-      .slice(0, 30)
-  }, [q, postures])
+  const nomsExclus = useMemo(() => new Set(postures.map((p) => p.nom)), [postures])
 
   async function save() {
     if (!postures.length) return
@@ -103,20 +96,7 @@ export function ModaleEditPosturesYoga({
           ))}
         </div>
         <div className="px-4 py-2">
-          <div className="relative mb-2">
-            <Search className="absolute top-1/2 left-2 size-4 -translate-y-1/2 text-neutral-400" />
-            <Input className="h-9 pl-8" placeholder="Recherche…" value={q} onChange={(e) => setQ(e.target.value)} />
-          </div>
-          <ul className="max-h-28 space-y-1 overflow-y-auto rounded border border-neutral-200 p-2 dark:border-neutral-700">
-            {res.map((p) => (
-              <li key={p.nom} className="flex items-center justify-between gap-2 text-sm">
-                <span className="truncate">{p.nom}</span>
-                <Button type="button" size="icon-sm" variant="secondary" className="h-7 w-7" onClick={() => ajouter(p)}>
-                  <Plus className="size-4" />
-                </Button>
-              </li>
-            ))}
-          </ul>
+          <SelecteurCataloguePostures nomsExclus={nomsExclus} onAjouter={ajouter} />
         </div>
         <DialogFooter className="flex-col gap-2 p-4 sm:flex-row sm:justify-between">
           <Button type="button" variant="outline" disabled={ch} onClick={defaut}>
