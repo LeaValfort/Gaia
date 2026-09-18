@@ -19,7 +19,8 @@ import { SectionApp } from '@/components/parametres/SectionApp'
 import { SectionCalculateurMacros } from '@/components/parametres/SectionCalculateurMacros'
 import { SectionDonneesCompte } from '@/components/parametres/SectionDonneesCompte'
 import { SectionMonCycle } from '@/components/parametres/SectionMonCycle'
-import { SectionPlanningSportComplet } from '@/components/parametres/SectionPlanningSportComplet'
+import { SectionPlanningSport } from '@/components/parametres/SectionPlanningSport'
+import { SectionPourcentagesGaia } from '@/components/parametres/SectionPourcentagesGaia'
 import { SectionTachesRecurrentes } from '@/components/parametres/SectionTachesRecurrentes'
 import { setMacrosMode, updateUserPreferences } from '@/lib/db/parametres'
 import type { MacroProfile, MacrosMode, RecurringTodo, SeanceProfil, Source, UserPreferences } from '@/types'
@@ -127,12 +128,18 @@ export function ParametresClient({
           ouvert={sectionOuverte === 'sport'}
           onToggle={() => toggleSection('sport')}
         >
-          <SectionPlanningSportComplet
+          <SectionPlanningSport
             prefs={prefs}
             userId={userId}
             seanceProfilsInitiales={seanceProfilsInitiales}
             onUpdate={onUpdate}
           />
+          <div className="mt-5 border-t border-neutral-200 pt-4 dark:border-neutral-800">
+            <p className="mb-2 text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+              Pourcentages « Séance Gaia »
+            </p>
+            <SectionPourcentagesGaia prefs={prefs} onUpdate={onUpdate} />
+          </div>
         </AccordeonSection>
 
         <AccordeonSection
