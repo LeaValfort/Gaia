@@ -10,12 +10,11 @@ import { getDailyMealIntakesJour } from '@/lib/db/dailyMealIntake'
 import { getMacroProfile } from '@/lib/db/macro-profiles'
 import { getTodosParDatePourUtilisateur } from '@/lib/db/todo'
 import { getCycleDay, getPhaseAvecStats } from '@/lib/cycle'
-import { getActiviteduJourEffectif, planningEffectif } from '@/lib/planning-sport'
-import { getOverrideJour } from '@/lib/db/planning-overrides'
+import { getOverridesJour } from '@/lib/db/planning-overrides'
 import { getEntreesPlanning } from '@/lib/db/planning-sport-entries'
 import { getToutesVariantesPourType } from '@/lib/db/sport-variantes'
 import { macrosCiblesPourJour } from '@/lib/macros-du-jour'
-import { seancesResoluesPourDate } from '@/lib/planning-sport-jour'
+import { seancesEffectivesJour, seancesResoluesPourDate, type SeanceEffectiveJour } from '@/lib/planning-sport-jour'
 import { getTypeJournee } from '@/lib/nutrition'
 import { generateTodosForToday } from '@/lib/recurring'
 import { fusionIntakesJour, totauxDepuisIntakes } from '@/lib/recapManuel'
@@ -75,10 +74,10 @@ export default async function PageAujourdhui({
     await generateTodosForToday(userId, aujourdhui)
   }
 
-  const [donnees, logDuJour, overrideJour] = await Promise.all([
+  const [donnees, logDuJour, overridesJour] = await Promise.all([
     getDonneesCyclePourAffichage(),
     getDailyLogParDate(dateStr),
-    getOverrideJour(dateStr),
+    getOverridesJour(dateStr),
   ])
   const todos = userId ? await getTodosParDatePourUtilisateur(userId, dateStr) : []
 
@@ -87,8 +86,6 @@ export default async function PageAujourdhui({
   const sansSuivi = mode === 'sans_cycle'
   const suiviCalorique = prefs?.suivi_calorique !== false
   const typeJournee = getTypeJournee(aujourdhui)
-  const planningSemaine = planningEffectif(prefs?.planning_sport)
-  const typeSeanceJour = getActiviteduJourEffectif(planningSemaine, aujourdhui, overrideJour)
 
   let phase: Phase = 'folliculaire'
   let jourDuCycle: number | null = null
@@ -97,30 +94,33 @@ export default async function PageAujourdhui({
     phase = getPhaseAvecStats(jourDuCycle, stats, cycleLength)
   }
 
+  let seancesEffectives: SeanceEffectiveJour[] = []
   let consoJour = { calories: 0, proteines: 0, glucides: 0, lipides: 0 }
   let macrosCibles: MacrosCiblesJour | null = null
 
-  if (suiviCalorique && userId) {
-    const [intakesJour, macroProfil, entreesPlanning, ...variantesParType] = await Promise.all([
-      getDailyMealIntakesJour(supabase, userId, dateStr),
-      getMacroProfile(userId),
+  if (userId) {
+    const [entreesPlanning, ...variantesParType] = await Promise.all([
       getEntreesPlanning(supabase, userId),
       ...TYPES_VARIANTES_MACROS.map((t) => getToutesVariantesPourType(supabase, userId, t)),
     ])
-    const entreesResolues = seancesResoluesPourDate(
-      entreesPlanning,
-      variantesParType.flat(),
-      aujourdhui
-    )
-    consoJour = totauxDepuisIntakes(fusionIntakesJour(dateStr, intakesJour))
-    macrosCibles = macrosCiblesPourJour({
-      profil: macroProfil,
-      phase,
-      entreesResolues,
-      date: aujourdhui,
-      sansSuiviCycle: sansSuivi,
-      macrosMode: prefs?.macros_mode ?? 'auto',
-    })
+    const entreesResolues = seancesResoluesPourDate(entreesPlanning, variantesParType.flat(), aujourdhui)
+    seancesEffectives = seancesEffectivesJour(entreesResolues, overridesJour)
+
+    if (suiviCalorique) {
+      const [intakesJour, macroProfil] = await Promise.all([
+        getDailyMealIntakesJour(supabase, userId, dateStr),
+        getMacroProfile(userId),
+      ])
+      consoJour = totauxDepuisIntakes(fusionIntakesJour(dateStr, intakesJour))
+      macrosCibles = macrosCiblesPourJour({
+        profil: macroProfil,
+        phase,
+        seancesEffectives,
+        date: aujourdhui,
+        sansSuiviCycle: sansSuivi,
+        macrosMode: prefs?.macros_mode ?? 'auto',
+      })
+    }
   }
 
   const prenom =
@@ -176,7 +176,7 @@ export default async function PageAujourdhui({
               macrosCibles={macrosCibles}
             />
           ) : null}
-          <SeanceDuJour phase={phaseHeader} sansCycle={sansSuivi} typeSeance={typeSeanceJour} />
+          <SeanceDuJour phase={phaseHeader} sansCycle={sansSuivi} seances={seancesEffectives} />
           <JournalDuJour
             phase={phaseHeader ?? 'folliculaire'}
             sansCycle={sansSuivi}

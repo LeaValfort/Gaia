@@ -822,6 +822,8 @@ export interface PlanningOverride {
   id: string
   user_id: string
   date: string
+  /** Séance précise remplacée (id `planning_sport_entries`) ; null = substitution "libre" (jour sans séance prévue). */
+  entree_id: string | null
   type_planning: TypePlanningJour
   created_at: string
 }

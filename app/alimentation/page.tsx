@@ -9,8 +9,9 @@ import { getLundiSemaine, getTypeJournee } from '@/lib/nutrition'
 import { getMacroProfile } from '@/lib/db/macro-profiles'
 import { macrosCiblesPourJour } from '@/lib/macros-du-jour'
 import { getEntreesPlanning } from '@/lib/db/planning-sport-entries'
+import { getOverridesJour } from '@/lib/db/planning-overrides'
 import { getToutesVariantesPourType } from '@/lib/db/sport-variantes'
-import { seancesResoluesPourDate } from '@/lib/planning-sport-jour'
+import { seancesEffectivesJour, seancesResoluesPourDate } from '@/lib/planning-sport-jour'
 import { getCycleDay, getPhaseAvecStats } from '@/lib/cycle'
 import { BADGE_PHASE_CYCLE } from '@/lib/cycle-affichage'
 import { PHASES_DESIGN } from '@/lib/data/phases-design'
@@ -49,12 +50,13 @@ export default async function PageAlimentation() {
   const sansSuivi = mode === 'sans_cycle'
   const suiviCalorique = prefs?.suivi_calorique !== false
 
-  const [intakesJour, macroProfil, entreesPlanning, ...variantesParType] = await Promise.all([
+  const [intakesJour, macroProfil, entreesPlanning, overridesJour, ...variantesParType] = await Promise.all([
     suiviCalorique
       ? getDailyMealIntakesJour(supabase, user.id, todayIso)
       : Promise.resolve([]),
     suiviCalorique ? getMacroProfile(user.id) : Promise.resolve(null),
     suiviCalorique ? getEntreesPlanning(supabase, user.id) : Promise.resolve([]),
+    suiviCalorique ? getOverridesJour(todayIso) : Promise.resolve([]),
     ...TYPES_VARIANTES_MACROS.map((t) =>
       suiviCalorique ? getToutesVariantesPourType(supabase, user.id, t) : Promise.resolve([])
     ),
@@ -74,12 +76,13 @@ export default async function PageAlimentation() {
   const entreesResolues = suiviCalorique
     ? seancesResoluesPourDate(entreesPlanning, variantesParType.flat(), today)
     : []
+  const seancesEffectives = suiviCalorique ? seancesEffectivesJour(entreesResolues, overridesJour) : []
 
   const macrosCibles: MacrosCiblesJour = suiviCalorique
     ? macrosCiblesPourJour({
         profil: macroProfil,
         phase,
-        entreesResolues,
+        seancesEffectives,
         date: today,
         sansSuiviCycle: sansSuivi,
         macrosMode: prefs?.macros_mode ?? 'auto',

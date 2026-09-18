@@ -22,7 +22,7 @@ import { typeSeanceVersForm } from '@/lib/sport/type-seance-form'
 import { BADGE_PHASE_CYCLE } from '@/lib/cycle-affichage'
 import { PHASES_DESIGN } from '@/lib/data/phases-design'
 import { getActiviteduJourEffectif, PLANNING_DEFAUT } from '@/lib/planning-sport'
-import { getOverrideJour, setOverrideJour, supprimerOverrideJour } from '@/lib/db/planning-overrides'
+import { getOverridesJour, setOverrideJour, supprimerOverrideJour } from '@/lib/db/planning-overrides'
 import { type SportLoggerId } from '@/lib/sport-page'
 import { Button } from '@/components/ui/button'
 import { cn } from '@/lib/utils'
@@ -168,7 +168,8 @@ export default function SportPage() {
         setPlanning(pMerge)
         setPourcentages(pourcentagesEffectifs(prefs?.pourcentages_gaia as PourcentagesGaia | undefined))
         setSeanceProfils((profils ?? []) as SeanceProfil[])
-        setOverrideAuj(await getOverrideJour(today))
+        const overridesAuj = await getOverridesJour(today)
+        setOverrideAuj(overridesAuj.find((o) => o.entree_id == null)?.type_planning ?? null)
       } catch (e) {
         setErreur(e instanceof Error ? e.message : 'Erreur de chargement.')
       } finally {
@@ -186,7 +187,7 @@ export default function SportPage() {
 
   async function changerSeanceJour(type: TypePlanningJour) {
     setChOverride(true)
-    const ok = await setOverrideJour(today, type)
+    const ok = await setOverrideJour(today, type, null)
     if (ok) setOverrideAuj(type)
     else toast.error('Impossible de changer la séance du jour.')
     setChOverride(false)
@@ -194,7 +195,7 @@ export default function SportPage() {
 
   async function revenirPlanning() {
     setChOverride(true)
-    const ok = await supprimerOverrideJour(today)
+    const ok = await supprimerOverrideJour(today, null)
     if (ok) setOverrideAuj(null)
     else toast.error('Impossible de revenir au planning.')
     setChOverride(false)

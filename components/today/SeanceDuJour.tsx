@@ -1,8 +1,9 @@
 import Link from 'next/link'
 import { Timer } from 'lucide-react'
-import { designPhaseAffichage, getInfosPhase } from '@/lib/cycle'
+import { designPhaseAffichage } from '@/lib/cycle'
 import { LABELS_PLANNING } from '@/lib/planning-sport'
-import type { Phase, TypePlanningJour } from '@/types'
+import { libelleSeanceEffective, type SeanceEffectiveJour } from '@/lib/planning-sport-jour'
+import type { Phase } from '@/types'
 import { cn } from '@/lib/utils'
 
 const CARD =
@@ -11,17 +12,17 @@ const CARD =
 export interface SeanceDuJourProps {
   phase: Phase | null
   sansCycle?: boolean
-  /** Activité planifiée aujourd'hui (planning hebdo) — affichée à la place du libellé de phase. */
-  typeSeance?: TypePlanningJour
+  /** Séances effectives du jour (planning + substitutions actives) — 0, 1 ou plusieurs. */
+  seances?: SeanceEffectiveJour[]
 }
 
-export function SeanceDuJour({ phase, sansCycle, typeSeance }: SeanceDuJourProps) {
+export function SeanceDuJour({ phase, sansCycle, seances = [] }: SeanceDuJourProps) {
   const d = designPhaseAffichage(phase, { sansCycle })
-  const titre = typeSeance
-    ? `${LABELS_PLANNING[typeSeance].emoji} ${LABELS_PLANNING[typeSeance].label}`
-    : phase && !sansCycle
-      ? `Séance conseillée — ${getInfosPhase(phase).label}`
-      : 'Séance du jour'
+  const libelles = seances.map(libelleSeanceEffective)
+  const titre =
+    libelles.length > 0
+      ? libelles.map((l) => `${l.emoji} ${l.label}`).join(' · ')
+      : `${LABELS_PLANNING.repos.emoji} ${LABELS_PLANNING.repos.label}`
   const duree = phase && !sansCycle && (phase === 'ovulation' || phase === 'folliculaire') ? '40–50 min' : '25–35 min'
 
   return (

@@ -6,7 +6,7 @@ import {
   getTypeJourneeEffectifMacros,
 } from '@/lib/nutrition'
 import { datePourPlanningSport } from '@/lib/planning-sport-recurrence'
-import { seanceLaPlusIntense, typePlanningDeEntree, type SeanceResolue } from '@/lib/planning-sport-jour'
+import { seanceLaPlusIntense, type SeanceEffectiveJour } from '@/lib/planning-sport-jour'
 import { PROFILS_DEFAUT } from '@/types'
 import type {
   MacroProfile,
@@ -39,16 +39,16 @@ const LIBELLE_PHASE: Record<Phase, string> = {
 
 /**
  * Type macro du jour : règles → cycle (si suivi du cycle actif) ; au moins une
- * séance planifiée (n'importe quel type, "Autre sport" compris) → sport ;
- * sinon repos.
+ * séance effective ce jour (planning + substitutions, "Autre sport" compris)
+ * → sport ; sinon repos.
  */
 export function typeJourneeMacrosDepuisEntrees(
   phase: Phase,
-  entreesResolues: SeanceResolue[],
+  seancesEffectives: SeanceEffectiveJour[],
   sansSuiviCycle: boolean
 ): TypeJourneeMacros {
   if (!sansSuiviCycle && phase === 'menstruation') return 'cycle'
-  return entreesResolues.length > 0 ? 'sport' : 'repos'
+  return seancesEffectives.length > 0 ? 'sport' : 'repos'
 }
 
 function typeJourneeAffichageDepuisMacros(typeMacro: TypeJourneeMacros): TypeJournee {
@@ -94,20 +94,22 @@ function macrosCiblesDepuisProfil(
 }
 
 /**
- * Cibles de macros pour une date précise, à partir des séances planifiées
- * déjà résolues (voir `seancesResoluesPourDate` dans `lib/planning-sport-jour.ts`).
+ * Cibles de macros pour une date précise, à partir des séances effectives du
+ * jour (voir `seancesEffectivesJour` dans `lib/planning-sport-jour.ts`, qui
+ * fusionne les séances planifiées avec les substitutions ponctuelles actives
+ * — "changer la séance d'aujourd'hui" influence donc aussi les macros).
  * S'il y a plusieurs séances ce jour-là, le profil d'effort le plus intense
  * est utilisé (choix de Léa).
  */
 export function macrosCiblesPourJour(options: {
   profil: MacroProfile | null
   phase: Phase
-  entreesResolues: SeanceResolue[]
+  seancesEffectives: SeanceEffectiveJour[]
   date: Date
   sansSuiviCycle: boolean
   macrosMode?: MacrosMode
 }): MacrosCiblesJour {
-  const { profil, phase, entreesResolues, date, sansSuiviCycle, macrosMode = 'auto' } = options
+  const { profil, phase, seancesEffectives, date, sansSuiviCycle, macrosMode = 'auto' } = options
   const dateStable = datePourPlanningSport(date)
   const typeJourneePlanning = getTypeJournee(dateStable)
   const typeJourneeUi = sansSuiviCycle
@@ -120,10 +122,10 @@ export function macrosCiblesPourJour(options: {
       : calculerMacrosJour(phase, typeJourneePlanning)
   }
 
-  const typeMacro = typeJourneeMacrosDepuisEntrees(phase, entreesResolues, sansSuiviCycle)
-  const seanceIntense = seanceLaPlusIntense(entreesResolues)
+  const typeMacro = typeJourneeMacrosDepuisEntrees(phase, seancesEffectives, sansSuiviCycle)
+  const seanceIntense = seanceLaPlusIntense(seancesEffectives)
   const effort = seanceIntense?.profil ?? { ...PROFILS_DEFAUT.repos }
-  const seanceType = seanceIntense ? typePlanningDeEntree(seanceIntense.entree) : 'repos'
+  const seanceType = seanceIntense?.type ?? 'repos'
 
   return macrosCiblesDepuisProfil(
     profil,
