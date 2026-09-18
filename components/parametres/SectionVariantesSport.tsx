@@ -102,7 +102,7 @@ export function SectionVariantesSport({ userId }: SectionVariantesSportProps) {
 
   return (
     <div className="space-y-3">
-      <Select value={comboId} onValueChange={(v) => setComboId(v)}>
+      <Select value={comboId} onValueChange={(v) => v && setComboId(v)}>
         <SelectTrigger className="w-full">
           <SelectValue />
         </SelectTrigger>
