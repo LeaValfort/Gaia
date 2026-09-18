@@ -2,7 +2,6 @@
 
 import { creerClientServeur } from '@/lib/supabase-server'
 import type { MacrosMode, PourcentagesGaia, UserPreferences } from '@/types'
-import { PLANNING_DEFAUT } from '@/lib/planning-sport'
 import {
   DEFAULT_CYCLE_LENGTH,
   DEFAULT_COOK_TIME,
@@ -80,7 +79,6 @@ export async function updateUserPreferences(
       notifications: actuel?.notifications ?? true,
       google_calendar_enabled: actuel?.google_calendar_enabled !== false,
       suivi_calorique: actuel?.suivi_calorique !== false,
-      planning_sport: updates.planning_sport ?? actuel?.planning_sport ?? PLANNING_DEFAUT,
       pourcentages_gaia: pourcentagesEffectifs(updates.pourcentages_gaia ?? actuel?.pourcentages_gaia),
       ...updates,
       mode_utilisateur:

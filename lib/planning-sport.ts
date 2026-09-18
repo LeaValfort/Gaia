@@ -1,4 +1,3 @@
-import { getISODay } from 'date-fns'
 import { PHASES_DESIGN } from '@/lib/data/phases-design'
 import type {
   CategorieExercice,
@@ -6,7 +5,6 @@ import type {
   ExerciceAdapte,
   ExerciceCustom,
   Phase,
-  PlanningSport,
   PourcentagesGaia,
   SeanceAdaptee,
   TypePlanningJour,
@@ -22,66 +20,6 @@ export const LABELS_PLANNING: Record<
   natation: { label: 'Natation', emoji: '🏊', couleur: 'bg-emerald-100' },
   autre: { label: 'Autre sport', emoji: '🎯', couleur: 'bg-amber-100' },
   repos: { label: 'Repos', emoji: '😴', couleur: 'bg-gray-100' },
-}
-
-export const PLANNING_DEFAUT: PlanningSport = {
-  lundi: 'muscu_full',
-  mardi: 'repos',
-  mercredi: 'yoga',
-  jeudi: 'repos',
-  vendredi: 'muscu_upper',
-  samedi: 'natation',
-  dimanche: 'repos',
-}
-
-const CLES_JOUR: (keyof PlanningSport)[] = [
-  'lundi',
-  'mardi',
-  'mercredi',
-  'jeudi',
-  'vendredi',
-  'samedi',
-  'dimanche',
-]
-
-export function getJourSemaine(date: Date): keyof PlanningSport {
-  const idx = getISODay(date) - 1
-  return CLES_JOUR[idx] ?? 'lundi'
-}
-
-export function getActiviteduJour(planning: PlanningSport, date: Date): TypePlanningJour {
-  return planning[getJourSemaine(date)]
-}
-
-/**
- * Planning hebdo fusionné avec les valeurs par défaut. Encore utilisé pour
- * l'affichage "séance du jour" (héritage de l'ancien planning jour-par-jour,
- * en cours de remplacement par le nouveau calendrier `planning_sport_entries`).
- */
-export function planningEffectif(planning: PlanningSport | null | undefined): PlanningSport {
-  const d = PLANNING_DEFAUT
-  if (!planning) return d
-  return {
-    lundi: planning.lundi ?? d.lundi,
-    mardi: planning.mardi ?? d.mardi,
-    mercredi: planning.mercredi ?? d.mercredi,
-    jeudi: planning.jeudi ?? d.jeudi,
-    vendredi: planning.vendredi ?? d.vendredi,
-    samedi: planning.samedi ?? d.samedi,
-    dimanche: planning.dimanche ?? d.dimanche,
-  }
-}
-
-/**
- * Activité effective d'un jour : la substitution ponctuelle (`planning_overrides`)
- * si elle existe pour cette date, sinon le planning hebdo normal.
- */
-export function getActiviteduJourEffectif(
-  planning: PlanningSport,
-  date: Date,
-  override: TypePlanningJour | null
-): TypePlanningJour {
-  return override ?? getActiviteduJour(planning, date)
 }
 
 /**

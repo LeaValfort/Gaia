@@ -689,8 +689,6 @@ export interface UserPreferences {
   notifications: boolean
   /** Afficher / utiliser l’agenda Google intégré sur l’accueil (défaut true si absent en base) */
   google_calendar_enabled?: boolean
-  /** Planning hebdo (lundi–dimanche), colonne `planning_sport` */
-  planning_sport?: PlanningSport
   /** Objectifs macros par défaut (jour de sport) */
   calories_defaut?: number | null
   proteines_defaut?: number | null
