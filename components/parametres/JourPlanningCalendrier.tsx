@@ -18,6 +18,8 @@ export interface JourPlanningCalendrierProps {
   label: string
   entrees: PlanningSportEntry[]
   variantesParType: Record<TypeVarianteSport, SportVariante[]>
+  /** Macros en mode Auto : un programme précis devient obligatoire (plus de « libre »). */
+  macrosObligatoire: boolean
   ouvert: boolean
   entreeEnCours: string | null
   onToggleAjout: () => void
@@ -33,6 +35,7 @@ export function JourPlanningCalendrier({
   label,
   entrees,
   variantesParType,
+  macrosObligatoire,
   ouvert,
   entreeEnCours,
   onToggleAjout,
@@ -62,6 +65,7 @@ export function JourPlanningCalendrier({
               variantesDisponibles={
                 entree.type_seance === 'autre' ? [] : variantesParType[entree.type_seance as TypeVarianteSport]
               }
+              programmeObligatoire={macrosObligatoire && entree.type_seance !== 'autre'}
               enChargement={entreeEnCours === entree.id}
               onChangerVariante={(id) => onChangerVariante(entree.id, id)}
               onChangerActivite={(a) => onChangerActivite(entree.id, a)}

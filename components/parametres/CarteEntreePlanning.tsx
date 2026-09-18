@@ -19,6 +19,8 @@ function labelVariante(v: SportVariante): string {
 export interface CarteEntreePlanningProps {
   entree: PlanningSportEntry
   variantesDisponibles: SportVariante[]
+  /** Macros en mode Auto : plus de « libre », un programme précis est requis. */
+  programmeObligatoire?: boolean
   enChargement?: boolean
   onChangerVariante: (varianteId: string | null) => void
   onChangerActivite: (activite: TypeActivite | null) => void
@@ -30,6 +32,7 @@ export interface CarteEntreePlanningProps {
 export function CarteEntreePlanning({
   entree,
   variantesDisponibles,
+  programmeObligatoire,
   enChargement,
   onChangerVariante,
   onChangerActivite,
@@ -73,6 +76,29 @@ export function CarteEntreePlanning({
             ))}
           </SelectContent>
         </Select>
+      ) : programmeObligatoire ? (
+        variantesDisponibles.length === 0 ? (
+          <p className="rounded-md bg-amber-50 px-2.5 py-2 text-[11px] text-amber-900 dark:bg-amber-950/30 dark:text-amber-100">
+            Crée d’abord un programme pour ce sport sur la page Sport : en mode macros Auto, « libre » n’est plus disponible ici.
+          </p>
+        ) : (
+          <Select
+            value={entree.variante_id}
+            onValueChange={(v) => v && onChangerVariante(v)}
+            disabled={enChargement}
+          >
+            <SelectTrigger className="h-8 text-xs">
+              <SelectValue placeholder="Choisis un programme" />
+            </SelectTrigger>
+            <SelectContent>
+              {variantesDisponibles.map((v) => (
+                <SelectItem key={v.id} value={v.id}>
+                  {labelVariante(v)}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        )
       ) : (
         <Select
           value={entree.variante_id ?? LIBRE_ID}

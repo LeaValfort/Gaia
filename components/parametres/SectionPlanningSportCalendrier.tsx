@@ -14,6 +14,7 @@ import { grouperEntreesParJour } from '@/lib/planning-sport-recurrence'
 import { supabase } from '@/lib/supabase'
 import type {
   JourSemaine,
+  MacrosMode,
   NouvellePlanningSportEntry,
   PlanningSportEntry,
   SportVariante,
@@ -41,10 +42,19 @@ const VARIANTES_VIDES: Record<TypeVarianteSport, SportVariante[]> = {
 /**
  * Calendrier hebdo du planning sport : plusieurs séances possibles par jour,
  * chacune avec une récurrence et un programme (ou « libre ») optionnels.
- * N'a aucun effet sur le planning jour-par-jour existant ni sur les macros
- * (voir SectionIntensiteSeances) — ce branchement viendra dans une étape suivante.
+ * L'intensité de chaque programme (pour les macros) se règle sur la page Sport,
+ * pas ici. En mode macros Auto, le « libre » n'est plus proposé pour Muscu/
+ * Natation/Yoga : un programme précis est requis (voir `macrosMode`).
+ * N'a aucun effet sur le planning jour-par-jour existant — ce branchement
+ * viendra dans une étape suivante.
  */
-export function SectionPlanningSportCalendrier({ userId }: { userId: string }) {
+export function SectionPlanningSportCalendrier({
+  userId,
+  macrosMode,
+}: {
+  userId: string
+  macrosMode: MacrosMode
+}) {
   const [entrees, setEntrees] = useState<PlanningSportEntry[]>([])
   const [variantesParType, setVariantesParType] = useState(VARIANTES_VIDES)
   const [chargement, setChargement] = useState(true)
@@ -110,6 +120,7 @@ export function SectionPlanningSportCalendrier({ userId }: { userId: string }) {
           label={label}
           entrees={parJour[cle]}
           variantesParType={variantesParType}
+          macrosObligatoire={macrosMode === 'auto'}
           ouvert={jourOuvert === cle}
           entreeEnCours={entreeEnCours}
           onToggleAjout={() => setJourOuvert((prev) => (prev === cle ? null : cle))}
