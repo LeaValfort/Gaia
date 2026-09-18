@@ -3,6 +3,7 @@
 import { useEffect, useMemo, useState } from 'react'
 import { toast } from 'sonner'
 import { JourPlanningCalendrier } from '@/components/parametres/JourPlanningCalendrier'
+import { getTypesActivitesLoggees } from '@/lib/db/activity-logs'
 import {
   creerEntreePlanning,
   getEntreesPlanning,
@@ -18,6 +19,7 @@ import type {
   NouvellePlanningSportEntry,
   PlanningSportEntry,
   SportVariante,
+  TypeActivite,
   TypeVarianteSport,
 } from '@/types'
 
@@ -57,6 +59,7 @@ export function SectionPlanningSportCalendrier({
 }) {
   const [entrees, setEntrees] = useState<PlanningSportEntry[]>([])
   const [variantesParType, setVariantesParType] = useState(VARIANTES_VIDES)
+  const [activitesLoggees, setActivitesLoggees] = useState<TypeActivite[]>([])
   const [chargement, setChargement] = useState(true)
   const [jourOuvert, setJourOuvert] = useState<JourSemaine | null>(null)
   const [entreeEnCours, setEntreeEnCours] = useState<string | null>(null)
@@ -64,11 +67,13 @@ export function SectionPlanningSportCalendrier({
   useEffect(() => {
     async function charger() {
       setChargement(true)
-      const [ent, ...variantes] = await Promise.all([
+      const [ent, activites, ...variantes] = await Promise.all([
         getEntreesPlanning(supabase, userId),
+        getTypesActivitesLoggees(supabase, userId),
         ...TYPES_VARIANTES.map((t) => getToutesVariantesPourType(supabase, userId, t)),
       ])
       setEntrees(ent)
+      setActivitesLoggees(activites)
       const map = { ...VARIANTES_VIDES }
       TYPES_VARIANTES.forEach((t, i) => {
         map[t] = variantes[i]
@@ -81,8 +86,12 @@ export function SectionPlanningSportCalendrier({
 
   const parJour = useMemo(() => grouperEntreesParJour(entrees), [entrees])
 
-  async function ajouter(jour: JourSemaine, type: PlanningSportEntry['type_seance']) {
-    const nouvelle = await creerEntreePlanning(supabase, userId, { jour_semaine: jour, type_seance: type })
+  async function ajouter(jour: JourSemaine, type: PlanningSportEntry['type_seance'], activite?: TypeActivite) {
+    const nouvelle = await creerEntreePlanning(supabase, userId, {
+      jour_semaine: jour,
+      type_seance: type,
+      ...(activite ? { activite_type: activite } : {}),
+    })
     if (!nouvelle) {
       toast.error('Impossible d’ajouter la séance.')
       return
@@ -120,11 +129,12 @@ export function SectionPlanningSportCalendrier({
           label={label}
           entrees={parJour[cle]}
           variantesParType={variantesParType}
+          activitesLoggees={activitesLoggees}
           macrosObligatoire={macrosMode === 'auto'}
           ouvert={jourOuvert === cle}
           entreeEnCours={entreeEnCours}
           onToggleAjout={() => setJourOuvert((prev) => (prev === cle ? null : cle))}
-          onAjouter={(type) => void ajouter(cle, type)}
+          onAjouter={(type, activite) => void ajouter(cle, type, activite)}
           onChangerVariante={(id, v) => void changer(id, { variante_id: v })}
           onChangerActivite={(id, a) => void changer(id, { activite_type: a })}
           onChangerRecurrence={(id, i, d) => void changer(id, { intervalle_semaines: i, decalage_semaine: d })}

@@ -3,27 +3,34 @@
 import { Plus } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { CarteEntreePlanning } from '@/components/parametres/CarteEntreePlanning'
+import { SPORTS_CONFIG } from '@/lib/data/sportsConfig'
 import { LABELS_PLANNING } from '@/lib/planning-sport'
 import type { PlanningSportEntry, SportVariante, TypeActivite, TypeVarianteSport } from '@/types'
 
-const TYPES_AJOUT: { id: PlanningSportEntry['type_seance']; label: string }[] = [
+/**
+ * Types fixes toujours proposables au planning. « Autre sport » n'y figure pas :
+ * on propose à la place un bouton par activité déjà loggée (voir `activitesLoggees`),
+ * puisque ce sport n'a normalement pas de contenu de séance à planifier à l'avance.
+ */
+const TYPES_FIXES: { id: PlanningSportEntry['type_seance']; label: string }[] = [
   { id: 'muscu_full', label: LABELS_PLANNING.muscu_full.label },
   { id: 'muscu_upper', label: LABELS_PLANNING.muscu_upper.label },
   { id: 'yoga', label: LABELS_PLANNING.yoga.label },
   { id: 'natation', label: LABELS_PLANNING.natation.label },
-  { id: 'autre', label: LABELS_PLANNING.autre.label },
 ]
 
 export interface JourPlanningCalendrierProps {
   label: string
   entrees: PlanningSportEntry[]
   variantesParType: Record<TypeVarianteSport, SportVariante[]>
+  /** Types d'activités « Autre sport » déjà loggées, pour un bouton par activité. */
+  activitesLoggees: TypeActivite[]
   /** Macros en mode Auto : un programme précis devient obligatoire (plus de « libre »). */
   macrosObligatoire: boolean
   ouvert: boolean
   entreeEnCours: string | null
   onToggleAjout: () => void
-  onAjouter: (type: PlanningSportEntry['type_seance']) => void
+  onAjouter: (type: PlanningSportEntry['type_seance'], activite?: TypeActivite) => void
   onChangerVariante: (entreeId: string, varianteId: string | null) => void
   onChangerActivite: (entreeId: string, activite: TypeActivite | null) => void
   onChangerRecurrence: (entreeId: string, intervalleSemaines: number, decalageSemaine: number) => void
@@ -35,6 +42,7 @@ export function JourPlanningCalendrier({
   label,
   entrees,
   variantesParType,
+  activitesLoggees,
   macrosObligatoire,
   ouvert,
   entreeEnCours,
@@ -78,7 +86,7 @@ export function JourPlanningCalendrier({
 
       {ouvert ? (
         <div className="flex flex-wrap gap-1.5 pl-1">
-          {TYPES_AJOUT.map(({ id, label: lib }) => (
+          {TYPES_FIXES.map(({ id, label: lib }) => (
             <button
               key={id}
               type="button"
@@ -88,6 +96,20 @@ export function JourPlanningCalendrier({
               {lib}
             </button>
           ))}
+          {activitesLoggees.map((activite) => {
+            const config = SPORTS_CONFIG.find((s) => s.type === activite)
+            if (!config) return null
+            return (
+              <button
+                key={activite}
+                type="button"
+                onClick={() => onAjouter('autre', activite)}
+                className="rounded-full border border-amber-200 bg-amber-50 px-2.5 py-1 text-[11px] font-medium text-amber-900 transition-colors hover:bg-amber-100 dark:border-amber-900/50 dark:bg-amber-950/30 dark:text-amber-100"
+              >
+                {config.nom}
+              </button>
+            )
+          })}
         </div>
       ) : null}
     </div>
