@@ -18,8 +18,9 @@ import { SectionBibliographie } from '@/components/parametres/SectionBibliograph
 import { SectionApp } from '@/components/parametres/SectionApp'
 import { SectionCalculateurMacros } from '@/components/parametres/SectionCalculateurMacros'
 import { SectionDonneesCompte } from '@/components/parametres/SectionDonneesCompte'
+import { SectionIntensiteSeances } from '@/components/parametres/SectionIntensiteSeances'
 import { SectionMonCycle } from '@/components/parametres/SectionMonCycle'
-import { SectionPlanningSport } from '@/components/parametres/SectionPlanningSport'
+import { SectionPlanningSportCalendrier } from '@/components/parametres/SectionPlanningSportCalendrier'
 import { SectionPourcentagesGaia } from '@/components/parametres/SectionPourcentagesGaia'
 import { SectionTachesRecurrentes } from '@/components/parametres/SectionTachesRecurrentes'
 import { setMacrosMode, updateUserPreferences } from '@/lib/db/parametres'
@@ -128,12 +129,13 @@ export function ParametresClient({
           ouvert={sectionOuverte === 'sport'}
           onToggle={() => toggleSection('sport')}
         >
-          <SectionPlanningSport
-            prefs={prefs}
-            userId={userId}
-            seanceProfilsInitiales={seanceProfilsInitiales}
-            onUpdate={onUpdate}
-          />
+          <SectionPlanningSportCalendrier userId={userId} />
+          <div className="mt-5 border-t border-neutral-200 pt-4 dark:border-neutral-800">
+            <p className="mb-2 text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+              Intensité par type de séance (pour les macros)
+            </p>
+            <SectionIntensiteSeances userId={userId} seanceProfilsInitiales={seanceProfilsInitiales} />
+          </div>
           <div className="mt-5 border-t border-neutral-200 pt-4 dark:border-neutral-800">
             <p className="mb-2 text-xs font-semibold uppercase tracking-wide text-muted-foreground">
               Pourcentages « Séance Gaia »

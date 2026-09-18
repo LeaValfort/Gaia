@@ -933,6 +933,46 @@ export interface SportVariante {
   updated_at: string
 }
 
+// ------------------------------------------------------------
+// Planning sport — calendrier hebdo avec récurrence (redesign du planning sport)
+// ------------------------------------------------------------
+
+/** Jour de la semaine, clé du planning hebdo. */
+export type JourSemaine = keyof PlanningSport
+
+/**
+ * Une séance planifiée dans le calendrier hebdo (`planning_sport_entries`).
+ * Contrairement à `PlanningSport` (un seul type par jour), plusieurs entrées
+ * peuvent exister pour un même jour, et chacune a sa propre récurrence
+ * (ex. un mercredi sur 2 en natation, l'autre en danse).
+ */
+export interface PlanningSportEntry {
+  id: string
+  user_id: string
+  jour_semaine: JourSemaine
+  type_seance: TypeVarianteSport | 'autre'
+  /** Programme précis (muscu/natation/yoga) ; null = libre, choisi au moment de la séance. */
+  variante_id: string | null
+  /** Activité précise si type_seance === 'autre' (ex. danse) ; null = libre. */
+  activite_type: TypeActivite | null
+  /** 1 = toutes les semaines, 2 = une semaine sur deux, etc. */
+  intervalle_semaines: number
+  /** Semaine de départ dans le cycle, entre 0 et intervalle_semaines - 1. */
+  decalage_semaine: number
+  created_at: string
+  updated_at: string
+}
+
+/** Données nécessaires pour créer une nouvelle entrée du calendrier. */
+export interface NouvellePlanningSportEntry {
+  jour_semaine: JourSemaine
+  type_seance: TypeVarianteSport | 'autre'
+  variante_id?: string | null
+  activite_type?: TypeActivite | null
+  intervalle_semaines?: number
+  decalage_semaine?: number
+}
+
 /** Types de nage prédéfinis proposés pour un bloc de séance natation personnalisée */
 export type TypeNage = 'echauffement' | 'crawl' | 'dos' | 'papillon' | 'mixte' | 'brasse' | 'recuperation'
 

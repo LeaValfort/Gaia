@@ -56,6 +56,31 @@ export async function getVariantes(
   }
 }
 
+/**
+ * Toutes les variantes d'un type de séance, tous lieux confondus (maison + salle
+ * pour la muscu). Utilisé par le calendrier de planning pour proposer un programme
+ * précis sans avoir à choisir le lieu au moment de la planification.
+ */
+export async function getToutesVariantesPourType(
+  supabase: SupabaseClient,
+  userId: string,
+  typeSeance: TypeVarianteSport
+): Promise<SportVariante[]> {
+  try {
+    const { data, error } = await supabase
+      .from('sport_variantes')
+      .select('*')
+      .eq('user_id', userId)
+      .eq('type_seance', typeSeance)
+      .order('created_at', { ascending: true })
+    if (error) throw error
+    return (data ?? []).map((r) => parseVariante(r as Record<string, unknown>))
+  } catch (e) {
+    console.error('getToutesVariantesPourType', e)
+    return []
+  }
+}
+
 /** Crée une nouvelle variante nommée avec son contenu initial, et l'active aussitôt. */
 export async function creerVariante(
   supabase: SupabaseClient,
