@@ -59,46 +59,40 @@ export const CARTES_LOGGER: CarteLoggerSport[] = [
   { id: 'natation', nom: 'Natation', emoji: '🏊', typesPlanning: ['natation'] },
 ]
 
-/** Type planning du jour → carte logger suggérée (null si repos). */
-export function carteSuggereePourTypeJour(
-  typeJour: TypePlanningJour
-): SportLoggerId | null {
-  if (typeJour === 'repos') return null
-  if (typeJour === 'yoga') return 'yoga'
-  if (typeJour === 'natation') return 'natation'
-  if (typeJour === 'muscu_full' || typeJour === 'muscu_upper') return 'muscu'
-  return null
-}
-
-export function ouvrirAutrePourTypeJour(typeJour: TypePlanningJour): boolean {
-  return typeJour === 'autre'
-}
-
-/** Cartes triées : séance suggérée en premier. */
-export function ordreCartesLogger(typeJour: TypePlanningJour): CarteLoggerSport[] {
-  const suggeree = carteSuggereePourTypeJour(typeJour)
-  const reste = CARTES_LOGGER.filter((c) => c.id !== suggeree)
-  if (suggeree) {
-    const carte = CARTES_LOGGER.find((c) => c.id === suggeree)
-    return carte ? [carte, ...reste] : CARTES_LOGGER
+/** Types de séance du jour → cartes logger suggérées (une séance peut en suggérer plusieurs). */
+export function cartesSuggereesPourTypesJour(typesJour: TypePlanningJour[]): SportLoggerId[] {
+  const suggerees = new Set<SportLoggerId>()
+  for (const t of typesJour) {
+    if (t === 'yoga') suggerees.add('yoga')
+    else if (t === 'natation') suggerees.add('natation')
+    else if (t === 'muscu_full' || t === 'muscu_upper') suggerees.add('muscu')
   }
-  return [...CARTES_LOGGER]
+  return CARTES_LOGGER.map((c) => c.id).filter((id) => suggerees.has(id))
 }
 
-function typeProfilPourCarte(
-  carte: CarteLoggerSport,
-  typeJour: TypePlanningJour
-): TypePlanningJour {
-  if (carte.typesPlanning.includes(typeJour)) return typeJour
-  return carte.typesPlanning[0] ?? 'repos'
+export function ouvrirAutrePourTypesJour(typesJour: TypePlanningJour[]): boolean {
+  return typesJour.includes('autre')
+}
+
+/** Cartes triées : séances suggérées en premier. */
+export function ordreCartesLogger(typesJour: TypePlanningJour[]): CarteLoggerSport[] {
+  const suggerees = new Set(cartesSuggereesPourTypesJour(typesJour))
+  const suggeree = CARTES_LOGGER.filter((c) => suggerees.has(c.id))
+  const reste = CARTES_LOGGER.filter((c) => !suggerees.has(c.id))
+  return [...suggeree, ...reste]
+}
+
+function typeProfilPourCarte(carte: CarteLoggerSport, typesJour: TypePlanningJour[]): TypePlanningJour {
+  const correspondance = typesJour.find((t) => carte.typesPlanning.includes(t))
+  return correspondance ?? carte.typesPlanning[0] ?? 'repos'
 }
 
 export function sousTitreCarteLogger(
   carte: CarteLoggerSport,
-  typeJour: TypePlanningJour,
+  typesJour: TypePlanningJour[],
   seanceProfils: SeanceProfil[]
 ): string {
-  const seanceType = typeProfilPourCarte(carte, typeJour)
+  const seanceType = typeProfilPourCarte(carte, typesJour)
   const profil = profilEffortPourTypeSeance(seanceType, seanceProfils)
   const typeLabel = LIBELLE_EFFORT[profil.type_effort]
   const duree =

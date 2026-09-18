@@ -19,25 +19,33 @@ import { SelecteurSeanceJour } from '@/components/sport/SelecteurSeanceJour'
 import { getCycleDay, getPhaseForDay } from '@/lib/cycle'
 import { getSeancesDuJourClient } from '@/lib/sport/workouts-client'
 import { typeSeanceVersForm } from '@/lib/sport/type-seance-form'
+import { cartesSubstitutionJour } from '@/lib/sport/substitution-jour'
 import { BADGE_PHASE_CYCLE } from '@/lib/cycle-affichage'
 import { PHASES_DESIGN } from '@/lib/data/phases-design'
-import { getActiviteduJourEffectif, PLANNING_DEFAUT } from '@/lib/planning-sport'
+import { getEntreesPlanning } from '@/lib/db/planning-sport-entries'
 import { getOverridesJour, setOverrideJour, supprimerOverrideJour } from '@/lib/db/planning-overrides'
+import { getToutesVariantesPourType } from '@/lib/db/sport-variantes'
+import { seancesEffectivesJour, seancesResoluesPourDate } from '@/lib/planning-sport-jour'
 import { type SportLoggerId } from '@/lib/sport-page'
 import { Button } from '@/components/ui/button'
 import { cn } from '@/lib/utils'
 import { POURCENTAGES_GAIA_DEFAUT } from '@/types'
 import type {
   Phase,
-  PlanningSport,
+  PlanningOverride,
+  PlanningSportEntry,
   PourcentagesGaia,
   SeanceProfil,
+  SportVariante,
   TypePlanningJour,
   TypeSeance,
+  TypeVarianteSport,
   WorkoutMuscuComplet,
   WorkoutNatationComplet,
   WorkoutYogaComplet,
 } from '@/types'
+
+const TYPES_VARIANTES_MACROS: TypeVarianteSport[] = ['muscu_full', 'muscu_upper', 'natation', 'yoga']
 
 function pourcentagesEffectifs(p: PourcentagesGaia | null | undefined): PourcentagesGaia {
   return { ...POURCENTAGES_GAIA_DEFAUT, ...(p ?? {}) }
@@ -45,27 +53,14 @@ function pourcentagesEffectifs(p: PourcentagesGaia | null | undefined): Pourcent
 
 type FormSport = SportLoggerId | 'autre'
 
-function planningComplet(p: PlanningSport | null | undefined): PlanningSport {
-  const d = PLANNING_DEFAUT
-  if (!p) return d
-  return {
-    lundi: p.lundi ?? d.lundi,
-    mardi: p.mardi ?? d.mardi,
-    mercredi: p.mercredi ?? d.mercredi,
-    jeudi: p.jeudi ?? d.jeudi,
-    vendredi: p.vendredi ?? d.vendredi,
-    samedi: p.samedi ?? d.samedi,
-    dimanche: p.dimanche ?? d.dimanche,
-  }
-}
-
 export default function SportPage() {
   const [phaseAffichee, setPhaseAffichee] = useState<Phase | null>(null)
   const [sansCycle, setSansCycle] = useState(false)
   const [jourDuCycle, setJourDuCycle] = useState(1)
   const [userId, setUserId] = useState<string | null>(null)
-  const [planning, setPlanning] = useState<PlanningSport>(PLANNING_DEFAUT)
-  const [overrideAuj, setOverrideAuj] = useState<TypePlanningJour | null>(null)
+  const [entreesPlanning, setEntreesPlanning] = useState<PlanningSportEntry[]>([])
+  const [variantesMacros, setVariantesMacros] = useState<SportVariante[]>([])
+  const [overridesAuj, setOverridesAuj] = useState<PlanningOverride[]>([])
   const [chOverride, setChOverride] = useState(false)
   const [pourcentages, setPourcentages] = useState<PourcentagesGaia>(POURCENTAGES_GAIA_DEFAUT)
   const [seanceProfils, setSeanceProfils] = useState<SeanceProfil[]>([])
@@ -132,14 +127,16 @@ export default function SportPage() {
             'toi'
         )
 
-        const [{ data: prefs, error: errPrefs }, { data: profils, error: errProfils }] =
+        const [{ data: prefs, error: errPrefs }, { data: profils, error: errProfils }, entrees, ...variantesParType] =
           await Promise.all([
             supabase
               .from('user_preferences')
-              .select('last_cycle_start, cycle_length, planning_sport, mode_utilisateur, pourcentages_gaia')
+              .select('last_cycle_start, cycle_length, mode_utilisateur, pourcentages_gaia')
               .eq('user_id', user.id)
               .maybeSingle(),
             supabase.from('seance_profils').select('*').eq('user_id', user.id),
+            getEntreesPlanning(supabase, user.id),
+            ...TYPES_VARIANTES_MACROS.map((t) => getToutesVariantesPourType(supabase, user.id, t)),
           ])
 
         if (errPrefs) throw new Error(errPrefs.message)
@@ -164,12 +161,11 @@ export default function SportPage() {
           setPhaseAffichee(null)
         }
 
-        const pMerge = planningComplet(prefs?.planning_sport as PlanningSport | undefined)
-        setPlanning(pMerge)
         setPourcentages(pourcentagesEffectifs(prefs?.pourcentages_gaia as PourcentagesGaia | undefined))
         setSeanceProfils((profils ?? []) as SeanceProfil[])
-        const overridesAuj = await getOverridesJour(today)
-        setOverrideAuj(overridesAuj.find((o) => o.entree_id == null)?.type_planning ?? null)
+        setEntreesPlanning(entrees)
+        setVariantesMacros(variantesParType.flat())
+        setOverridesAuj(await getOverridesJour(today))
       } catch (e) {
         setErreur(e instanceof Error ? e.message : 'Erreur de chargement.')
       } finally {
@@ -180,23 +176,32 @@ export default function SportPage() {
     void chargerDonnees()
   }, [today])
 
-  const typeJourEffectif = useMemo(
-    () => getActiviteduJourEffectif(planning, new Date(), overrideAuj),
-    [planning, overrideAuj]
+  const entreesResolues = useMemo(
+    () => seancesResoluesPourDate(entreesPlanning, variantesMacros, new Date()),
+    [entreesPlanning, variantesMacros]
+  )
+  const seancesEffectives = useMemo(
+    () => seancesEffectivesJour(entreesResolues, overridesAuj),
+    [entreesResolues, overridesAuj]
+  )
+  const typesJourEffectifs = useMemo(() => seancesEffectives.map((s) => s.type), [seancesEffectives])
+  const cartesSubstitution = useMemo(
+    () => cartesSubstitutionJour(entreesResolues, overridesAuj),
+    [entreesResolues, overridesAuj]
   )
 
-  async function changerSeanceJour(type: TypePlanningJour) {
+  async function changerSeance(entreeId: string | null, type: TypePlanningJour) {
     setChOverride(true)
-    const ok = await setOverrideJour(today, type, null)
-    if (ok) setOverrideAuj(type)
-    else toast.error('Impossible de changer la séance du jour.')
+    const ok = await setOverrideJour(today, type, entreeId)
+    if (ok) setOverridesAuj(await getOverridesJour(today))
+    else toast.error('Impossible de changer la séance.')
     setChOverride(false)
   }
 
-  async function revenirPlanning() {
+  async function revenirSeance(entreeId: string | null) {
     setChOverride(true)
-    const ok = await supprimerOverrideJour(today, null)
-    if (ok) setOverrideAuj(null)
+    const ok = await supprimerOverrideJour(today, entreeId)
+    if (ok) setOverridesAuj(await getOverridesJour(today))
     else toast.error('Impossible de revenir au planning.')
     setChOverride(false)
   }
@@ -275,18 +280,22 @@ export default function SportPage() {
 
         {!sansCycle && phaseAffichee ? <ConseilPhaseSport phase={phaseAffichee} /> : null}
 
-        <PlanningSemaineStrip planning={planning} />
+        <PlanningSemaineStrip entrees={entreesPlanning} />
 
-        <SelecteurSeanceJour
-          typeEffectif={typeJourEffectif}
-          overrideActif={overrideAuj != null}
-          onChanger={(t) => void changerSeanceJour(t)}
-          onRevenir={() => void revenirPlanning()}
-          chargement={chOverride}
-        />
+        <div className="flex flex-col gap-2">
+          {cartesSubstitution.map((carte) => (
+            <SelecteurSeanceJour
+              key={carte.entreeId ?? 'libre'}
+              carte={carte}
+              onChanger={(t) => void changerSeance(carte.entreeId, t)}
+              onRevenir={() => void revenirSeance(carte.entreeId)}
+              chargement={chOverride}
+            />
+          ))}
+        </div>
 
         <ListeLoggerSeance
-          typeJour={typeJourEffectif}
+          typesJour={typesJourEffectifs}
           seanceProfils={seanceProfils}
           formOuvert={formOuvert}
           onOuvrir={setFormOuvert}
@@ -315,7 +324,6 @@ export default function SportPage() {
                 phase={phaseSeance ?? navPhase}
                 userId={userId}
                 date={dateSeance}
-                planning={planning}
                 seanceExistante={seancesJour.muscu}
                 onEnregistre={apresEnregistrement}
                 pourcentages={pourcentages}

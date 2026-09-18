@@ -2,9 +2,9 @@
 
 import { ChevronRight } from 'lucide-react'
 import {
-  carteSuggereePourTypeJour,
+  cartesSuggereesPourTypesJour,
   ordreCartesLogger,
-  ouvrirAutrePourTypeJour,
+  ouvrirAutrePourTypesJour,
   sousTitreCarteLogger,
   type SportLoggerId,
 } from '@/lib/sport-page'
@@ -12,22 +12,22 @@ import type { SeanceProfil, TypePlanningJour } from '@/types'
 import { cn } from '@/lib/utils'
 
 interface ListeLoggerSeanceProps {
-  /** Activité effective du jour (planning hebdo, ou substitution ponctuelle si active) */
-  typeJour: TypePlanningJour
+  /** Types des séances effectives du jour (planning + substitutions), 0 à plusieurs. */
+  typesJour: TypePlanningJour[]
   seanceProfils: SeanceProfil[]
   formOuvert: SportLoggerId | 'autre' | null
   onOuvrir: (id: SportLoggerId | 'autre') => void
 }
 
 export function ListeLoggerSeance({
-  typeJour,
+  typesJour,
   seanceProfils,
   formOuvert,
   onOuvrir,
 }: ListeLoggerSeanceProps) {
-  const suggeree = carteSuggereePourTypeJour(typeJour)
-  const autreSuggere = ouvrirAutrePourTypeJour(typeJour)
-  const cartes = ordreCartesLogger(typeJour)
+  const suggerees = new Set(cartesSuggereesPourTypesJour(typesJour))
+  const autreSuggere = ouvrirAutrePourTypesJour(typesJour)
+  const cartes = ordreCartesLogger(typesJour)
 
   return (
     <section className="flex flex-col gap-3">
@@ -37,7 +37,7 @@ export function ListeLoggerSeance({
 
       <ul className="flex flex-col gap-2">
         {cartes.map((carte) => {
-          const estSuggeree = carte.id === suggeree
+          const estSuggeree = suggerees.has(carte.id)
           const ouvert = formOuvert === carte.id
 
           return (
@@ -67,7 +67,7 @@ export function ListeLoggerSeance({
                     ) : null}
                   </span>
                   <span className="mt-0.5 block text-xs text-muted-foreground">
-                    {sousTitreCarteLogger(carte, typeJour, seanceProfils)}
+                    {sousTitreCarteLogger(carte, typesJour, seanceProfils)}
                   </span>
                 </span>
                 <ChevronRight

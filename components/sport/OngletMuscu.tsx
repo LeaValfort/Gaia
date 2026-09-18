@@ -41,7 +41,6 @@ import type {
   IntensiteEffort,
   Lieu,
   Phase,
-  PlanningSport,
   PourcentagesGaia,
   ProfilEffort,
   SeanceAdaptee,
@@ -59,7 +58,6 @@ export function OngletMuscu({
   phase,
   userId,
   date,
-  planning: _planning,
   seanceExistante,
   onEnregistre,
   pourcentages = POURCENTAGES_GAIA_DEFAUT,
@@ -67,7 +65,6 @@ export function OngletMuscu({
   phase: Phase | null
   userId: string
   date: string
-  planning: PlanningSport
   seanceExistante?: WorkoutMuscuComplet | null
   onEnregistre?: () => void
   /** Pourcentages d'ajustement par phase, réglables dans Paramètres > Planning sport */

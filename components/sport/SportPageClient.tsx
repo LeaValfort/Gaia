@@ -37,7 +37,6 @@ export function SportPageClient({ initial }: { initial: SportPageInitial }) {
               phase={phase}
               userId={userId}
               date={date}
-              planning={planning}
               seanceExistante={seances.muscu}
             />
           )}

@@ -2,19 +2,16 @@
 
 import { addDays, format, isSameDay, startOfWeek } from 'date-fns'
 import { fr } from 'date-fns/locale'
-import {
-  CLES_SEMAINE,
-  emojiEtTypeCourt,
-  JOURS_ABREGE,
-} from '@/lib/sport-page'
-import type { PlanningSport, TypePlanningJour } from '@/types'
+import { entreesActivesPourDate } from '@/lib/planning-sport-recurrence'
+import { CLES_SEMAINE, emojiEtTypeCourt, JOURS_ABREGE } from '@/lib/sport-page'
+import type { PlanningSportEntry } from '@/types'
 import { cn } from '@/lib/utils'
 
 interface PlanningSemaineStripProps {
-  planning: PlanningSport
+  entrees: PlanningSportEntry[]
 }
 
-export function PlanningSemaineStrip({ planning }: PlanningSemaineStripProps) {
+export function PlanningSemaineStrip({ entrees }: PlanningSemaineStripProps) {
   const auj = new Date()
   const debutSemaine = startOfWeek(auj, { weekStartsOn: 1 })
 
@@ -22,11 +19,12 @@ export function PlanningSemaineStrip({ planning }: PlanningSemaineStripProps) {
     <div className="-mx-1 overflow-x-auto px-1 pb-1 [scrollbar-width:thin]">
       <div className="flex w-max min-w-full gap-2">
         {CLES_SEMAINE.map((cle, idx) => {
-          const type: TypePlanningJour = planning[cle]
-          const { emoji, court } = emojiEtTypeCourt(type)
           const dateJour = addDays(debutSemaine, idx)
+          const seancesJour = entreesActivesPourDate(entrees, dateJour)
           const estAuj = isSameDay(dateJour, auj)
-          const repos = type === 'repos'
+          const repos = seancesJour.length === 0
+          const { emoji, court } = repos ? { emoji: '😴', court: 'Repos' } : emojiEtTypeCourt(seancesJour[0].type_seance)
+          const label = !repos && seancesJour.length > 1 ? `+${seancesJour.length}` : court
 
           return (
             <div
@@ -54,7 +52,7 @@ export function PlanningSemaineStrip({ planning }: PlanningSemaineStripProps) {
                     : 'text-neutral-800 dark:text-neutral-200'
                 )}
               >
-                {court}
+                {label}
               </span>
             </div>
           )
