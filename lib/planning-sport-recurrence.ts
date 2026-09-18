@@ -1,4 +1,5 @@
-import { differenceInCalendarDays, getISODay } from 'date-fns'
+import { differenceInCalendarDays, format, getISODay, parseISO } from 'date-fns'
+import { toZonedTime } from 'date-fns-tz'
 import type { JourSemaine, PlanningSportEntry } from '@/types'
 
 const CLES_JOUR: JourSemaine[] = [
@@ -16,14 +17,28 @@ const CLES_JOUR: JourSemaine[] = [
 // choisie tant qu'elle reste fixe et tombe un lundi.
 const LUNDI_REFERENCE = new Date(2024, 0, 1)
 
+const TZ_JOUR = process.env.NEXT_PUBLIC_CALENDAR_TZ ?? 'Europe/Paris'
+
+/**
+ * Date calendaire stable en fuseau utilisateur (évite qu'un serveur Vercel en
+ * UTC calcule le mauvais jour de la semaine près de minuit heure de Paris).
+ * Point d'entrée unique pour toute date utilisée par le planning sport —
+ * utilisé aussi par `lib/macros-du-jour.ts` pour rester cohérent.
+ */
+export function datePourPlanningSport(date: Date): Date {
+  const zoned = toZonedTime(date, TZ_JOUR)
+  const iso = format(zoned, 'yyyy-MM-dd')
+  return parseISO(`${iso}T12:00:00`)
+}
+
 export function getJourSemaineDe(date: Date): JourSemaine {
-  const idx = getISODay(date) - 1
+  const idx = getISODay(datePourPlanningSport(date)) - 1
   return CLES_JOUR[idx] ?? 'lundi'
 }
 
 /** Numéro de semaine (entier, peut être négatif) depuis le lundi de référence. */
 export function numeroSemaine(date: Date): number {
-  return Math.floor(differenceInCalendarDays(date, LUNDI_REFERENCE) / 7)
+  return Math.floor(differenceInCalendarDays(datePourPlanningSport(date), LUNDI_REFERENCE) / 7)
 }
 
 /** Une entrée récurrente est-elle active la semaine de `date` ? */

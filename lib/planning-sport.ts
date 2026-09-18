@@ -54,6 +54,25 @@ export function getActiviteduJour(planning: PlanningSport, date: Date): TypePlan
 }
 
 /**
+ * Planning hebdo fusionné avec les valeurs par défaut. Encore utilisé pour
+ * l'affichage "séance du jour" (héritage de l'ancien planning jour-par-jour,
+ * en cours de remplacement par le nouveau calendrier `planning_sport_entries`).
+ */
+export function planningEffectif(planning: PlanningSport | null | undefined): PlanningSport {
+  const d = PLANNING_DEFAUT
+  if (!planning) return d
+  return {
+    lundi: planning.lundi ?? d.lundi,
+    mardi: planning.mardi ?? d.mardi,
+    mercredi: planning.mercredi ?? d.mercredi,
+    jeudi: planning.jeudi ?? d.jeudi,
+    vendredi: planning.vendredi ?? d.vendredi,
+    samedi: planning.samedi ?? d.samedi,
+    dimanche: planning.dimanche ?? d.dimanche,
+  }
+}
+
+/**
  * Activité effective d'un jour : la substitution ponctuelle (`planning_overrides`)
  * si elle existe pour cette date, sinon le planning hebdo normal.
  */

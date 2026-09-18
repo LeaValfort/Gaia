@@ -1,14 +1,12 @@
-import { format, getISODay, parseISO } from 'date-fns'
-import { toZonedTime } from 'date-fns-tz'
 import { calculerMacrosDepuisProfil, type TypeJourneeMacros } from '@/lib/macro-calculator'
-import { getProfilPourSeance } from '@/lib/db/seance-profils'
 import {
   calculerMacrosJour,
   calculerMacrosJourSansCycle,
   getTypeJournee,
   getTypeJourneeEffectifMacros,
 } from '@/lib/nutrition'
-import { PLANNING_DEFAUT } from '@/lib/planning-sport'
+import { datePourPlanningSport } from '@/lib/planning-sport-recurrence'
+import { seanceLaPlusIntense, typePlanningDeEntree, type SeanceResolue } from '@/lib/planning-sport-jour'
 import { PROFILS_DEFAUT } from '@/types'
 import type {
   MacroProfile,
@@ -16,30 +14,15 @@ import type {
   MacrosJour,
   MacrosMode,
   Phase,
-  PlanningSport,
   ProfilEffort,
   TypeJournee,
   TypePlanningJour,
 } from '@/types'
 
-const TZ_JOUR = process.env.NEXT_PUBLIC_CALENDAR_TZ ?? 'Europe/Paris'
-
-const CLES_JOUR: (keyof PlanningSport)[] = [
-  'lundi',
-  'mardi',
-  'mercredi',
-  'jeudi',
-  'vendredi',
-  'samedi',
-  'dimanche',
-]
-
-const SEANCES_SPORT = new Set<TypePlanningJour>([
-  'muscu_full',
-  'muscu_upper',
-  'yoga',
-  'natation',
-])
+// Fuseau horaire utilisé pour dater les séances — voir `datePourPlanningSport`
+// dans `lib/planning-sport-recurrence.ts` (source unique, réexportée ici pour
+// compatibilité avec le code existant qui l'importait depuis ce fichier).
+export { datePourPlanningSport }
 
 const LIBELLE_TYPE_MACROS: Record<TypeJourneeMacros, string> = {
   sport: 'Jour de sport',
@@ -54,58 +37,18 @@ const LIBELLE_PHASE: Record<Phase, string> = {
   luteale: 'lutéale',
 }
 
-/** Date calendaire en fuseau utilisateur (évite un mauvais jour ISO sur Vercel UTC). */
-export function datePourPlanningSport(date: Date): Date {
-  const zoned = toZonedTime(date, TZ_JOUR)
-  const iso = format(zoned, 'yyyy-MM-dd')
-  return parseISO(`${iso}T12:00:00`)
-}
-
-/** Planning hebdo fusionné avec les valeurs par défaut. */
-export function planningEffectif(planning: PlanningSport | null | undefined): PlanningSport {
-  const d = PLANNING_DEFAUT
-  if (!planning) return d
-  return {
-    lundi: planning.lundi ?? d.lundi,
-    mardi: planning.mardi ?? d.mardi,
-    mercredi: planning.mercredi ?? d.mercredi,
-    jeudi: planning.jeudi ?? d.jeudi,
-    vendredi: planning.vendredi ?? d.vendredi,
-    samedi: planning.samedi ?? d.samedi,
-    dimanche: planning.dimanche ?? d.dimanche,
-  }
-}
-
-export function planningSportDepuisPrefs(
-  planning: PlanningSport | null | undefined
-): PlanningSport {
-  return planningEffectif(planning)
-}
-
-function cleJourSemaine(date: Date): keyof PlanningSport {
-  const idx = getISODay(date) - 1
-  return CLES_JOUR[idx] ?? 'lundi'
-}
-
-/** Activité du planning `user_preferences.planning_sport` pour la date (fuseau Paris). */
-export function activitePlanningDuJour(planning: PlanningSport, date: Date): TypePlanningJour {
-  const dateStable = datePourPlanningSport(date)
-  return planning[cleJourSemaine(dateStable)]
-}
-
 /**
- * Type macro : règles → cycle ; muscu / natation / yoga → sport ; sinon repos.
+ * Type macro du jour : règles → cycle (si suivi du cycle actif) ; au moins une
+ * séance planifiée (n'importe quel type, "Autre sport" compris) → sport ;
+ * sinon repos.
  */
-export function typeJourneeMacrosDepuisPlanning(
+export function typeJourneeMacrosDepuisEntrees(
   phase: Phase,
-  planning: PlanningSport,
-  date: Date,
+  entreesResolues: SeanceResolue[],
   sansSuiviCycle: boolean
 ): TypeJourneeMacros {
   if (!sansSuiviCycle && phase === 'menstruation') return 'cycle'
-  const activite = activitePlanningDuJour(planning, date)
-  if (SEANCES_SPORT.has(activite)) return 'sport'
-  return 'repos'
+  return entreesResolues.length > 0 ? 'sport' : 'repos'
 }
 
 function typeJourneeAffichageDepuisMacros(typeMacro: TypeJourneeMacros): TypeJournee {
@@ -114,95 +57,7 @@ function typeJourneeAffichageDepuisMacros(typeMacro: TypeJourneeMacros): TypeJou
   return 'sport'
 }
 
-function macrosJourDepuisProfilStocke(
-  profil: MacroProfile,
-  typeMacro: TypeJourneeMacros
-): MacrosJour | null {
-  switch (typeMacro) {
-    case 'sport':
-      if (
-        profil.kcal_sport == null ||
-        profil.proteines_sport_g == null ||
-        profil.glucides_sport_g == null ||
-        profil.lipides_sport_g == null
-      ) {
-        return null
-      }
-      return {
-        kcal: profil.kcal_sport,
-        proteines: profil.proteines_sport_g,
-        glucides: profil.glucides_sport_g,
-        lipides: profil.lipides_sport_g,
-      }
-    case 'repos':
-      if (
-        profil.kcal_repos == null ||
-        profil.proteines_repos_g == null ||
-        profil.glucides_repos_g == null ||
-        profil.lipides_repos_g == null
-      ) {
-        return null
-      }
-      return {
-        kcal: profil.kcal_repos,
-        proteines: profil.proteines_repos_g,
-        glucides: profil.glucides_repos_g,
-        lipides: profil.lipides_repos_g,
-      }
-    case 'cycle':
-      if (
-        profil.kcal_base == null ||
-        profil.proteines_g == null ||
-        profil.glucides_g == null ||
-        profil.lipides_g == null
-      ) {
-        return null
-      }
-      return {
-        kcal: profil.kcal_base,
-        proteines: profil.proteines_g,
-        glucides: profil.glucides_g,
-        lipides: profil.lipides_g,
-      }
-    default:
-      return null
-  }
-}
-
-const SEANCE_TYPE_REPOS = 'repos'
-
-/** Profil d'effort local (sans appel DB) à partir du planning du jour. */
-export function profilEffortLocalDepuisPlanning(
-  planning: PlanningSport,
-  date: Date
-): ProfilEffort {
-  const seanceType = activitePlanningDuJour(planningEffectif(planning), date)
-  const defaut = PROFILS_DEFAUT[seanceType]
-  if (defaut) return { ...defaut }
-  return { ...PROFILS_DEFAUT[SEANCE_TYPE_REPOS] }
-}
-
-/**
- * Profil d'effort du jour (planning + préférences personnalisées Supabase).
- */
-export async function profilEffortPourJour(
-  userId: string,
-  planning: PlanningSport,
-  date: Date
-): Promise<ProfilEffort> {
-  try {
-    const seanceType = activitePlanningDuJour(planningEffectif(planning), date)
-    return await getProfilPourSeance(userId, seanceType)
-  } catch (erreur) {
-    console.error('Erreur profilEffortPourJour:', erreur)
-    return profilEffortLocalDepuisPlanning(planning, date)
-  }
-}
-
-function macrosDepuisManuels(
-  profil: MacroProfile,
-  seanceType: TypePlanningJour
-): MacrosJour | null {
+function macrosDepuisManuels(profil: MacroProfile, seanceType: TypePlanningJour): MacrosJour | null {
   const manuels = profil.macros_manuels
   if (!manuels || typeof manuels !== 'object') return null
   const m = manuels[seanceType]
@@ -238,18 +93,21 @@ function macrosCiblesDepuisProfil(
   }
 }
 
+/**
+ * Cibles de macros pour une date précise, à partir des séances planifiées
+ * déjà résolues (voir `seancesResoluesPourDate` dans `lib/planning-sport-jour.ts`).
+ * S'il y a plusieurs séances ce jour-là, le profil d'effort le plus intense
+ * est utilisé (choix de Léa).
+ */
 export function macrosCiblesPourJour(options: {
   profil: MacroProfile | null
-  profilEffort: ProfilEffort | null
   phase: Phase
-  planning: PlanningSport
+  entreesResolues: SeanceResolue[]
   date: Date
   sansSuiviCycle: boolean
   macrosMode?: MacrosMode
 }): MacrosCiblesJour {
-  const { profil, profilEffort, phase, planning, date, sansSuiviCycle, macrosMode = 'auto' } =
-    options
-  const planningMerge = planningEffectif(planning)
+  const { profil, phase, entreesResolues, date, sansSuiviCycle, macrosMode = 'auto' } = options
   const dateStable = datePourPlanningSport(date)
   const typeJourneePlanning = getTypeJournee(dateStable)
   const typeJourneeUi = sansSuiviCycle
@@ -262,15 +120,10 @@ export function macrosCiblesPourJour(options: {
       : calculerMacrosJour(phase, typeJourneePlanning)
   }
 
-  const typeMacro = typeJourneeMacrosDepuisPlanning(
-    phase,
-    planningMerge,
-    date,
-    sansSuiviCycle
-  )
-  const effort =
-    profilEffort ?? profilEffortLocalDepuisPlanning(planningMerge, date)
-  const seanceType = activitePlanningDuJour(planningMerge, date)
+  const typeMacro = typeJourneeMacrosDepuisEntrees(phase, entreesResolues, sansSuiviCycle)
+  const seanceIntense = seanceLaPlusIntense(entreesResolues)
+  const effort = seanceIntense?.profil ?? { ...PROFILS_DEFAUT.repos }
+  const seanceType = seanceIntense ? typePlanningDeEntree(seanceIntense.entree) : 'repos'
 
   return macrosCiblesDepuisProfil(
     profil,

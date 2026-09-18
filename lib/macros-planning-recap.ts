@@ -1,12 +1,12 @@
 import { calculerMacrosDepuisProfil } from '@/lib/macro-calculator'
-import { LABELS_PLANNING, PLANNING_DEFAUT } from '@/lib/planning-sport'
+import { LABELS_PLANNING } from '@/lib/planning-sport'
 import { PROFILS_DEFAUT } from '@/types'
 import type {
   IntensiteEffort,
   MacroProfile,
   MacrosJour,
   Phase,
-  PlanningSport,
+  PlanningSportEntry,
   ProfilEffort,
   SeanceProfil,
   TypePlanningJour,
@@ -21,32 +21,8 @@ const ORDRE_SEANCES: TypePlanningJour[] = [
   'repos',
 ]
 
-const CLES_JOUR: (keyof PlanningSport)[] = [
-  'lundi',
-  'mardi',
-  'mercredi',
-  'jeudi',
-  'vendredi',
-  'samedi',
-  'dimanche',
-]
-
 const SEANCE_TYPE_REPOS = 'repos'
 const PHASE_RECAP_DEFAUT: Phase = 'folliculaire'
-
-function planningMerge(planning: PlanningSport | null | undefined): PlanningSport {
-  const d = PLANNING_DEFAUT
-  if (!planning) return d
-  return {
-    lundi: planning.lundi ?? d.lundi,
-    mardi: planning.mardi ?? d.mardi,
-    mercredi: planning.mercredi ?? d.mercredi,
-    jeudi: planning.jeudi ?? d.jeudi,
-    vendredi: planning.vendredi ?? d.vendredi,
-    samedi: planning.samedi ?? d.samedi,
-    dimanche: planning.dimanche ?? d.dimanche,
-  }
-}
 
 export const LIBELLE_INTENSITE: Record<IntensiteEffort, string> = {
   legere: 'Légère',
@@ -62,13 +38,14 @@ export type RecapSeancePlanning = {
   macros: MacrosJour
 }
 
-/** Types de séance distincts présents dans le planning hebdo. */
-export function seancesUniquesDuPlanning(
-  planning: PlanningSport | null | undefined
-): TypePlanningJour[] {
-  const p = planningMerge(planning)
+/**
+ * Types de séance distincts présents dans le calendrier de planification
+ * (`planning_sport_entries`). "Repos" seul si aucune séance planifiée.
+ */
+export function seancesUniquesDuCalendrier(entrees: PlanningSportEntry[]): TypePlanningJour[] {
   const types = new Set<TypePlanningJour>()
-  for (const cle of CLES_JOUR) types.add(p[cle])
+  for (const e of entrees) types.add(e.type_seance)
+  if (types.size === 0) types.add(SEANCE_TYPE_REPOS)
   return ORDRE_SEANCES.filter((t) => types.has(t))
 }
 
@@ -92,11 +69,11 @@ export function profilEffortPourTypeSeance(
 /** Récap macros par séance du planning (calculateur automatique). */
 export function recapMacrosPlanning(
   profil: MacroProfile,
-  planning: PlanningSport | null | undefined,
+  entrees: PlanningSportEntry[],
   seanceProfils: SeanceProfil[],
   phase: Phase = PHASE_RECAP_DEFAUT
 ): RecapSeancePlanning[] {
-  return seancesUniquesDuPlanning(planning).map((seanceType) => {
+  return seancesUniquesDuCalendrier(entrees).map((seanceType) => {
     const meta = LABELS_PLANNING[seanceType]
     const profilEffort = profilEffortPourTypeSeance(seanceType, seanceProfils)
     return {

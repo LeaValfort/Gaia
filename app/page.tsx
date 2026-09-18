@@ -10,13 +10,12 @@ import { getDailyMealIntakesJour } from '@/lib/db/dailyMealIntake'
 import { getMacroProfile } from '@/lib/db/macro-profiles'
 import { getTodosParDatePourUtilisateur } from '@/lib/db/todo'
 import { getCycleDay, getPhaseAvecStats } from '@/lib/cycle'
-import { getActiviteduJourEffectif } from '@/lib/planning-sport'
+import { getActiviteduJourEffectif, planningEffectif } from '@/lib/planning-sport'
 import { getOverrideJour } from '@/lib/db/planning-overrides'
-import {
-  macrosCiblesPourJour,
-  planningEffectif,
-  profilEffortPourJour,
-} from '@/lib/macros-du-jour'
+import { getEntreesPlanning } from '@/lib/db/planning-sport-entries'
+import { getToutesVariantesPourType } from '@/lib/db/sport-variantes'
+import { macrosCiblesPourJour } from '@/lib/macros-du-jour'
+import { seancesResoluesPourDate } from '@/lib/planning-sport-jour'
 import { getTypeJournee } from '@/lib/nutrition'
 import { generateTodosForToday } from '@/lib/recurring'
 import { fusionIntakesJour, totauxDepuisIntakes } from '@/lib/recapManuel'
@@ -26,7 +25,14 @@ import { JournalDuJour } from '@/components/today/JournalDuJour'
 import { TodoDuJour } from '@/components/today/TodoDuJour'
 import { AgendaDuJour } from '@/components/today/AgendaDuJour'
 import { MacrosCibles } from '@/components/today/MacrosCibles'
-import { DEFAULT_MODE_UTILISATEUR, type MacrosCiblesJour, type Phase } from '@/types'
+import {
+  DEFAULT_MODE_UTILISATEUR,
+  type MacrosCiblesJour,
+  type Phase,
+  type TypeVarianteSport,
+} from '@/types'
+
+const TYPES_VARIANTES_MACROS: TypeVarianteSport[] = ['muscu_full', 'muscu_upper', 'natation', 'yoga']
 
 function premierParam(v: string | string[] | undefined): string | undefined {
   if (v == null) return undefined
@@ -95,18 +101,22 @@ export default async function PageAujourdhui({
   let macrosCibles: MacrosCiblesJour | null = null
 
   if (suiviCalorique && userId) {
-    const planningSport = planningSemaine
-    const [intakesJour, macroProfil, profilEffort] = await Promise.all([
+    const [intakesJour, macroProfil, entreesPlanning, ...variantesParType] = await Promise.all([
       getDailyMealIntakesJour(supabase, userId, dateStr),
       getMacroProfile(userId),
-      profilEffortPourJour(userId, planningSport, aujourdhui),
+      getEntreesPlanning(supabase, userId),
+      ...TYPES_VARIANTES_MACROS.map((t) => getToutesVariantesPourType(supabase, userId, t)),
     ])
+    const entreesResolues = seancesResoluesPourDate(
+      entreesPlanning,
+      variantesParType.flat(),
+      aujourdhui
+    )
     consoJour = totauxDepuisIntakes(fusionIntakesJour(dateStr, intakesJour))
     macrosCibles = macrosCiblesPourJour({
       profil: macroProfil,
-      profilEffort,
       phase,
-      planning: planningSport,
+      entreesResolues,
       date: aujourdhui,
       sansSuiviCycle: sansSuivi,
       macrosMode: prefs?.macros_mode ?? 'auto',

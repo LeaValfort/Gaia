@@ -16,11 +16,12 @@ import {
   LIBELLE_INTENSITE,
   macrosManuelsDepuisProfil,
   recapMacrosPlanning,
-  seancesUniquesDuPlanning,
+  seancesUniquesDuCalendrier,
   type RecapSeancePlanning,
 } from '@/lib/macros-planning-recap'
-import { planningEffectif } from '@/lib/macros-du-jour'
+import { getEntreesPlanning } from '@/lib/db/planning-sport-entries'
 import { LABELS_PLANNING } from '@/lib/planning-sport'
+import { supabase } from '@/lib/supabase'
 import type { MacroProfileSaveData } from '@/lib/db/macro-profiles'
 import type {
   MacroProfile,
@@ -29,6 +30,7 @@ import type {
   MacrosMode,
   NiveauActivite,
   Objectif,
+  PlanningSportEntry,
   SeanceProfil,
   TypePlanningJour,
   UserPreferences,
@@ -211,7 +213,7 @@ export function SectionCalculateurMacros({
   onMacrosModeChange,
 }: SectionCalculateurMacrosProps) {
   const router = useRouter()
-  const planning = useMemo(() => planningEffectif(prefs.planning_sport), [prefs.planning_sport])
+  const [entreesPlanning, setEntreesPlanning] = useState<PlanningSportEntry[]>([])
   const [mode, setMode] = useState<MacrosMode>(
     prefs.macros_mode ?? lireModeLocal() ?? MACROS_MODE_AUTO
   )
@@ -237,6 +239,16 @@ export function SectionCalculateurMacros({
   useEffect(() => {
     setMode(prefs.macros_mode ?? lireModeLocal() ?? MACROS_MODE_AUTO)
   }, [prefs.macros_mode])
+
+  useEffect(() => {
+    let actif = true
+    void getEntreesPlanning(supabase, userId).then((entrees) => {
+      if (actif) setEntreesPlanning(entrees)
+    })
+    return () => {
+      actif = false
+    }
+  }, [userId])
 
   useEffect(() => {
     if (!profilInitial) return
@@ -289,8 +301,8 @@ export function SectionCalculateurMacros({
 
   const recapPlanning = useMemo(() => {
     if (!profilCalcule) return null
-    return recapMacrosPlanning(profilCalcule, planning, seanceProfilsInitiales)
-  }, [profilCalcule, planning, seanceProfilsInitiales])
+    return recapMacrosPlanning(profilCalcule, entreesPlanning, seanceProfilsInitiales)
+  }, [profilCalcule, entreesPlanning, seanceProfilsInitiales])
 
   const resultatsAuto = useMemo(() => {
     if (!profilCalcule || !recapPlanning) return null
@@ -305,7 +317,7 @@ export function SectionCalculateurMacros({
     }
   }, [activite, numeriques, profilCalcule, recapPlanning])
 
-  const typesPlanning = useMemo(() => seancesUniquesDuPlanning(planning), [planning])
+  const typesPlanning = useMemo(() => seancesUniquesDuCalendrier(entreesPlanning), [entreesPlanning])
 
   const initLignesManuelles = useCallback(() => {
     const stocke = macrosManuelsDepuisProfil(profilInitial)
