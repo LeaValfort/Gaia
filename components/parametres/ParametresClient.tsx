@@ -18,7 +18,6 @@ import { SectionBibliographie } from '@/components/parametres/SectionBibliograph
 import { SectionApp } from '@/components/parametres/SectionApp'
 import { SectionCalculateurMacros } from '@/components/parametres/SectionCalculateurMacros'
 import { SectionDonneesCompte } from '@/components/parametres/SectionDonneesCompte'
-import { SectionIntensiteSeances } from '@/components/parametres/SectionIntensiteSeances'
 import { SectionMonCycle } from '@/components/parametres/SectionMonCycle'
 import { SectionPlanningSportCalendrier } from '@/components/parametres/SectionPlanningSportCalendrier'
 import { SectionPourcentagesGaia } from '@/components/parametres/SectionPourcentagesGaia'
@@ -130,12 +129,9 @@ export function ParametresClient({
           onToggle={() => toggleSection('sport')}
         >
           <SectionPlanningSportCalendrier userId={userId} />
-          <div className="mt-5 border-t border-neutral-200 pt-4 dark:border-neutral-800">
-            <p className="mb-2 text-xs font-semibold uppercase tracking-wide text-muted-foreground">
-              Intensité par type de séance (pour les macros)
-            </p>
-            <SectionIntensiteSeances userId={userId} seanceProfilsInitiales={seanceProfilsInitiales} />
-          </div>
+          <p className="mt-4 text-xs text-muted-foreground">
+            L&apos;intensité de chaque programme (pour les macros) se règle maintenant sur la page Sport, à la création ou depuis l&apos;onglet du programme concerné.
+          </p>
           <div className="mt-5 border-t border-neutral-200 pt-4 dark:border-neutral-800">
             <p className="mb-2 text-xs font-semibold uppercase tracking-wide text-muted-foreground">
               Pourcentages « Séance Gaia »

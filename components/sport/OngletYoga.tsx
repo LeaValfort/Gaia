@@ -9,6 +9,7 @@ import { Button } from '@/components/ui/button'
 import { TimerYoga } from '@/components/sport/TimerYoga'
 import { YogaPostureLigne } from '@/components/sport/yoga/YogaPostureLigne'
 import { MacrosSeanceCard } from '@/components/sport/MacrosSeanceCard'
+import { CarteIntensiteSeance } from '@/components/parametres/CarteIntensiteSeance'
 import { MuscuRessentiEmojis } from '@/components/sport/muscu/MuscuRessentiEmojis'
 import { ONGLET_DEFAUT_ID, SelecteurVariante } from '@/components/sport/SelecteurVariante'
 import { ModaleEditPosturesYoga } from '@/components/sport/ModaleEditPosturesYoga'
@@ -19,12 +20,23 @@ import {
   creerVariante,
   getVariantes,
   mettreAJourContenuVariante,
+  mettreAJourProfilVariante,
   renommerVariante,
   supprimerVariante,
 } from '@/lib/db/sport-variantes'
 import { supabase } from '@/lib/supabase'
 import { PHASES_DESIGN } from '@/lib/data/phases-design'
-import type { Phase, PostureYoga, SeanceYoga, SportVariante, TypeYoga, WorkoutYogaComplet } from '@/types'
+import type {
+  IntensiteEffort,
+  Phase,
+  PostureYoga,
+  ProfilEffort,
+  SeanceYoga,
+  SportVariante,
+  TypeEffort,
+  TypeYoga,
+  WorkoutYogaComplet,
+} from '@/types'
 
 function parseType(n: string | null): TypeYoga | null {
   if (!n) return null
@@ -108,6 +120,16 @@ export function OngletYoga({
     if (varianteActiveId) {
       const ok = await activerVariante(supabase, userId, 'yoga', 'na', null)
       if (ok) setVarianteActiveId(null)
+    }
+  }
+
+  async function changerIntensiteYoga(profil: ProfilEffort) {
+    if (!varianteActive) return
+    const ok = await mettreAJourProfilVariante(supabase, userId, 'yoga', varianteActive.id, profil)
+    if (ok) {
+      setVariantes((prev) => prev.map((v) => (v.id === varianteActive.id ? { ...v, ...profil } : v)))
+    } else {
+      toast.error('Impossible d’enregistrer l’intensité.')
     }
   }
 
@@ -229,6 +251,15 @@ export function OngletYoga({
         onSupprimer={(id) => void supprimerVarianteYoga(id)}
         couleurActif="bg-[#7C3AED] text-white"
       />
+      {varianteActive ? (
+        <CarteIntensiteSeance
+          label={`Intensité — ${varianteActive.nom}`}
+          profil={{ intensite: varianteActive.intensite, type_effort: varianteActive.type_effort, duree_min: varianteActive.duree_min }}
+          onChangerIntensite={(v: IntensiteEffort) => void changerIntensiteYoga({ intensite: v, type_effort: varianteActive.type_effort, duree_min: varianteActive.duree_min })}
+          onChangerEffort={(v: Exclude<TypeEffort, 'aucun'>) => void changerIntensiteYoga({ intensite: varianteActive.intensite, type_effort: v, duree_min: varianteActive.duree_min })}
+          onChangerDuree={(v: number) => void changerIntensiteYoga({ intensite: varianteActive.intensite, type_effort: varianteActive.type_effort, duree_min: v })}
+        />
+      ) : null}
       <div className="flex items-center justify-between gap-2">
         <p className="text-sm text-neutral-600 dark:text-neutral-400">{seance.description}</p>
         <Button type="button" size="sm" variant="outline" onClick={() => setModalePostures(true)} className="shrink-0">

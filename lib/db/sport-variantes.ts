@@ -1,11 +1,16 @@
 import type { SupabaseClient } from '@supabase/supabase-js'
-import type {
-  BlocNatation,
-  ExerciceCustom,
-  LieuVariante,
-  PostureYoga,
-  SportVariante,
-  TypeVarianteSport,
+import { deleteSeanceProfil, upsertSeanceProfil } from '@/lib/db/seance-profils'
+import {
+  PROFILS_DEFAUT,
+  type BlocNatation,
+  type ExerciceCustom,
+  type IntensiteEffort,
+  type LieuVariante,
+  type PostureYoga,
+  type ProfilEffort,
+  type SportVariante,
+  type TypeEffort,
+  type TypeVarianteSport,
 } from '@/types'
 
 /** Contenu initial ou mis à jour d'une variante (selon le sport concerné). */
@@ -14,6 +19,8 @@ export interface ContenuVariante {
   niveauNatation?: number
   blocsNatation?: BlocNatation[]
   postures?: PostureYoga[]
+  /** Intensité/effort/durée de ce programme (utilisés pour les macros). */
+  profilEffort?: ProfilEffort
 }
 
 function parseVariante(row: Record<string, unknown>): SportVariante {
@@ -28,6 +35,9 @@ function parseVariante(row: Record<string, unknown>): SportVariante {
     niveau_natation: typeof row.niveau_natation === 'number' ? row.niveau_natation : null,
     blocs_natation: Array.isArray(row.blocs_natation) ? (row.blocs_natation as BlocNatation[]) : null,
     postures: Array.isArray(row.postures) ? (row.postures as PostureYoga[]) : null,
+    intensite: (row.intensite as IntensiteEffort) ?? 'moderee',
+    type_effort: (row.type_effort as TypeEffort) ?? 'mixte',
+    duree_min: typeof row.duree_min === 'number' ? row.duree_min : 45,
     created_at: String(row.created_at),
     updated_at: String(row.updated_at),
   }
@@ -97,6 +107,7 @@ export async function creerVariante(
       .eq('user_id', userId)
       .eq('type_seance', typeSeance)
       .eq('lieu', lieu)
+    const profil = contenu.profilEffort ?? PROFILS_DEFAUT[typeSeance]
     const { data, error } = await supabase
       .from('sport_variantes')
       .insert({
@@ -109,10 +120,16 @@ export async function creerVariante(
         niveau_natation: contenu.niveauNatation ?? null,
         blocs_natation: contenu.blocsNatation ?? null,
         postures: contenu.postures ?? null,
+        intensite: profil.intensite,
+        type_effort: profil.type_effort,
+        duree_min: profil.duree_min,
       })
       .select('*')
       .single()
     if (error) throw error
+    // Cette variante devient tout de suite le programme actif : on resynchronise
+    // seance_profils (encore utilisé pour le calcul des macros) avec son intensité.
+    await upsertSeanceProfil(userId, typeSeance, profil).catch(() => {})
     return parseVariante(data as Record<string, unknown>)
   } catch (e) {
     console.error('creerVariante', e)
@@ -136,12 +153,57 @@ export async function activerVariante(
       .eq('type_seance', typeSeance)
       .eq('lieu', lieu)
     if (varianteId) {
-      const { error } = await supabase.from('sport_variantes').update({ est_active: true }).eq('id', varianteId)
+      const { data, error } = await supabase
+        .from('sport_variantes')
+        .update({ est_active: true })
+        .eq('id', varianteId)
+        .select('intensite, type_effort, duree_min')
+        .single()
       if (error) throw error
+      const row = data as Record<string, unknown>
+      // Programme activé : seance_profils suit son intensité (macros à jour).
+      await upsertSeanceProfil(userId, typeSeance, {
+        intensite: row.intensite as IntensiteEffort,
+        type_effort: row.type_effort as TypeEffort,
+        duree_min: row.duree_min as number,
+      }).catch(() => {})
+    } else {
+      // Retour à "Par défaut" : plus de réglage perso, seance_profils repasse
+      // sur les valeurs génériques du catalogue.
+      await deleteSeanceProfil(userId, typeSeance).catch(() => {})
     }
     return true
   } catch (e) {
     console.error('activerVariante', e)
+    return false
+  }
+}
+
+/** Modifie l'intensité/effort/durée d'une variante existante (et resynchronise les macros si elle est active). */
+export async function mettreAJourProfilVariante(
+  supabase: SupabaseClient,
+  userId: string,
+  typeSeance: TypeVarianteSport,
+  varianteId: string,
+  profil: ProfilEffort
+): Promise<boolean> {
+  try {
+    const { error } = await supabase
+      .from('sport_variantes')
+      .update({
+        intensite: profil.intensite,
+        type_effort: profil.type_effort,
+        duree_min: profil.duree_min,
+        updated_at: new Date().toISOString(),
+      })
+      .eq('id', varianteId)
+    if (error) throw error
+    // N'est appelé que depuis l'écran où cette variante est déjà la variante
+    // active affichée : on peut resynchroniser seance_profils sans revérifier.
+    await upsertSeanceProfil(userId, typeSeance, profil).catch(() => {})
+    return true
+  } catch (e) {
+    console.error('mettreAJourProfilVariante', e)
     return false
   }
 }

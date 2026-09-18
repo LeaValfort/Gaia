@@ -7,6 +7,7 @@ import { Pencil } from 'lucide-react'
 import { BilanSeance } from '@/components/sport/BilanSeance'
 import { MacrosSeanceCard } from '@/components/sport/MacrosSeanceCard'
 import { BannerSuggestionGaia } from '@/components/sport/BannerSuggestionGaia'
+import { CarteIntensiteSeance } from '@/components/parametres/CarteIntensiteSeance'
 import { ExerciceItem } from '@/components/sport/ExerciceItem'
 import { ModaleEditSeance } from '@/components/sport/ModaleEditSeance'
 import { ONGLET_DEFAUT_ID, SelecteurVariante } from '@/components/sport/SelecteurVariante'
@@ -20,6 +21,7 @@ import {
   creerVariante,
   getVariantes,
   mettreAJourContenuVariante,
+  mettreAJourProfilVariante,
   renommerVariante,
   supprimerVariante,
 } from '@/lib/db/sport-variantes'
@@ -36,12 +38,15 @@ import { POURCENTAGES_GAIA_DEFAUT } from '@/types'
 import type {
   DerniereCharge,
   ExerciceCustom,
+  IntensiteEffort,
   Lieu,
   Phase,
   PlanningSport,
   PourcentagesGaia,
+  ProfilEffort,
   SeanceAdaptee,
   SportVariante,
+  TypeEffort,
   TypeSeanceMuscle,
   WorkoutMuscuComplet,
 } from '@/types'
@@ -152,6 +157,19 @@ export function OngletMuscu({
     setExercicesFaits((f) => (f.includes(n) ? f.filter((y) => y !== n) : [...f, n]))
   }, [])
 
+  const varianteActive = variantes.find((v) => v.id === varianteActiveId) ?? null
+
+  async function changerIntensiteMuscu(profil: ProfilEffort) {
+    if (!varianteActive) return
+    const typePlanning = typeMuscuVersPlanning(typeSeance)
+    const ok = await mettreAJourProfilVariante(supabase, userId, typePlanning, varianteActive.id, profil)
+    if (ok) {
+      setVariantes((prev) => prev.map((v) => (v.id === varianteActive.id ? { ...v, ...profil } : v)))
+    } else {
+      toast.error('Impossible d’enregistrer l’intensité.')
+    }
+  }
+
   async function selectionnerVariante(id: string | null) {
     const typePlanning = typeMuscuVersPlanning(typeSeance)
     const ok = await activerVariante(supabase, userId, typePlanning, lieu, id)
@@ -230,6 +248,15 @@ export function OngletMuscu({
         onRenommer={(id, nom) => void renommerVarianteMuscu(id, nom)}
         onSupprimer={(id) => void supprimerVarianteMuscu(id)}
       />
+      {varianteActive ? (
+        <CarteIntensiteSeance
+          label={`Intensité — ${varianteActive.nom}`}
+          profil={{ intensite: varianteActive.intensite, type_effort: varianteActive.type_effort, duree_min: varianteActive.duree_min }}
+          onChangerIntensite={(v: IntensiteEffort) => void changerIntensiteMuscu({ intensite: v, type_effort: varianteActive.type_effort, duree_min: varianteActive.duree_min })}
+          onChangerEffort={(v: Exclude<TypeEffort, 'aucun'>) => void changerIntensiteMuscu({ intensite: varianteActive.intensite, type_effort: v, duree_min: varianteActive.duree_min })}
+          onChangerDuree={(v: number) => void changerIntensiteMuscu({ intensite: varianteActive.intensite, type_effort: varianteActive.type_effort, duree_min: v })}
+        />
+      ) : null}
       <div className="flex flex-wrap items-center justify-between gap-2">
         <p className="text-sm font-semibold text-neutral-800 dark:text-neutral-100">💪 {LBL[typeSeance]} — {lieu === 'maison' ? '🏠' : '🏋️'}</p>
         <Button type="button" size="sm" variant="outline" onClick={() => setModale(true)} className="shrink-0">

@@ -11,6 +11,7 @@ import { loggerSeanceNatationClient, modifierSeanceNatationClient } from '@/lib/
 import { blocsDefautPourNiveau, totauxDepuisBlocs } from '@/lib/data/swimming'
 import { MacrosSeanceCard } from '@/components/sport/MacrosSeanceCard'
 import { BannerSuggestionGaia } from '@/components/sport/BannerSuggestionGaia'
+import { CarteIntensiteSeance } from '@/components/parametres/CarteIntensiteSeance'
 import { SelecteurVariante, type OngletFixeVariante } from '@/components/sport/SelecteurVariante'
 import { ModaleEditBlocsNatation } from '@/components/sport/ModaleEditBlocsNatation'
 import { BlocNatationLigne } from '@/components/sport/natation/BlocNatationLigne'
@@ -20,6 +21,7 @@ import {
   creerVariante,
   getVariantes,
   mettreAJourContenuVariante,
+  mettreAJourProfilVariante,
   renommerVariante,
   supprimerVariante,
 } from '@/lib/db/sport-variantes'
@@ -29,9 +31,12 @@ import {
   SWIM_LEVEL_MAX,
   SWIM_LEVEL_MIN,
   type BlocNatation,
+  type IntensiteEffort,
   type Phase,
   type PourcentagesGaia,
+  type ProfilEffort,
   type SportVariante,
+  type TypeEffort,
   type WorkoutNatationComplet,
 } from '@/types'
 import { cn } from '@/lib/utils'
@@ -109,6 +114,18 @@ export function OngletNatation({
     setVariantes((prev) => prev.map((v) => (v.id === varianteActiveId ? { ...v, niveau_natation: niv } : v)))
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [niv])
+
+  const varianteActive = variantes.find((v) => v.id === varianteActiveId) ?? null
+
+  async function changerIntensiteNatation(profil: ProfilEffort) {
+    if (!varianteActive) return
+    const ok = await mettreAJourProfilVariante(supabase, userId, 'natation', varianteActive.id, profil)
+    if (ok) {
+      setVariantes((prev) => prev.map((v) => (v.id === varianteActive.id ? { ...v, ...profil } : v)))
+    } else {
+      toast.error('Impossible d’enregistrer l’intensité.')
+    }
+  }
 
   async function selectionnerVarianteNatation(id: string | null) {
     const ok = await activerVariante(supabase, userId, 'natation', 'na', id)
@@ -251,6 +268,15 @@ export function OngletNatation({
         onglets={NIVEAUX_ONGLETS}
         couleurActif="bg-[#059669] text-white"
       />
+      {varianteActive ? (
+        <CarteIntensiteSeance
+          label={`Intensité — ${varianteActive.nom}`}
+          profil={{ intensite: varianteActive.intensite, type_effort: varianteActive.type_effort, duree_min: varianteActive.duree_min }}
+          onChangerIntensite={(v: IntensiteEffort) => void changerIntensiteNatation({ intensite: v, type_effort: varianteActive.type_effort, duree_min: varianteActive.duree_min })}
+          onChangerEffort={(v: Exclude<TypeEffort, 'aucun'>) => void changerIntensiteNatation({ intensite: varianteActive.intensite, type_effort: v, duree_min: varianteActive.duree_min })}
+          onChangerDuree={(v: number) => void changerIntensiteNatation({ intensite: varianteActive.intensite, type_effort: varianteActive.type_effort, duree_min: v })}
+        />
+      ) : null}
       <div className="flex flex-col gap-2 rounded-lg border border-emerald-200/60 bg-white/60 p-3 text-sm dark:border-emerald-800 dark:bg-emerald-950/30">
         <div className="flex items-center justify-between gap-2">
           <p className="min-w-0 flex-1 font-medium text-neutral-900 dark:text-neutral-50">

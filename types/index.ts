@@ -929,6 +929,10 @@ export interface SportVariante {
   blocs_natation: BlocNatation[] | null
   /** Yoga uniquement — postures personnalisées (ordre + sélection) */
   postures: PostureYoga[] | null
+  /** Intensité/effort/durée de ce programme, utilisés pour le calcul des macros. */
+  intensite: IntensiteEffort
+  type_effort: TypeEffort
+  duree_min: number
   created_at: string
   updated_at: string
 }
