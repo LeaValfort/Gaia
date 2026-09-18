@@ -7,11 +7,10 @@ import { AlimentationOnglets } from '@/components/alimentation/AlimentationOngle
 import { PageHeader } from '@/components/shared/PageHeader'
 import { getLundiSemaine, getTypeJournee } from '@/lib/nutrition'
 import { getMacroProfile } from '@/lib/db/macro-profiles'
-import {
-  macrosCiblesPourJour,
-  planningEffectif,
-  profilEffortPourJour,
-} from '@/lib/macros-du-jour'
+import { macrosCiblesPourJour } from '@/lib/macros-du-jour'
+import { getEntreesPlanning } from '@/lib/db/planning-sport-entries'
+import { getToutesVariantesPourType } from '@/lib/db/sport-variantes'
+import { seancesResoluesPourDate } from '@/lib/planning-sport-jour'
 import { getCycleDay, getPhaseAvecStats } from '@/lib/cycle'
 import { BADGE_PHASE_CYCLE } from '@/lib/cycle-affichage'
 import { PHASES_DESIGN } from '@/lib/data/phases-design'
@@ -20,8 +19,10 @@ import { getDailyMealIntakesJour } from '@/lib/db/dailyMealIntake'
 import { fusionIntakesJour, totauxDepuisIntakes } from '@/lib/recapManuel'
 import { Nav } from '@/components/shared/Nav'
 import { cn } from '@/lib/utils'
-import type { MacrosCiblesJour, Phase } from '@/types'
+import type { MacrosCiblesJour, Phase, TypeVarianteSport } from '@/types'
 import { DEFAULT_MODE_UTILISATEUR } from '@/types'
+
+const TYPES_VARIANTES_MACROS: TypeVarianteSport[] = ['muscu_full', 'muscu_upper', 'natation', 'yoga']
 
 export const dynamic = 'force-dynamic'
 
@@ -48,11 +49,15 @@ export default async function PageAlimentation() {
   const sansSuivi = mode === 'sans_cycle'
   const suiviCalorique = prefs?.suivi_calorique !== false
 
-  const [intakesJour, macroProfil] = await Promise.all([
+  const [intakesJour, macroProfil, entreesPlanning, ...variantesParType] = await Promise.all([
     suiviCalorique
       ? getDailyMealIntakesJour(supabase, user.id, todayIso)
       : Promise.resolve([]),
     suiviCalorique ? getMacroProfile(user.id) : Promise.resolve(null),
+    suiviCalorique ? getEntreesPlanning(supabase, user.id) : Promise.resolve([]),
+    ...TYPES_VARIANTES_MACROS.map((t) =>
+      suiviCalorique ? getToutesVariantesPourType(supabase, user.id, t) : Promise.resolve([])
+    ),
   ])
   const consoJour = suiviCalorique
     ? totauxDepuisIntakes(fusionIntakesJour(todayIso, intakesJour))
@@ -66,17 +71,15 @@ export default async function PageAlimentation() {
   }
 
   const design = designPhaseAffichage(sansSuivi ? null : phase, { sansCycle: sansSuivi })
-  const planningSport = planningEffectif(prefs?.planning_sport)
-  const profilEffort = suiviCalorique
-    ? await profilEffortPourJour(user.id, planningSport, today)
-    : null
+  const entreesResolues = suiviCalorique
+    ? seancesResoluesPourDate(entreesPlanning, variantesParType.flat(), today)
+    : []
 
   const macrosCibles: MacrosCiblesJour = suiviCalorique
     ? macrosCiblesPourJour({
         profil: macroProfil,
-        profilEffort,
         phase,
-        planning: planningSport,
+        entreesResolues,
         date: today,
         sansSuiviCycle: sansSuivi,
         macrosMode: prefs?.macros_mode ?? 'auto',
