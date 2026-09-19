@@ -1,11 +1,11 @@
-// Données statiques de la checklist anti-inflammatoire
+// Données statiques de la checklist alimentation quotidienne (Chantier 6)
 
-import type { Rayon } from '@/types'
+import type { Phase, Rayon, TypeJournee } from '@/types'
 
 export interface ItemChecklist {
   id: string
   label: string
-  categorie: 'proteines' | 'graisses' | 'legumes' | 'hydratation' | 'eviter'
+  categorie: 'preparation' | 'proteines' | 'graisses' | 'legumes' | 'hydratation' | 'eviter'
   description: string
   emoji: string
 }
@@ -37,7 +37,7 @@ export const ITEMS_CHECKLIST: ItemChecklist[] = [
   { id: 'evite_ultra_transforme', label: 'Ultra-transformé évité',    categorie: 'eviter', description: 'Plats préparés, charcuterie industrielle',             emoji: '🏭' },
 ]
 
-// Batch cooking — item séparé, non inclus dans le score principal
+// Batch cooking — item séparé, hebdomadaire, non inclus dans le score du jour
 export const BATCH_ITEM = {
   id: 'batch_done',
   label: 'Batch cooking du dimanche fait',
@@ -46,6 +46,7 @@ export const BATCH_ITEM = {
 
 // Titres d'affichage pour chaque catégorie
 export const CATEGORIES_LABELS: Record<ItemChecklist['categorie'], string> = {
+  preparation: '🎯 Préparation de la séance du jour',
   proteines:   '🥩 Protéines',
   graisses:    '🫒 Graisses saines',
   legumes:     '🥦 Légumes & Fibres',
@@ -55,12 +56,47 @@ export const CATEGORIES_LABELS: Record<ItemChecklist['categorie'], string> = {
 
 // Ordre d'affichage des catégories
 export const ORDRE_CATEGORIES: ItemChecklist['categorie'][] = [
-  'proteines', 'graisses', 'legumes', 'hydratation', 'eviter',
+  'preparation', 'proteines', 'graisses', 'legumes', 'hydratation', 'eviter',
 ]
 
-// Crée un état checklist vide (tous les items à false)
-export function creerChecklistVide(): Record<string, boolean> {
-  return Object.fromEntries(ITEMS_CHECKLIST.map((item) => [item.id, false]))
+// ------------------------------------------------------------
+// Préparation de la séance du jour — varie selon le type de journée réel
+// (calculé à partir du planning + substitutions, pas le planning fixe)
+// ------------------------------------------------------------
+
+export const ITEMS_PREPARATION_SEANCE: Record<TypeJournee, ItemChecklist[]> = {
+  sport: [
+    { id: 'prep_glucides',   label: 'Repas riche en glucides 2-3h avant', categorie: 'preparation', description: 'Pour tenir la charge d’entraînement sans coup de mou', emoji: '🍚' },
+    { id: 'prep_hydratation_sport', label: 'Bouteille d’eau prête',       categorie: 'preparation', description: 'À emporter ou à portée pendant la séance',                emoji: '🥤' },
+    { id: 'prep_collation',  label: 'Collation protéinée post-séance prévue', categorie: 'preparation', description: 'Pour la récupération musculaire dans l’heure qui suit', emoji: '🥜' },
+  ],
+  yoga: [
+    { id: 'prep_leger',  label: 'Repas léger avant la séance', categorie: 'preparation', description: 'Éviter un repas lourd juste avant une séance de yoga', emoji: '🥗' },
+    { id: 'prep_tenue',  label: 'Tenue confortable et tapis prêts', categorie: 'preparation', description: 'Pour ne pas être gênée pendant les postures',        emoji: '🧘' },
+  ],
+  repos: [
+    { id: 'prep_repos_repas', label: 'Repas équilibré, sans surcompenser', categorie: 'preparation', description: 'Jour de repos : pas besoin de charger en glucides', emoji: '🍲' },
+  ],
+  regles: [
+    { id: 'prep_fer',    label: 'Aliments riches en fer au menu',           categorie: 'preparation', description: 'Viande rouge, lentilles, épinards — pour compenser les pertes', emoji: '🥩' },
+    { id: 'prep_tisane', label: 'Tisane ou bouillotte anti-crampes prête',  categorie: 'preparation', description: 'Gingembre, camomille ou framboisier',                          emoji: '🍵' },
+  ],
+}
+
+// ------------------------------------------------------------
+// Symptômes à surveiller — rappel informatif par phase, pas de case à cocher
+// ------------------------------------------------------------
+
+export const SYMPTOMES_A_SURVEILLER: Record<Phase, string> = {
+  menstruation: 'Fatigue, crampes et maux de tête sont fréquents cette phase — priorise le repos et l’hydratation.',
+  folliculaire: 'L’énergie remonte généralement : bon moment pour les séances plus intenses, tout en restant à l’écoute.',
+  ovulation: 'Une légère douleur ovulatoire ou une libido en hausse sont normales à cette phase.',
+  luteale: 'Ballonnements, fringales sucrées et irritabilité peuvent apparaître — hydratation et magnésium aident.',
+}
+
+// Crée un état checklist vide pour une liste d'items donnée (tous à false)
+export function creerChecklistVideDepuis(items: ItemChecklist[]): Record<string, boolean> {
+  return Object.fromEntries(items.map((item) => [item.id, false]))
 }
 
 // ------------------------------------------------------------

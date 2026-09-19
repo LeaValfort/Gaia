@@ -4,6 +4,7 @@
 import { startOfWeek, format } from 'date-fns'
 import type { Phase, TypeJournee, MacrosCiblesJour } from '@/types'
 import type { ItemChecklist } from '@/lib/data/nutrition'
+import { ITEMS_CHECKLIST, ITEMS_PREPARATION_SEANCE } from '@/lib/data/nutrition'
 
 // ------------------------------------------------------------
 // Macros par type de journée
@@ -71,6 +72,22 @@ export function calculerScoreChecklist(
   const fait = items.filter((item) => checklist[item.id] === true).length
   const pourcentage = total > 0 ? Math.round((fait / total) * 100) : 0
   return { fait, total, pourcentage }
+}
+
+/**
+ * Items de la checklist alimentation du jour : base anti-inflammatoire +
+ * un item "aliment star" propre à la phase + les items de préparation de la
+ * séance du jour (selon le type de journée réel, substitutions comprises).
+ */
+export function itemsChecklistDuJour(phase: Phase, typeJournee: TypeJournee): ItemChecklist[] {
+  const itemStarPhase: ItemChecklist = {
+    id: `star_${phase}`,
+    label: `Aliment star de la phase : ${ALIMENTS_STARS[phase].slice(0, 3).join(', ')}`,
+    categorie: 'legumes',
+    description: 'Aliments particulièrement adaptés à cette phase du cycle',
+    emoji: '⭐',
+  }
+  return [...ITEMS_PREPARATION_SEANCE[typeJournee], ...ITEMS_CHECKLIST, itemStarPhase]
 }
 
 /**

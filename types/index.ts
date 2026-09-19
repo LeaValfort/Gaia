@@ -552,7 +552,7 @@ export interface WorkoutYogaComplet {
 // Alimentation
 // ------------------------------------------------------------
 
-/** Checklist anti-inflammatoire de la semaine */
+/** Checklist anti-inflammatoire de la semaine (garde uniquement le batch cooking désormais) */
 export interface NutritionLog {
   id: string
   user_id: string
@@ -560,6 +560,19 @@ export interface NutritionLog {
   checklist: Record<string, boolean>  // { "omega3": true, "legumes": false, ... }
   batch_done: boolean
   notes: string | null
+  created_at: string
+}
+
+/**
+ * Checklist alimentation quotidienne (Chantier 6) : anti-inflammatoire adapté
+ * à la phase + préparation de la séance du jour. Remise à zéro chaque jour,
+ * contrairement à `NutritionLog` qui reste hebdomadaire (batch cooking).
+ */
+export interface NutritionChecklistJour {
+  id: string
+  user_id: string
+  date: string                  // format ISO YYYY-MM-DD
+  checklist: Record<string, boolean>
   created_at: string
 }
 

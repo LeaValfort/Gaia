@@ -5,7 +5,7 @@ import {
   AlimentationNav,
   type VueAlimentation,
 } from '@/components/alimentation/AlimentationNav'
-import { ChecklistHebdo } from '@/components/alimentation/ChecklistHebdo'
+import { ChecklistJour } from '@/components/alimentation/ChecklistJour'
 import { ListeCourses } from '@/components/alimentation/ListeCourses'
 import { SuggestionsRecettes } from '@/components/alimentation/SuggestionsRecettes'
 import { OngletAujourdhui } from '@/components/alimentation/OngletAujourdhui'
@@ -97,7 +97,13 @@ export function AlimentationOnglets(p: AlimentationOngletsProps) {
         ) : null}
 
         {vue === 'checklist' ? (
-          <ChecklistHebdo userId={p.userId} weekStart={p.weekStart} />
+          <ChecklistJour
+            userId={p.userId}
+            todayIso={p.todayIso}
+            weekStart={p.weekStart}
+            phase={p.phase}
+            typeJournee={p.macrosCibles.typeJournee}
+          />
         ) : null}
 
         {vue === 'courses' ? (
