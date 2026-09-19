@@ -331,6 +331,27 @@ export interface RecetteSuggestion {
   image_url?: string | null
 }
 
+/**
+ * Valeurs nutritionnelles pour 100 g de plat préparé.
+ * Calculées une fois à la sauvegarde (jamais recalculées à l'affichage), uniquement
+ * pour permettre le calcul du Nutri-score — pas affichées telles quelles à l'utilisatrice.
+ */
+export interface Nutrition100g {
+  kcal: number
+  proteines: number
+  glucides: number
+  sucres: number
+  lipides: number
+  acides_gras_satures: number
+  sel: number
+  fibres: number
+  /** Proportion de fruits, légumes, légumineuses et fruits à coque, en % de la masse totale */
+  fruits_legumes_pct: number
+}
+
+/** Lettre Nutri-score (A = meilleur profil nutritionnel, E = moins bon) */
+export type NutriScoreLettre = 'A' | 'B' | 'C' | 'D' | 'E'
+
 /** Une recette sauvegardée */
 export interface Recipe {
   id: string
@@ -341,14 +362,46 @@ export interface Recipe {
   phase: Phase | null
   type_repas: TypeRepas | null
   raison: string | null
+  /** @deprecated Ne sert plus qu'à identifier les recettes migrées depuis TheMealDB (Chantier 5) */
   spoonacular_id: number | null
   calories: number | null
   proteines: number | null
   glucides: number | null
   lipides: number | null
-  /** Étapes de préparation (saisie libre), absent si migration non appliquée */
+  /** Étapes de préparation (texte libre, une étape par ligne) */
   instructions?: string | null
+  /** Nombre de portions du plat tel que préparé (défaut 1) */
+  portions?: number
+  /** Poids total estimé du plat préparé, en grammes — sert au calcul du Nutri-score */
+  poids_total_g?: number | null
+  /** Valeurs pour 100 g, présentes uniquement pour les recettes générées par l'IA (Chantier 5) */
+  nutrition_100g?: Nutrition100g | null
   created_at: string
+}
+
+/**
+ * Recette complète générée par l'IA (remplace la recherche TheMealDB + traduction MyMemory).
+ * Pas encore sauvegardée : pas d'id ni de user_id tant qu'elle n'est pas persistée dans `recipes`.
+ */
+export interface RecetteGeneree {
+  nom: string
+  phase: Phase | null
+  type_repas: TypeRepas | null
+  temps_min: number
+  portions: number
+  poids_total_g: number
+  /** Chaque élément au format "quantité nom", ex. "200 g poulet" */
+  ingredients: string[]
+  /** Étapes de préparation, une par ligne */
+  instructions: string
+  /** Par portion */
+  calories: number
+  proteines: number
+  glucides: number
+  lipides: number
+  nutrition_100g: Nutrition100g
+  /** Pourquoi ce plat est adapté à la phase / au profil (1-2 phrases) */
+  raison: string
 }
 
 /** Saisie journalière d’un créneau repas (macros manuelles, hors recette du planning) */

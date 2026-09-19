@@ -1,60 +1,32 @@
 'use client'
 
 import { useState } from 'react'
-import { Bookmark, ShoppingCart, Check } from 'lucide-react'
+import { ShoppingCart, Check } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { supabase } from '@/lib/supabase'
-import { saveRecette } from '@/lib/db/nutrition'
 import { addShoppingItem } from '@/lib/db/courses'
 import { getLundiSemaine } from '@/lib/nutrition'
 import { devinerAssignation } from '@/lib/data/courses'
 import { parserIngredientCourses } from '@/lib/db/shopping-items'
-import type { RecetteDetail } from '@/types'
+import type { Recipe } from '@/types'
 
 interface BoutonsRecetteProps {
-  recette: RecetteDetail
+  /** La recette est déjà en base (cette fiche vient toujours de la table recipes) */
+  recette: Recipe
   userId: string
 }
 
 export function BoutonsRecette({ recette, userId }: BoutonsRecetteProps) {
-  const [sauvegardee, setSauvegardee] = useState(false)
   const [ajoutee, setAjoutee] = useState(false)
-  const [chargementSave, setChargementSave] = useState(false)
-  const [chargementCourses, setChargementCourses] = useState(false)
-
-  async function handleSauvegarder() {
-    if (!userId) return
-    setChargementSave(true)
-    try {
-      await saveRecette(supabase, userId, {
-        nom: recette.titre,
-        ingredients: recette.ingredients.map((i) => `${i.quantite ?? ''} ${i.nom}`.trim()),
-        temps_min: recette.tempsMin,
-        phase: null,
-        type_repas: null,
-        raison: null,
-        spoonacular_id: recette.id,
-        calories:  recette.calories  || null,
-        proteines: recette.proteines || null,
-        glucides:  recette.glucides  || null,
-        lipides:   recette.lipides   || null,
-      })
-      setSauvegardee(true)
-    } catch {
-      // erreur déjà loggée dans saveRecette
-    } finally {
-      setChargementSave(false)
-    }
-  }
+  const [chargement, setChargement] = useState(false)
 
   async function handleAjouterCourses() {
     if (!userId) return
-    setChargementCourses(true)
+    setChargement(true)
     const weekStart = getLundiSemaine(new Date())
     try {
       await Promise.all(
-        recette.ingredients.map((ing) => {
-          const ligne = ing.quantite ? `${ing.quantite} ${ing.nom}` : ing.nom
+        recette.ingredients.map((ligne) => {
           const { nom, quantite } = parserIngredientCourses(ligne)
           const { rayon, enseigne } = devinerAssignation(nom)
           return addShoppingItem(supabase, userId, {
@@ -63,7 +35,7 @@ export function BoutonsRecette({ recette, userId }: BoutonsRecetteProps) {
             quantite,
             enseigne,
             rayon,
-            source: 'themealdb',
+            source: 'manuel',
           })
         })
       )
@@ -71,35 +43,17 @@ export function BoutonsRecette({ recette, userId }: BoutonsRecetteProps) {
     } catch {
       // erreur déjà loggée dans addShoppingItem
     } finally {
-      setChargementCourses(false)
+      setChargement(false)
     }
   }
 
   return (
-    <div className="flex flex-col sm:flex-row gap-3">
-      <Button
-        onClick={handleSauvegarder}
-        disabled={sauvegardee || chargementSave || !userId}
-        className="flex-1"
-      >
-        {sauvegardee ? (
-          <><Check size={16} className="mr-2" />Recette sauvegardée</>
-        ) : (
-          <><Bookmark size={16} className="mr-2" />{chargementSave ? 'Sauvegarde...' : 'Sauvegarder cette recette'}</>
-        )}
-      </Button>
-      <Button
-        variant="outline"
-        onClick={handleAjouterCourses}
-        disabled={ajoutee || chargementCourses || !userId}
-        className="flex-1"
-      >
-        {ajoutee ? (
-          <><Check size={16} className="mr-2" />Ingrédients ajoutés</>
-        ) : (
-          <><ShoppingCart size={16} className="mr-2" />{chargementCourses ? 'Ajout...' : 'Ajouter aux courses'}</>
-        )}
-      </Button>
-    </div>
+    <Button onClick={handleAjouterCourses} disabled={ajoutee || chargement || !userId} className="w-full">
+      {ajoutee ? (
+        <><Check size={16} className="mr-2" />Ingrédients ajoutés</>
+      ) : (
+        <><ShoppingCart size={16} className="mr-2" />{chargement ? 'Ajout...' : 'Ajouter aux courses'}</>
+      )}
+    </Button>
   )
 }

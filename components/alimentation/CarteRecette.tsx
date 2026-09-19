@@ -36,9 +36,7 @@ interface CarteRecetteProps {
 export function CarteRecette({ recette, onDelete }: CarteRecetteProps) {
   const [confirmation, setConfirmation] = useState(false)
 
-  const urlRecette = recette.spoonacular_id
-    ? `/alimentation/recette/${recette.spoonacular_id}`
-    : null
+  const urlRecette = `/alimentation/recette/${recette.id}`
 
   const emoji = recette.phase ? PHASE_EMOJI[recette.phase] : '🍽️'
 
