@@ -4,6 +4,8 @@ import { useState, useEffect, useCallback, useRef } from 'react'
 import { ChefHat, Search } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
+import { Label } from '@/components/ui/label'
+import { Switch } from '@/components/ui/switch'
 import { Skeleton } from '@/components/ui/skeleton'
 import { supabase } from '@/lib/supabase'
 import { getLundiSemaine } from '@/lib/nutrition'
@@ -32,6 +34,7 @@ export function SuggestionsRecettes({
 }: SuggestionsRecettesProps) {
   const [phaseSelectee, setPhaseSelectee] = useState<Phase>(phaseInitiale)
   const [repasSelectionne, setRepasSelectionne] = useState<TypeRepas>(() => repasParDefautSelonHeure())
+  const [avecIA, setAvecIA] = useState(true)
   const [perso, setPerso] = useState<Recipe[]>([])
   const [generees, setGenerees] = useState<RecetteGeneree[]>([])
   const [chargement, setChargement] = useState(false)
@@ -57,6 +60,7 @@ export function SuggestionsRecettes({
           allergies: allergies.join(','),
           tempsMax: String(tempsMax),
           phase: phaseSelectee,
+          avecIA: String(avecIA),
         })
         const q = (queryText ?? rechercheRef.current).trim()
         if (q) params.set('query', q)
@@ -72,7 +76,7 @@ export function SuggestionsRecettes({
         setChargement(false)
       }
     },
-    [typeJournee, allergies, tempsMax, phaseSelectee, repasSelectionne]
+    [typeJournee, allergies, tempsMax, phaseSelectee, repasSelectionne, avecIA]
   )
 
   useEffect(() => {
@@ -99,7 +103,14 @@ export function SuggestionsRecettes({
 
         <SelecteurRepasRecettes repasSelectionne={repasSelectionne} onChange={setRepasSelectionne} />
 
-        <p className="text-xs text-neutral-400">Générées par IA · macros calculées via CIQUAL</p>
+        <div className="flex items-center justify-between gap-2 pt-0.5">
+          <Label htmlFor="avec-ia" className="text-xs text-neutral-500 dark:text-neutral-400 font-normal">
+            {avecIA
+              ? 'Générer des recettes par IA · macros calculées via CIQUAL'
+              : 'IA désactivée · recherche uniquement dans tes recettes'}
+          </Label>
+          <Switch id="avec-ia" size="sm" checked={avecIA} onCheckedChange={setAvecIA} />
+        </div>
 
         <div className="flex gap-2 mt-1">
           <div className="relative flex-1">

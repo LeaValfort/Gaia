@@ -65,6 +65,9 @@ export async function GET(request: NextRequest) {
   const typeRepas = (searchParams.get('typeRepas') ?? 'dejeuner') as TypeRepas
   const allergies = (searchParams.get('allergies') ?? '').split(',').map((a) => a.trim()).filter(Boolean)
   const tempsMax = Number(searchParams.get('tempsMax')) || 30
+  // Désactivable depuis l'UI pour ne pas consommer de crédits IA quand on cherche juste
+  // parmi ses propres recettes déjà enregistrées.
+  const avecIA = searchParams.get('avecIA') !== 'false'
 
   try {
     const supabase = await creerClientServeur()
@@ -80,15 +83,17 @@ export async function GET(request: NextRequest) {
     const perso = filtrerRecettesPersonnelles(toutesRecettes, query, phase)
 
     const objectif = objectifsRepasDefaut(typeJournee, typeRepas)
-    const bases = await genererRecettes({
-      phase,
-      typeJournee,
-      typeRepas,
-      objectif,
-      allergies,
-      tempsMax,
-      recherche: query || undefined,
-    })
+    const bases = avecIA
+      ? await genererRecettes({
+          phase,
+          typeJournee,
+          typeRepas,
+          objectif,
+          allergies,
+          tempsMax,
+          recherche: query || undefined,
+        })
+      : []
     const generees = bases.map((b) => finaliserRecette(b, typeRepas, objectif.calories))
 
     return NextResponse.json({ perso, generees })
