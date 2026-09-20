@@ -45,6 +45,7 @@ export function RecettesSauvegardees({
   const [filtrePhase, setFiltrePhase] = useState<Phase | 'toutes'>(phase)
   const [filtreRepas, setFiltreRepas] = useState<TypeRepas | 'tous'>('tous')
   const [recherche, setRecherche] = useState('')
+  const [erreurSuppression, setErreurSuppression] = useState<string | null>(null)
 
   const charger = useCallback(
     async (opts?: { silent?: boolean }) => {
@@ -73,8 +74,15 @@ export function RecettesSauvegardees({
   }, [masquerFiltrePhase])
 
   async function handleDelete(id: string) {
+    setErreurSuppression(null)
     setRecettes((prev) => prev.filter((r) => r.id !== id))
-    await deleteRecette(supabase, userId, id)
+    const succes = await deleteRecette(supabase, userId, id)
+    if (!succes) {
+      // La suppression n'a pas été confirmée côté serveur : on restaure la vraie liste
+      // plutôt que de laisser croire que la recette a disparu alors qu'elle est toujours là.
+      setErreurSuppression('La suppression a échoué, la recette a été restaurée.')
+      void charger({ silent: true })
+    }
   }
 
   const recettesFiltrees = useMemo(() => {
@@ -149,6 +157,10 @@ export function RecettesSauvegardees({
           </button>
         ))}
       </div>
+
+      {erreurSuppression ? (
+        <p className="text-xs text-red-500 dark:text-red-400">{erreurSuppression}</p>
+      ) : null}
 
       <div className="relative">
         <Search

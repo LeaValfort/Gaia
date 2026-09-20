@@ -21,21 +21,26 @@ export async function getRecettes(
   }
 }
 
-/** Supprime une recette par son id */
+/** Supprime une recette par son id. Renvoie false si la suppression n'a pas pu être confirmée
+ *  (erreur, ou aucune ligne réellement supprimée côté serveur — ex. RLS qui bloque sans lever
+ *  d'erreur), pour éviter de faire disparaître la recette de l'UI sans qu'elle le soit vraiment. */
 export async function deleteRecette(
   supabase: SupabaseClient,
   userId: string,
   recetteId: string
-): Promise<void> {
+): Promise<boolean> {
   try {
-    const { error } = await supabase
+    const { data, error } = await supabase
       .from('recipes')
       .delete()
       .eq('id', recetteId)
       .eq('user_id', userId)
+      .select('id')
     if (error) throw error
+    return (data?.length ?? 0) > 0
   } catch (erreur) {
     console.error('Erreur deleteRecette:', erreur)
+    return false
   }
 }
 
