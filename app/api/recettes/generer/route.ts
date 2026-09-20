@@ -52,6 +52,7 @@ function finaliserRecette(base: RecetteBase, typeRepas: TypeRepas, objectifCalor
     lipides: macros.lipides,
     nutrition_100g: versNutrition100g(resultat),
     ingredients_non_reconnus: resultat.ingredientsNonReconnus,
+    ingredients_approximes: resultat.ingredientsApproximes,
     raison: base.raison,
   }
 }

@@ -371,19 +371,44 @@ export interface EntreeCiqual {
   sel: number | null
 }
 
-/** Ingrédient d'une recette générée par l'IA : nom en français + quantité en grammes. */
+/**
+ * Catégorie alimentaire d'un ingrédient, dans un vocabulaire fixe que l'IA doit respecter.
+ * Sert de repli quand l'ingrédient précis n'est pas reconnu dans CIQUAL : on utilise alors
+ * la moyenne CIQUAL de sa catégorie plutôt que de bloquer les macros de toute la recette.
+ * 'autre' = aucune catégorie ne convient (assaisonnement, condiment...) : pas d'approximation possible.
+ */
+export type CategorieIngredient =
+  | 'legume'
+  | 'fruit'
+  | 'feculent'
+  | 'legumineuse'
+  | 'viande'
+  | 'poisson'
+  | 'oeuf'
+  | 'produit_laitier'
+  | 'fromage'
+  | 'fruit_a_coque'
+  | 'matiere_grasse'
+  | 'sucre_sucrant'
+  | 'autre'
+
+/** Ingrédient d'une recette générée par l'IA : nom en français, quantité en grammes, catégorie. */
 export interface IngredientRecette {
   nom: string
   grammes: number
+  categorie: CategorieIngredient
 }
 
 /**
  * Résultat du calcul des macros d'une recette à partir de CIQUAL (lib/nutrition/calcul-recette.ts).
- * `macrosDisponibles` est faux dès qu'un ingrédient n'a pas été reconnu avec certitude :
- * on préfère ne pas afficher de macros plutôt que d'en afficher d'incomplètes ou inventées.
+ * `macrosDisponibles` est faux uniquement si un ingrédient est resté totalement non identifiable
+ * (catégorie 'autre' sans correspondance) : dans ce cas on préfère ne rien afficher plutôt que
+ * d'inventer un chiffre. `ingredientsApproximes` liste les ingrédients dont les macros viennent
+ * d'une moyenne de catégorie (toujours sourcée CIQUAL) plutôt que d'une correspondance exacte.
  */
 export interface ResultatCalculRecette {
   macrosDisponibles: boolean
+  ingredientsApproximes: string[]
   ingredientsNonReconnus: string[]
   poidsTotalG: number
   totalKcal: number
@@ -394,7 +419,7 @@ export interface ResultatCalculRecette {
   totalAgs: number
   totalFibres: number
   totalSel: number
-  /** Masse totale (g) provenant d'ingrédients du groupe CIQUAL "fruits, légumes, légumineuses et oléagineux" */
+  /** Masse totale (g) provenant d'ingrédients des catégories légume/fruit/légumineuse/fruit à coque */
   totalFruitsLegumesG: number
 }
 
@@ -452,8 +477,10 @@ export interface RecetteGeneree {
   glucides: number | null
   lipides: number | null
   nutrition_100g: Nutrition100g | null
-  /** Noms des ingrédients IA non reconnus dans CIQUAL (vide si macrosDisponibles) */
+  /** Noms des ingrédients totalement non identifiables (vide si macrosDisponibles) */
   ingredients_non_reconnus: string[]
+  /** Noms des ingrédients dont les macros viennent d'une moyenne de catégorie, pas d'un match exact */
+  ingredients_approximes: string[]
   /** Pourquoi ce plat est adapté à la phase / au profil (1-2 phrases) */
   raison: string
 }

@@ -3,19 +3,23 @@
 // valeurs par portion / pour 100 g. Aucune valeur ici n'est inventée : tout vient de CIQUAL,
 // ou la recette est marquée comme non chiffrable (macrosDisponibles = false).
 
-import { trouverAliment } from '@/lib/nutrition/ciqual'
+import { trouverAlimentOuApproximation } from '@/lib/nutrition/ciqual'
+import { CATEGORIES_FRUITS_LEGUMES } from '@/lib/data/ciqual-categories'
 import type { IngredientRecette, Nutrition100g, ResultatCalculRecette } from '@/types'
-
-const GROUPE_FRUITS_LEGUMES = 'fruits, légumes, légumineuses et oléagineux'
 
 function arrondi(v: number): number {
   return Math.round(v * 10) / 10
 }
 
-/** Additionne les macros de tous les ingrédients. Un seul ingrédient non reconnu suffit à
- *  rendre les macros indisponibles pour toute la recette (pas de total partiel trompeur). */
+/**
+ * Additionne les macros de tous les ingrédients. Pour chaque ingrédient, on tente d'abord une
+ * correspondance CIQUAL exacte, puis la moyenne de sa catégorie (toujours sourcée CIQUAL) en
+ * repli ; seul un ingrédient sans catégorie exploitable ('autre' sans données) reste vraiment
+ * non chiffrable et bloque les macros de toute la recette (pas de total partiel trompeur).
+ */
 export function calculerMacrosRecette(ingredients: IngredientRecette[]): ResultatCalculRecette {
   const ingredientsNonReconnus: string[] = []
+  const ingredientsApproximes: string[] = []
   let poidsTotalG = 0
   let totalKcal = 0
   let totalProteines = 0
@@ -29,13 +33,15 @@ export function calculerMacrosRecette(ingredients: IngredientRecette[]): Resulta
 
   for (const ing of ingredients) {
     poidsTotalG += ing.grammes
-    const aliment = trouverAliment(ing.nom)
+    const trouve = trouverAlimentOuApproximation(ing)
+    const aliment = trouve?.entree
     const complet =
       aliment && aliment.kcal != null && aliment.proteines != null && aliment.glucides != null && aliment.lipides != null
     if (!complet) {
       ingredientsNonReconnus.push(ing.nom)
       continue
     }
+    if (trouve!.approxime) ingredientsApproximes.push(ing.nom)
     const f = ing.grammes / 100
     totalKcal += aliment.kcal! * f
     totalProteines += aliment.proteines! * f
@@ -45,11 +51,12 @@ export function calculerMacrosRecette(ingredients: IngredientRecette[]): Resulta
     totalAgs += (aliment.ags ?? 0) * f
     totalFibres += (aliment.fibres ?? 0) * f
     totalSel += (aliment.sel ?? 0) * f
-    if (aliment.groupe === GROUPE_FRUITS_LEGUMES) totalFruitsLegumesG += ing.grammes
+    if (CATEGORIES_FRUITS_LEGUMES.includes(ing.categorie)) totalFruitsLegumesG += ing.grammes
   }
 
   return {
     macrosDisponibles: ingredientsNonReconnus.length === 0 && ingredients.length > 0,
+    ingredientsApproximes,
     ingredientsNonReconnus,
     poidsTotalG,
     totalKcal: arrondi(totalKcal),
@@ -74,7 +81,11 @@ export function ajusterPourCalories(
 ): IngredientRecette[] {
   if (!resultat.macrosDisponibles || resultat.totalKcal <= 0) return ingredients
   const facteur = caloriesCiblesTotales / resultat.totalKcal
-  return ingredients.map((ing) => ({ nom: ing.nom, grammes: Math.max(1, Math.round(ing.grammes * facteur)) }))
+  return ingredients.map((ing) => ({
+    nom: ing.nom,
+    grammes: Math.max(1, Math.round(ing.grammes * facteur)),
+    categorie: ing.categorie,
+  }))
 }
 
 export function versNutrition100g(resultat: ResultatCalculRecette): Nutrition100g | null {

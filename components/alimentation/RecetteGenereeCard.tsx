@@ -81,10 +81,17 @@ export function RecetteGenereeCard({ recette, userId, weekStart }: RecetteGenere
         <p className="font-semibold text-sm text-neutral-900 dark:text-neutral-50 leading-snug">{recette.nom}</p>
 
         {macrosDisponibles ? (
-          <div className="flex flex-wrap gap-1">
-            {macros.map(({ label, className }) => (
-              <Badge key={label} variant="outline" className={`text-xs ${className}`}>{label}</Badge>
-            ))}
+          <div className="flex flex-col gap-1">
+            <div className="flex flex-wrap gap-1">
+              {macros.map(({ label, className }) => (
+                <Badge key={label} variant="outline" className={`text-xs ${className}`}>{label}</Badge>
+              ))}
+            </div>
+            {recette.ingredients_approximes.length > 0 ? (
+              <p className="text-[11px] text-neutral-500 dark:text-neutral-400 italic">
+                Estimation (moyenne CIQUAL) pour : {recette.ingredients_approximes.join(', ')}
+              </p>
+            ) : null}
           </div>
         ) : (
           <p className="text-xs text-amber-600 dark:text-amber-400 flex items-start gap-1">

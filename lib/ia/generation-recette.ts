@@ -63,10 +63,18 @@ Propose exactement ${nombre} recettes complètes, adaptées à ce créneau, cett
 Choisis des proportions d'ingrédients réalistes pour t'approcher de l'objectif donné (ce n'est pas toi
 qui calcules les macros finales, elles seront calculées à partir d'une base nutritionnelle officielle).
 
-Pour chaque ingrédient, donne un nom simple et générique (pas de marque) et son poids en grammes tel
-qu'il est acheté / avant cuisson (cru pour viande, poisson, riz, pâtes, légumineuses ; tel quel pour
-légumes, fruits, produits laitiers). Jamais d'unité comme "1 boîte", "1 cuillère" ou "1 pincée" :
-convertis toujours en grammes, y compris pour une petite quantité d'épice (par exemple 1 g).
+Pour chaque ingrédient, donne :
+- un nom simple et générique (pas de marque) ;
+- son poids en grammes tel qu'il est acheté / avant cuisson (cru pour viande, poisson, riz, pâtes,
+  légumineuses ; tel quel pour légumes, fruits, produits laitiers) — jamais d'unité comme "1 boîte",
+  "1 cuillère" ou "1 pincée", convertis toujours en grammes, y compris pour une petite quantité
+  d'épice (par exemple 1 g) ;
+- sa catégorie, EXACTEMENT une de cette liste fixe (pour permettre une estimation nutritionnelle
+  même si l'ingrédient précis n'est pas reconnu) : legume, fruit, feculent, legumineuse, viande,
+  poisson, oeuf, produit_laitier, fromage, fruit_a_coque, matiere_grasse, sucre_sucrant, autre
+  (utilise "autre" seulement pour un assaisonnement/condiment sans vraie valeur nutritionnelle,
+  comme le sel, le poivre ou les herbes).
+
 Ingrédients dont les macros sont précisément connues, à privilégier (liste non exhaustive) :
 ${INGREDIENTS_CONNUS}.
 
@@ -76,7 +84,11 @@ Réponds UNIQUEMENT avec un tableau JSON valide, sans texte avant ni après, au 
     "nom": "nom du plat",
     "temps_min": 20,
     "portions": 1,
-    "ingredients": [{ "nom": "poulet", "grammes": 120 }, { "nom": "riz", "grammes": 60 }],
+    "ingredients": [
+      { "nom": "poulet", "grammes": 120, "categorie": "viande" },
+      { "nom": "riz", "grammes": 60, "categorie": "feculent" },
+      { "nom": "sel", "grammes": 1, "categorie": "autre" }
+    ],
     "instructions": "Étape 1...\\nÉtape 2...\\nÉtape 3...",
     "raison": "pourquoi ce plat est adapté à cette phase et ce créneau (1-2 phrases)"
   }
@@ -90,7 +102,7 @@ export async function genererRecettes(params: ParametresGeneration): Promise<Rec
     const client = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY })
     const message = await client.messages.create({
       model: 'claude-haiku-4-5-20251001',
-      max_tokens: 4096,
+      max_tokens: 6144,
       messages: [{ role: 'user', content: construirePrompt(params) }],
     })
 
@@ -105,7 +117,13 @@ export async function genererRecettes(params: ParametresGeneration): Promise<Rec
       .map((b) => versRecetteBase(b, params.phase))
       .filter((r): r is RecetteBase => r !== null)
   } catch (erreur) {
-    console.error('Erreur genererRecettes:', erreur)
+    // Log à plat (jamais un objet imbriqué) pour que le détail exact soit lisible
+    // directement dans les logs Vercel, sans avoir à déplier un objet tronqué.
+    const e = erreur as { status?: number; message?: string; error?: unknown }
+    console.error(
+      'Erreur genererRecettes:',
+      JSON.stringify({ status: e?.status, message: e?.message, body: e?.error })
+    )
     return []
   }
 }
