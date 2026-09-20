@@ -447,6 +447,8 @@ export interface Recipe {
   poids_total_g?: number | null
   /** Valeurs pour 100 g, présentes uniquement pour les recettes générées par l'IA (Chantier 5) */
   nutrition_100g?: Nutrition100g | null
+  /** Photo ajoutée à la main via « Modifier » (URL publique Supabase Storage) */
+  image_url?: string | null
   created_at: string
 }
 

@@ -1,23 +1,15 @@
 import { notFound, redirect } from 'next/navigation'
 import Link from 'next/link'
 import { ArrowLeft, Clock, Users } from 'lucide-react'
-import { Badge } from '@/components/ui/badge'
 import { Separator } from '@/components/ui/separator'
 import { BoutonsRecette } from '@/components/alimentation/BoutonsRecette'
+import { EnTeteRecette } from '@/components/alimentation/EnTeteRecette'
 import { creerClientServeur } from '@/lib/supabase-server'
 import { parserIngredientCourses } from '@/lib/db/shopping-items'
 import { calculerNutriScore } from '@/lib/nutrition/nutri-score'
 
 interface PageProps {
   params: Promise<{ id: string }>
-}
-
-const NUTRISCORE_STYLES: Record<string, string> = {
-  A: 'bg-green-600 text-white',
-  B: 'bg-lime-500 text-white',
-  C: 'bg-amber-500 text-white',
-  D: 'bg-orange-600 text-white',
-  E: 'bg-red-600 text-white',
 }
 
 /** Étapes de préparation, une par ligne non vide (fonctionne pour saisie manuelle et IA). */
@@ -56,22 +48,7 @@ export default async function PageDetailRecette({ params }: PageProps) {
           <ArrowLeft size={16} /> Retour
         </Link>
 
-        <div className="flex flex-col gap-2">
-          <div className="flex items-start justify-between gap-3">
-            <h1 className="text-xl font-bold text-neutral-900 dark:text-neutral-50 leading-snug">{recette.nom}</h1>
-            {nutriScore ? (
-              <span
-                className={`shrink-0 rounded-full size-8 flex items-center justify-center text-sm font-bold ${NUTRISCORE_STYLES[nutriScore]}`}
-                title="Nutri-score estimé à partir des valeurs pour 100 g"
-              >
-                {nutriScore}
-              </span>
-            ) : null}
-          </div>
-          {recette.phase ? (
-            <Badge variant="secondary" className="text-xs capitalize w-fit">{recette.phase}</Badge>
-          ) : null}
-        </div>
+        <EnTeteRecette recette={recette} userId={user.id} nutriScore={nutriScore} />
 
         <div className="flex gap-4 text-sm text-neutral-600 dark:text-neutral-400">
           {recette.temps_min ? (

@@ -11,7 +11,6 @@ import { saveRecette } from '@/lib/db/nutrition'
 import { addShoppingItem } from '@/lib/db/courses'
 import { devinerAssignation } from '@/lib/data/courses'
 import { parserIngredientCourses } from '@/lib/db/shopping-items'
-import { categorieDominante, ICONE_CATEGORIE, COULEUR_CATEGORIE } from '@/lib/data/categorie-icones'
 import type { RecetteGeneree } from '@/types'
 
 interface RecetteGenereeCardProps {
@@ -39,9 +38,6 @@ export function RecetteGenereeCard({ recette, userId, weekStart }: RecetteGenere
     : []
 
   const ingredientsAffiches = recette.ingredients.slice(0, 4)
-  const categorie = categorieDominante(recette.ingredients_structures)
-  const icone = ICONE_CATEGORIE[categorie]
-  const couleurIcone = COULEUR_CATEGORIE[categorie]
 
   async function handleSave() {
     await saveRecette(supabase, userId, {
@@ -102,18 +98,8 @@ export function RecetteGenereeCard({ recette, userId, weekStart }: RecetteGenere
         onClick={() => setOuverte(true)}
         onKeyDown={(e) => e.key === 'Enter' && setOuverte(true)}
       >
-        <div className="flex items-start gap-2">
-          <div
-            className={`flex size-9 shrink-0 items-center justify-center rounded-lg text-lg ${couleurIcone}`}
-            aria-hidden
-          >
-            {icone}
-          </div>
-          <div className="flex flex-col gap-1 min-w-0">
-            <Badge variant="outline" className="text-xs w-fit">✨ Suggestion IA</Badge>
-            <p className="font-semibold text-sm text-neutral-900 dark:text-neutral-50 leading-snug">{recette.nom}</p>
-          </div>
-        </div>
+        <Badge variant="outline" className="text-xs w-fit">✨ Suggestion IA</Badge>
+        <p className="font-semibold text-sm text-neutral-900 dark:text-neutral-50 leading-snug">{recette.nom}</p>
 
         {macrosDisponibles ? (
           <div className="flex flex-col gap-1">
@@ -166,15 +152,7 @@ export function RecetteGenereeCard({ recette, userId, weekStart }: RecetteGenere
       <Dialog open={ouverte} onOpenChange={setOuverte}>
         <DialogContent className="sm:max-w-xl max-h-[85vh] overflow-y-auto">
           <DialogHeader>
-            <DialogTitle className="flex items-center gap-2">
-              <span
-                className={`flex size-8 shrink-0 items-center justify-center rounded-lg text-base ${couleurIcone}`}
-                aria-hidden
-              >
-                {icone}
-              </span>
-              {recette.nom}
-            </DialogTitle>
+            <DialogTitle>{recette.nom}</DialogTitle>
           </DialogHeader>
 
           {macrosDisponibles ? (

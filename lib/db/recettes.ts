@@ -92,3 +92,41 @@ export async function insertRecetteManuelle(
     return null
   }
 }
+
+export interface ChampsModifiablesRecette {
+  nom: string
+  ingredients: string[]
+  temps_min: number | null
+  phase: Phase | null
+  type_repas: TypeRepas | null
+  calories: number
+  proteines: number
+  glucides: number
+  lipides: number
+  instructions: string | null
+  raison: string | null
+  image_url: string | null
+}
+
+/** Met à jour une recette existante (formulaire « Modifier »). Renvoie false si la mise à jour
+ *  n'a pas pu être confirmée (erreur, ou aucune ligne réellement modifiée côté serveur). */
+export async function updateRecette(
+  supabase: SupabaseClient,
+  userId: string,
+  recetteId: string,
+  champs: ChampsModifiablesRecette
+): Promise<boolean> {
+  try {
+    const { data, error } = await supabase
+      .from('recipes')
+      .update(champs)
+      .eq('id', recetteId)
+      .eq('user_id', userId)
+      .select('id')
+    if (error) throw error
+    return (data?.length ?? 0) > 0
+  } catch (erreur) {
+    console.error('Erreur updateRecette:', erreur)
+    return false
+  }
+}
