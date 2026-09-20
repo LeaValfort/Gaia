@@ -352,6 +352,52 @@ export interface Nutrition100g {
 /** Lettre Nutri-score (A = meilleur profil nutritionnel, E = moins bon) */
 export type NutriScoreLettre = 'A' | 'B' | 'C' | 'D' | 'E'
 
+/**
+ * Entrée de la table CIQUAL (ANSES) — composition nutritionnelle officielle et sourcée.
+ * Valeurs pour 100 g d'aliment, `null` quand la donnée n'est pas mesurée dans la table.
+ */
+export interface EntreeCiqual {
+  code: string
+  nom: string
+  groupe: string
+  sousGroupe: string
+  kcal: number | null
+  proteines: number | null
+  glucides: number | null
+  lipides: number | null
+  sucres: number | null
+  ags: number | null
+  fibres: number | null
+  sel: number | null
+}
+
+/** Ingrédient d'une recette générée par l'IA : nom en français + quantité en grammes. */
+export interface IngredientRecette {
+  nom: string
+  grammes: number
+}
+
+/**
+ * Résultat du calcul des macros d'une recette à partir de CIQUAL (lib/nutrition/calcul-recette.ts).
+ * `macrosDisponibles` est faux dès qu'un ingrédient n'a pas été reconnu avec certitude :
+ * on préfère ne pas afficher de macros plutôt que d'en afficher d'incomplètes ou inventées.
+ */
+export interface ResultatCalculRecette {
+  macrosDisponibles: boolean
+  ingredientsNonReconnus: string[]
+  poidsTotalG: number
+  totalKcal: number
+  totalProteines: number
+  totalGlucides: number
+  totalLipides: number
+  totalSucres: number
+  totalAgs: number
+  totalFibres: number
+  totalSel: number
+  /** Masse totale (g) provenant d'ingrédients du groupe CIQUAL "fruits, légumes, légumineuses et oléagineux" */
+  totalFruitsLegumesG: number
+}
+
 /** Une recette sauvegardée */
 export interface Recipe {
   id: string
@@ -390,16 +436,24 @@ export interface RecetteGeneree {
   temps_min: number
   portions: number
   poids_total_g: number
-  /** Chaque élément au format "quantité nom", ex. "200 g poulet" */
+  /** Ingrédients structurés (nom + grammes) tels que générés par l'IA, base du calcul CIQUAL */
+  ingredients_structures: IngredientRecette[]
+  /** Chaque élément au format "quantité nom", pour affichage et liste de courses */
   ingredients: string[]
   /** Étapes de préparation, une par ligne */
   instructions: string
-  /** Par portion */
-  calories: number
-  proteines: number
-  glucides: number
-  lipides: number
-  nutrition_100g: Nutrition100g
+  /**
+   * Macros par portion, calculées à partir de CIQUAL (jamais inventées par l'IA).
+   * `null` quand au moins un ingrédient n'a pas pu être reconnu dans CIQUAL —
+   * la recette reste affichée, sans macros plutôt qu'avec des macros incomplètes.
+   */
+  calories: number | null
+  proteines: number | null
+  glucides: number | null
+  lipides: number | null
+  nutrition_100g: Nutrition100g | null
+  /** Noms des ingrédients IA non reconnus dans CIQUAL (vide si macrosDisponibles) */
+  ingredients_non_reconnus: string[]
   /** Pourquoi ce plat est adapté à la phase / au profil (1-2 phrases) */
   raison: string
 }

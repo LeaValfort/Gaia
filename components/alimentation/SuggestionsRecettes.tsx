@@ -7,10 +7,12 @@ import { Input } from '@/components/ui/input'
 import { Skeleton } from '@/components/ui/skeleton'
 import { supabase } from '@/lib/supabase'
 import { getLundiSemaine } from '@/lib/nutrition'
+import { repasParDefautSelonHeure } from '@/lib/repartitionRepas'
 import { RecettePersoCard } from '@/components/alimentation/RecettePersoCard'
 import { RecetteGenereeCard } from '@/components/alimentation/RecetteGenereeCard'
 import { SelecteurPhaseRecettes } from '@/components/alimentation/SelecteurPhaseRecettes'
-import type { Phase, TypeJournee, Recipe, RecetteGeneree } from '@/types'
+import { SelecteurRepasRecettes } from '@/components/alimentation/SelecteurRepasRecettes'
+import type { Phase, TypeJournee, TypeRepas, Recipe, RecetteGeneree } from '@/types'
 
 interface SuggestionsRecettesProps {
   phase: Phase
@@ -29,6 +31,7 @@ export function SuggestionsRecettes({
   sansSuiviCycle,
 }: SuggestionsRecettesProps) {
   const [phaseSelectee, setPhaseSelectee] = useState<Phase>(phaseInitiale)
+  const [repasSelectionne, setRepasSelectionne] = useState<TypeRepas>(() => repasParDefautSelonHeure())
   const [perso, setPerso] = useState<Recipe[]>([])
   const [generees, setGenerees] = useState<RecetteGeneree[]>([])
   const [chargement, setChargement] = useState(false)
@@ -50,6 +53,7 @@ export function SuggestionsRecettes({
       try {
         const params = new URLSearchParams({
           typeJournee,
+          typeRepas: repasSelectionne,
           allergies: allergies.join(','),
           tempsMax: String(tempsMax),
           phase: phaseSelectee,
@@ -68,7 +72,7 @@ export function SuggestionsRecettes({
         setChargement(false)
       }
     },
-    [typeJournee, allergies, tempsMax, phaseSelectee]
+    [typeJournee, allergies, tempsMax, phaseSelectee, repasSelectionne]
   )
 
   useEffect(() => {
@@ -93,7 +97,9 @@ export function SuggestionsRecettes({
           </p>
         )}
 
-        <p className="text-xs text-neutral-400">Générées par IA · adaptées à ton profil</p>
+        <SelecteurRepasRecettes repasSelectionne={repasSelectionne} onChange={setRepasSelectionne} />
+
+        <p className="text-xs text-neutral-400">Générées par IA · macros calculées via CIQUAL</p>
 
         <div className="flex gap-2 mt-1">
           <div className="relative flex-1">

@@ -1,12 +1,14 @@
-// Recettes pour l'onglet Suggestions : recettes perso correspondantes + recettes
-// générées par l'IA. Remplace /api/spoonacular (qui n'a jamais utilisé Spoonacular :
-// il interrogeait TheMealDB, traduit via MyMemory — moteur retiré au Chantier 5).
+// Recettes pour l'onglet Suggestions : recettes perso correspondantes + recettes générées par
+// l'IA, macros calculées via CIQUAL (Chantier 5, refonte — remplace les macros inventées par l'IA).
 
 import { NextRequest, NextResponse } from 'next/server'
 import { genererRecettes } from '@/lib/ia/generation-recette'
+import type { RecetteBase } from '@/lib/ia/recette-brute'
+import { calculerMacrosRecette, ajusterPourCalories, versNutrition100g, versMacrosParPortion } from '@/lib/nutrition/calcul-recette'
+import { objectifsRepasDefaut } from '@/lib/repartitionRepas'
 import { getRecettes } from '@/lib/db/recettes'
 import { creerClientServeur } from '@/lib/supabase-server'
-import type { Phase, Recipe, TypeJournee } from '@/types'
+import type { Phase, Recipe, RecetteGeneree, TypeJournee, TypeRepas } from '@/types'
 
 function correspond(texte: string, query: string): boolean {
   return texte.toLowerCase().includes(query.toLowerCase())
@@ -22,11 +24,44 @@ function filtrerRecettesPersonnelles(recettes: Recipe[], query: string, phase: P
   })
 }
 
+/** Calcule les macros d'une recette générée, ajuste les quantités sur l'objectif calorique du
+ *  créneau, puis reconstruit la recette finale avec ingrédients (et macros) à jour. */
+function finaliserRecette(base: RecetteBase, typeRepas: TypeRepas, objectifCaloriesPortion: number): RecetteGeneree {
+  const premierCalcul = calculerMacrosRecette(base.ingredients_structures)
+  const ingredientsAjustes = ajusterPourCalories(
+    base.ingredients_structures,
+    objectifCaloriesPortion * base.portions,
+    premierCalcul
+  )
+  const resultat = calculerMacrosRecette(ingredientsAjustes)
+  const macros = versMacrosParPortion(resultat, base.portions)
+
+  return {
+    nom: base.nom,
+    phase: base.phase,
+    type_repas: typeRepas,
+    temps_min: base.temps_min,
+    portions: base.portions,
+    poids_total_g: resultat.poidsTotalG,
+    ingredients_structures: ingredientsAjustes,
+    ingredients: ingredientsAjustes.map((i) => `${i.grammes} g ${i.nom}`),
+    instructions: base.instructions,
+    calories: macros.calories,
+    proteines: macros.proteines,
+    glucides: macros.glucides,
+    lipides: macros.lipides,
+    nutrition_100g: versNutrition100g(resultat),
+    ingredients_non_reconnus: resultat.ingredientsNonReconnus,
+    raison: base.raison,
+  }
+}
+
 export async function GET(request: NextRequest) {
   const { searchParams } = new URL(request.url)
   const query = searchParams.get('query') ?? ''
   const phase = (searchParams.get('phase') ?? 'folliculaire') as Phase
   const typeJournee = (searchParams.get('typeJournee') ?? 'repos') as TypeJournee
+  const typeRepas = (searchParams.get('typeRepas') ?? 'dejeuner') as TypeRepas
   const allergies = (searchParams.get('allergies') ?? '').split(',').map((a) => a.trim()).filter(Boolean)
   const tempsMax = Number(searchParams.get('tempsMax')) || 30
 
@@ -43,13 +78,17 @@ export async function GET(request: NextRequest) {
     const toutesRecettes = await getRecettes(supabase, user.id)
     const perso = filtrerRecettesPersonnelles(toutesRecettes, query, phase)
 
-    const generees = await genererRecettes({
+    const objectif = objectifsRepasDefaut(typeJournee, typeRepas)
+    const bases = await genererRecettes({
       phase,
       typeJournee,
+      typeRepas,
+      objectif,
       allergies,
       tempsMax,
       recherche: query || undefined,
     })
+    const generees = bases.map((b) => finaliserRecette(b, typeRepas, objectif.calories))
 
     return NextResponse.json({ perso, generees })
   } catch (erreur) {

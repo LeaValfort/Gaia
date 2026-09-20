@@ -9,6 +9,15 @@ const PART: Record<TypeRepas, { k: number; p: number; g: number; l: number }> = 
   diner: { k: 0.35, p: 0.35, g: 0.32, l: 0.35 },
 }
 
+/** Créneau probable selon l'heure actuelle — sert de valeur initiale au sélecteur de recettes. */
+export function repasParDefautSelonHeure(maintenant: Date = new Date()): TypeRepas {
+  const heure = maintenant.getHours() + maintenant.getMinutes() / 60
+  if (heure < 10.5) return 'petit-dej'
+  if (heure < 14.5) return 'dejeuner'
+  if (heure < 18.5) return 'collation'
+  return 'diner'
+}
+
 export function objectifsRepasDefaut(typeJournee: TypeJournee, typeRepas: TypeRepas): {
   calories: number
   proteines: number

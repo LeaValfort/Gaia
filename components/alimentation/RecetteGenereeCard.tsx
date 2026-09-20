@@ -1,7 +1,7 @@
 'use client'
 
 import { useState } from 'react'
-import { Bookmark, ShoppingCart, Check } from 'lucide-react'
+import { Bookmark, ShoppingCart, Check, AlertTriangle } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import { supabase } from '@/lib/supabase'
@@ -17,17 +17,21 @@ interface RecetteGenereeCardProps {
   weekStart: string
 }
 
-/** Carte pour une recette générée par l'IA, pas encore sauvegardée. */
+/** Carte pour une recette générée par l'IA, pas encore sauvegardée. Macros = CIQUAL uniquement :
+ *  si un ingrédient n'a pas été reconnu, on l'affiche sans macros plutôt que d'en inventer. */
 export function RecetteGenereeCard({ recette, userId, weekStart }: RecetteGenereeCardProps) {
   const [saved, setSaved] = useState(false)
   const [added, setAdded] = useState(false)
 
-  const macros = [
-    { label: `${recette.calories} kcal`, className: 'text-orange-600 dark:text-orange-400' },
-    { label: `${recette.proteines}g P`, className: 'text-blue-600 dark:text-blue-400' },
-    { label: `${recette.glucides}g G`, className: 'text-amber-600 dark:text-amber-400' },
-    { label: `${recette.lipides}g L`, className: 'text-green-600 dark:text-green-400' },
-  ]
+  const macrosDisponibles = recette.calories !== null
+  const macros = macrosDisponibles
+    ? [
+        { label: `${recette.calories} kcal`, className: 'text-orange-600 dark:text-orange-400' },
+        { label: `${recette.proteines}g P`, className: 'text-blue-600 dark:text-blue-400' },
+        { label: `${recette.glucides}g G`, className: 'text-amber-600 dark:text-amber-400' },
+        { label: `${recette.lipides}g L`, className: 'text-green-600 dark:text-green-400' },
+      ]
+    : []
 
   const ingredientsAffiches = recette.ingredients.slice(0, 4)
 
@@ -76,11 +80,19 @@ export function RecetteGenereeCard({ recette, userId, weekStart }: RecetteGenere
         <Badge variant="outline" className="text-xs w-fit">✨ Suggestion IA</Badge>
         <p className="font-semibold text-sm text-neutral-900 dark:text-neutral-50 leading-snug">{recette.nom}</p>
 
-        <div className="flex flex-wrap gap-1">
-          {macros.map(({ label, className }) => (
-            <Badge key={label} variant="outline" className={`text-xs ${className}`}>{label}</Badge>
-          ))}
-        </div>
+        {macrosDisponibles ? (
+          <div className="flex flex-wrap gap-1">
+            {macros.map(({ label, className }) => (
+              <Badge key={label} variant="outline" className={`text-xs ${className}`}>{label}</Badge>
+            ))}
+          </div>
+        ) : (
+          <p className="text-xs text-amber-600 dark:text-amber-400 flex items-start gap-1">
+            <AlertTriangle size={12} className="shrink-0 mt-0.5" />
+            Macros non disponibles ({recette.ingredients_non_reconnus.join(', ')} non reconnu
+            {recette.ingredients_non_reconnus.length > 1 ? 's' : ''} dans la base nutritionnelle)
+          </p>
+        )}
 
         {recette.raison ? (
           <p className="text-xs text-muted-foreground italic">{recette.raison}</p>
