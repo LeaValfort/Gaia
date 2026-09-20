@@ -4,7 +4,8 @@ import { useState, type MouseEvent } from 'react'
 import Link from 'next/link'
 import { ChevronRight, Clock, Trash2 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
-import type { Phase, Recipe } from '@/types'
+import { VignetteRecette } from '@/components/alimentation/VignetteRecette'
+import type { Recipe } from '@/types'
 import { cn } from '@/lib/utils'
 
 const PHASE_STYLES: Record<string, string> = {
@@ -21,13 +22,6 @@ const PHASE_LABELS: Record<string, string> = {
   luteale: 'Lutéale',
 }
 
-const PHASE_EMOJI: Record<Phase, string> = {
-  menstruation: '🩸',
-  folliculaire: '🌱',
-  ovulation: '✨',
-  luteale: '🍂',
-}
-
 interface CarteRecetteProps {
   recette: Recipe
   onDelete: (id: string) => void
@@ -37,8 +31,6 @@ export function CarteRecette({ recette, onDelete }: CarteRecetteProps) {
   const [confirmation, setConfirmation] = useState(false)
 
   const urlRecette = `/alimentation/recette/${recette.id}`
-
-  const emoji = recette.phase ? PHASE_EMOJI[recette.phase] : '🍽️'
 
   function handleDelete(e: MouseEvent<HTMLButtonElement>) {
     e.preventDefault()
@@ -52,12 +44,11 @@ export function CarteRecette({ recette, onDelete }: CarteRecetteProps) {
 
   const contenu = (
     <div className="flex min-w-0 flex-1 items-center gap-3">
-      <div
-        className="flex size-10 shrink-0 items-center justify-center rounded-lg bg-neutral-100 text-xl dark:bg-neutral-800"
-        aria-hidden
-      >
-        {emoji}
-      </div>
+      <VignetteRecette
+        imageUrl={recette.image_url}
+        nom={recette.nom}
+        className="size-10 shrink-0 rounded-lg"
+      />
 
       <div className="min-w-0 flex-1">
         <p className="truncate text-sm font-medium text-neutral-900 dark:text-neutral-50">

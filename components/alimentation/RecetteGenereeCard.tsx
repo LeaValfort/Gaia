@@ -6,6 +6,7 @@ import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog'
 import { RecetteGenereeDetail } from '@/components/alimentation/RecetteGenereeDetail'
+import { VignetteRecette } from '@/components/alimentation/VignetteRecette'
 import { supabase } from '@/lib/supabase'
 import { saveRecette } from '@/lib/db/nutrition'
 import { addShoppingItem } from '@/lib/db/courses'
@@ -92,60 +93,63 @@ export function RecetteGenereeCard({ recette, userId, weekStart }: RecetteGenere
   return (
     <div className="rounded-xl border border-neutral-200 dark:border-neutral-800 overflow-hidden flex flex-col">
       <div
-        className="p-3 flex flex-col gap-2 flex-1 cursor-pointer"
+        className="flex flex-col flex-1 cursor-pointer"
         role="button"
         tabIndex={0}
         onClick={() => setOuverte(true)}
         onKeyDown={(e) => e.key === 'Enter' && setOuverte(true)}
       >
-        <Badge variant="outline" className="text-xs w-fit">✨ Suggestion IA</Badge>
-        <p className="font-semibold text-sm text-neutral-900 dark:text-neutral-50 leading-snug">{recette.nom}</p>
+        <VignetteRecette nom={recette.nom} className="h-24 w-full" />
+        <div className="p-3 flex flex-col gap-2 flex-1">
+          <Badge variant="outline" className="text-xs w-fit">✨ Suggestion IA</Badge>
+          <p className="font-semibold text-sm text-neutral-900 dark:text-neutral-50 leading-snug">{recette.nom}</p>
 
-        {macrosDisponibles ? (
-          <div className="flex flex-col gap-1">
-            <div className="flex flex-wrap gap-1">
-              {macros.map(({ label, className }) => (
-                <Badge key={label} variant="outline" className={`text-xs ${className}`}>{label}</Badge>
-              ))}
+          {macrosDisponibles ? (
+            <div className="flex flex-col gap-1">
+              <div className="flex flex-wrap gap-1">
+                {macros.map(({ label, className }) => (
+                  <Badge key={label} variant="outline" className={`text-xs ${className}`}>{label}</Badge>
+                ))}
+              </div>
+              {recette.ingredients_approximes.length > 0 ? (
+                <p className="text-[11px] text-neutral-500 dark:text-neutral-400 italic">
+                  Estimation (moyenne CIQUAL) pour : {recette.ingredients_approximes.join(', ')}
+                </p>
+              ) : null}
             </div>
-            {recette.ingredients_approximes.length > 0 ? (
-              <p className="text-[11px] text-neutral-500 dark:text-neutral-400 italic">
-                Estimation (moyenne CIQUAL) pour : {recette.ingredients_approximes.join(', ')}
-              </p>
-            ) : null}
-          </div>
-        ) : (
-          <p className="text-xs text-amber-600 dark:text-amber-400 flex items-start gap-1">
-            <AlertTriangle size={12} className="shrink-0 mt-0.5" />
-            Macros non disponibles ({recette.ingredients_non_reconnus.join(', ')} non reconnu
-            {recette.ingredients_non_reconnus.length > 1 ? 's' : ''} dans la base nutritionnelle)
+          ) : (
+            <p className="text-xs text-amber-600 dark:text-amber-400 flex items-start gap-1">
+              <AlertTriangle size={12} className="shrink-0 mt-0.5" />
+              Macros non disponibles ({recette.ingredients_non_reconnus.join(', ')} non reconnu
+              {recette.ingredients_non_reconnus.length > 1 ? 's' : ''} dans la base nutritionnelle)
+            </p>
+          )}
+
+          {recette.raison ? (
+            <p className="text-xs text-muted-foreground italic">{recette.raison}</p>
+          ) : null}
+
+          {ingredientsAffiches.length > 0 ? (
+            <ul className="flex flex-col gap-0.5">
+              {ingredientsAffiches.map((ing) => (
+                <li key={ing} className="truncate text-xs text-muted-foreground">{ing}</li>
+              ))}
+              {recette.ingredients.length > ingredientsAffiches.length ? (
+                <li className="text-xs text-muted-foreground">
+                  +{recette.ingredients.length - ingredientsAffiches.length} ingrédient
+                  {recette.ingredients.length - ingredientsAffiches.length > 1 ? 's' : ''}
+                </li>
+              ) : null}
+            </ul>
+          ) : null}
+
+          <p className="text-xs text-violet-600 dark:text-violet-400 flex items-center gap-1">
+            <Maximize2 size={12} />Voir la recette complète
           </p>
-        )}
 
-        {recette.raison ? (
-          <p className="text-xs text-muted-foreground italic">{recette.raison}</p>
-        ) : null}
-
-        {ingredientsAffiches.length > 0 ? (
-          <ul className="flex flex-col gap-0.5">
-            {ingredientsAffiches.map((ing) => (
-              <li key={ing} className="truncate text-xs text-muted-foreground">{ing}</li>
-            ))}
-            {recette.ingredients.length > ingredientsAffiches.length ? (
-              <li className="text-xs text-muted-foreground">
-                +{recette.ingredients.length - ingredientsAffiches.length} ingrédient
-                {recette.ingredients.length - ingredientsAffiches.length > 1 ? 's' : ''}
-              </li>
-            ) : null}
-          </ul>
-        ) : null}
-
-        <p className="text-xs text-violet-600 dark:text-violet-400 flex items-center gap-1">
-          <Maximize2 size={12} />Voir la recette complète
-        </p>
-
-        <div className="flex gap-1.5 flex-wrap mt-auto pt-1" onClick={(e) => e.stopPropagation()}>
-          {boutonsAction}
+          <div className="flex gap-1.5 flex-wrap mt-auto pt-1" onClick={(e) => e.stopPropagation()}>
+            {boutonsAction}
+          </div>
         </div>
       </div>
 
