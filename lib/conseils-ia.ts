@@ -70,7 +70,7 @@ export async function genererNouveauxConseilsSiNecessaire(): Promise<void> {
 
     const client = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY })
     const message = await client.messages.create({
-      model: 'claude-3-5-haiku-20241022',
+      model: 'claude-haiku-4-5-20251001',
       max_tokens: 2048,
       messages: [{ role: 'user', content: construirePrompt(sources, existantsParCle) }],
     })
