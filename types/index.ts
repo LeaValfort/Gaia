@@ -243,68 +243,10 @@ export interface MacrosCiblesJour {
   message: string
 }
 
-/** Un ingrédient avec quantité précise (page détail recette) */
-export interface IngredientDetail {
-  nom: string
-  quantite: string  // ex: "200 g", "2 cuillères à soupe"
-}
-
-/** Une étape de préparation (page détail recette) */
-export interface EtapeRecette {
-  numero: number
-  instruction: string
-}
-
-/** Détail complet d'une recette Spoonacular */
-export interface RecetteDetail {
-  id: number
-  titre: string
-  image: string
-  tempsMin: number
-  portions: number
-  calories: number
-  proteines: number
-  glucides: number
-  lipides: number
-  ingredients: IngredientDetail[]
-  etapes: EtapeRecette[]
-  urlOriginale: string
-  regimes: string[]  // ex: ["gluten free", "dairy free"]
-}
-
-/** Un ingrédient dans la liste de la carte recette (suggestions) */
-export interface IngredientCarte {
-  nom: string
-  quantite: string | null  // quantité en métrique, null si inconnue
-}
-
-/** Recette retournée par l'API Spoonacular */
-export interface RecetteSpoonacular {
-  id: number
-  titre: string
-  image: string
-  tempsMin: number
-  calories: number
-  proteines: number
-  glucides: number
-  lipides: number
-  ingredients: IngredientCarte[]
-  urlOriginale: string
-}
-
-/** Produit alimentaire Open Food Facts (macros pour 100 g) */
-export interface OpenFoodProduct {
-  id: string
-  nom: string
-  calories_100g: number | null
-  proteines_100g: number | null
-  glucides_100g: number | null
-  lipides_100g: number | null
-  ingredients: string | null
-  image_url: string | null
-}
-
-/** Recette TheMealDB normalisée */
+/** Recette TheMealDB normalisée — encore utilisé par lib/db/shopping-items.ts pour parser
+ *  les mesures d'ingrédients. Le reste de l'intégration TheMealDB/Spoonacular (détail
+ *  recette, traduction, macros Open Food Facts) a été retiré au nettoyage Chantier 5, 5a-2 :
+ *  remplacé par le moteur de recettes IA + CIQUAL (étape 5a-1). */
 export interface MealDBResult {
   id: string
   nom: string
@@ -313,22 +255,6 @@ export interface MealDBResult {
   image_url: string | null
   ingredients: string[]
   mesures: string[]
-}
-
-/** Suggestion unifiée (recettes perso + TheMealDB) */
-export interface RecetteSuggestion {
-  id: string
-  source: 'perso' | 'themealdb'
-  nom: string
-  phase: Phase | null
-  temps_min: number | null
-  calories: number | null
-  proteines: number | null
-  glucides: number | null
-  lipides: number | null
-  ingredients: string[] | null
-  mesures?: string[] | null
-  image_url?: string | null
 }
 
 /**
