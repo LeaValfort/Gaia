@@ -1,37 +1,40 @@
 // Vignette d'une carte recette (Chantier 5, étape 5b) : la photo ajoutée via "Modifier" si
-// elle existe, sinon un dégradé chaleureux (palette crème/orange-rouge façon Jow) choisi de
-// façon stable selon le nom de la recette — pas d'icône/emoji (essayé puis retiré, cf. plan).
+// elle existe, sinon le symbole + la couleur de la phase du cycle associée à la recette —
+// même code couleur/emoji que le reste de l'appli (PHASES_DESIGN). Pas de dégradé générique
+// ni d'icône par catégorie d'ingrédient (essayés puis retirés, Léa ne les aimait pas).
+import { PHASES_DESIGN, PHASE_DESIGN_ACCUEIL_NEUTRE } from '@/lib/data/phases-design'
 import { cn } from '@/lib/utils'
+import type { Phase } from '@/types'
 
-const DEGRADES_CARTE = [
-  'from-orange-200 to-red-200 dark:from-orange-900/50 dark:to-red-900/40',
-  'from-amber-100 to-orange-300 dark:from-amber-900/50 dark:to-orange-800/40',
-  'from-rose-100 to-orange-200 dark:from-rose-900/50 dark:to-orange-900/40',
-  'from-yellow-100 to-amber-300 dark:from-yellow-900/50 dark:to-amber-800/40',
-]
-
-/** Choisit un dégradé de façon stable selon le nom (même recette = même dégradé à chaque
- *  affichage, sans avoir besoin de le stocker en base). */
-function degradePour(nom: string): string {
-  let hash = 0
-  for (let i = 0; i < nom.length; i++) {
-    hash = (hash * 31 + nom.charCodeAt(i)) | 0
-  }
-  return DEGRADES_CARTE[Math.abs(hash) % DEGRADES_CARTE.length]
+const FOND_PHASE: Record<Phase, string> = {
+  menstruation: 'bg-rose-100 dark:bg-rose-900/40',
+  folliculaire: 'bg-amber-100 dark:bg-amber-900/40',
+  ovulation: 'bg-emerald-100 dark:bg-emerald-900/40',
+  luteale: 'bg-violet-100 dark:bg-violet-900/40',
 }
+const FOND_NEUTRE = 'bg-emerald-100 dark:bg-emerald-900/40'
 
 interface VignetteRecetteProps {
   imageUrl?: string | null
-  nom: string
+  /** Recette perso sans phase renseignée → symbole neutre (PHASE_DESIGN_ACCUEIL_NEUTRE). */
+  phase: Phase | null
   className?: string
 }
 
-export function VignetteRecette({ imageUrl, nom, className }: VignetteRecetteProps) {
+export function VignetteRecette({ imageUrl, phase, className }: VignetteRecetteProps) {
   if (imageUrl) {
     return (
       // eslint-disable-next-line @next/next/no-img-element
       <img src={imageUrl} alt="" className={cn('object-cover', className)} />
     )
   }
-  return <div className={cn('bg-gradient-to-br', degradePour(nom), className)} aria-hidden />
+
+  const emoji = phase ? PHASES_DESIGN[phase].emoji : PHASE_DESIGN_ACCUEIL_NEUTRE.emoji
+  const fond = phase ? FOND_PHASE[phase] : FOND_NEUTRE
+
+  return (
+    <div className={cn('flex items-center justify-center', fond, className)} aria-hidden>
+      <span className="text-2xl leading-none">{emoji}</span>
+    </div>
+  )
 }

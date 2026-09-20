@@ -19,7 +19,7 @@ export function RecettePersoCard({ recette }: { recette: Recipe }) {
 
   return (
     <div className="rounded-xl border border-neutral-200 dark:border-neutral-800 overflow-hidden flex flex-col">
-      <VignetteRecette imageUrl={recette.image_url} nom={recette.nom} className="h-24 w-full" />
+      <VignetteRecette imageUrl={recette.image_url} phase={recette.phase} className="h-24 w-full" />
       <div className="p-3 flex flex-col gap-2 flex-1">
         <Badge variant="outline" className="text-xs w-fit">📖 Ta recette</Badge>
         <p className="font-semibold text-sm text-neutral-900 dark:text-neutral-50 leading-snug">{recette.nom}</p>

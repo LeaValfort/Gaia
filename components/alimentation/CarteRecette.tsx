@@ -46,7 +46,7 @@ export function CarteRecette({ recette, onDelete }: CarteRecetteProps) {
     <div className="flex min-w-0 flex-1 items-center gap-3">
       <VignetteRecette
         imageUrl={recette.image_url}
-        nom={recette.nom}
+        phase={recette.phase}
         className="size-10 shrink-0 rounded-lg"
       />
 

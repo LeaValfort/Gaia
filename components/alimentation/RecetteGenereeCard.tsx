@@ -99,7 +99,7 @@ export function RecetteGenereeCard({ recette, userId, weekStart }: RecetteGenere
         onClick={() => setOuverte(true)}
         onKeyDown={(e) => e.key === 'Enter' && setOuverte(true)}
       >
-        <VignetteRecette nom={recette.nom} className="h-24 w-full" />
+        <VignetteRecette phase={recette.phase} className="h-24 w-full" />
         <div className="p-3 flex flex-col gap-2 flex-1">
           <Badge variant="outline" className="text-xs w-fit">✨ Suggestion IA</Badge>
           <p className="font-semibold text-sm text-neutral-900 dark:text-neutral-50 leading-snug">{recette.nom}</p>
