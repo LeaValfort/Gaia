@@ -3,11 +3,12 @@
 import { useState } from 'react'
 import { ShoppingCart, Check } from 'lucide-react'
 import { Button } from '@/components/ui/button'
+import { DialogueAjoutCourses } from '@/components/alimentation/DialogueAjoutCourses'
 import { supabase } from '@/lib/supabase'
 import { addShoppingItem } from '@/lib/db/courses'
 import { getLundiSemaine } from '@/lib/nutrition'
 import { devinerAssignation } from '@/lib/data/courses'
-import { parserIngredientCourses } from '@/lib/db/shopping-items'
+import { parserIngredientCourses, type IngredientCourses } from '@/lib/db/shopping-items'
 import type { Recipe } from '@/types'
 
 interface BoutonsRecetteProps {
@@ -19,15 +20,19 @@ interface BoutonsRecetteProps {
 export function BoutonsRecette({ recette, userId }: BoutonsRecetteProps) {
   const [ajoutee, setAjoutee] = useState(false)
   const [chargement, setChargement] = useState(false)
+  const [dialogueOuvert, setDialogueOuvert] = useState(false)
 
-  async function handleAjouterCourses() {
+  const ingredientsCourses: IngredientCourses[] = recette.ingredients.map((ligne) =>
+    parserIngredientCourses(ligne)
+  )
+
+  async function confirmerAjoutCourses(choisis: IngredientCourses[]) {
     if (!userId) return
     setChargement(true)
     const weekStart = getLundiSemaine(new Date())
     try {
       await Promise.all(
-        recette.ingredients.map((ligne) => {
-          const { nom, quantite } = parserIngredientCourses(ligne)
+        choisis.map(({ nom, quantite }) => {
           const { rayon, enseigne } = devinerAssignation(nom)
           return addShoppingItem(supabase, userId, {
             week_start: weekStart,
@@ -48,12 +53,25 @@ export function BoutonsRecette({ recette, userId }: BoutonsRecetteProps) {
   }
 
   return (
-    <Button onClick={handleAjouterCourses} disabled={ajoutee || chargement || !userId} className="w-full">
-      {ajoutee ? (
-        <><Check size={16} className="mr-2" />Ingrédients ajoutés</>
-      ) : (
-        <><ShoppingCart size={16} className="mr-2" />{chargement ? 'Ajout...' : 'Ajouter aux courses'}</>
-      )}
-    </Button>
+    <>
+      <Button
+        onClick={() => setDialogueOuvert(true)}
+        disabled={ajoutee || chargement || !userId}
+        className="w-full"
+      >
+        {ajoutee ? (
+          <><Check size={16} className="mr-2" />Ingrédients ajoutés</>
+        ) : (
+          <><ShoppingCart size={16} className="mr-2" />{chargement ? 'Ajout...' : 'Ajouter aux courses'}</>
+        )}
+      </Button>
+
+      <DialogueAjoutCourses
+        ouvert={dialogueOuvert}
+        onOuvertChange={setDialogueOuvert}
+        ingredients={ingredientsCourses}
+        onConfirmer={confirmerAjoutCourses}
+      />
+    </>
   )
 }

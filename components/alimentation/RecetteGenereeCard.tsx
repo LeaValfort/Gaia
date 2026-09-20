@@ -7,11 +7,12 @@ import { Badge } from '@/components/ui/badge'
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog'
 import { RecetteGenereeDetail } from '@/components/alimentation/RecetteGenereeDetail'
 import { VignetteRecette } from '@/components/alimentation/VignetteRecette'
+import { DialogueAjoutCourses } from '@/components/alimentation/DialogueAjoutCourses'
 import { supabase } from '@/lib/supabase'
 import { saveRecette } from '@/lib/db/nutrition'
 import { addShoppingItem } from '@/lib/db/courses'
 import { devinerAssignation } from '@/lib/data/courses'
-import { parserIngredientCourses } from '@/lib/db/shopping-items'
+import { parserIngredientCourses, type IngredientCourses } from '@/lib/db/shopping-items'
 import type { RecetteGeneree } from '@/types'
 
 interface RecetteGenereeCardProps {
@@ -27,6 +28,7 @@ export function RecetteGenereeCard({ recette, userId, weekStart }: RecetteGenere
   const [saved, setSaved] = useState(false)
   const [added, setAdded] = useState(false)
   const [ouverte, setOuverte] = useState(false)
+  const [dialogueCoursesOuvert, setDialogueCoursesOuvert] = useState(false)
 
   const macrosDisponibles = recette.calories !== null
   const macros = macrosDisponibles
@@ -61,10 +63,13 @@ export function RecetteGenereeCard({ recette, userId, weekStart }: RecetteGenere
     setSaved(true)
   }
 
-  async function handleAddCourses() {
+  const ingredientsCourses: IngredientCourses[] = recette.ingredients.map((ligne) =>
+    parserIngredientCourses(ligne)
+  )
+
+  async function confirmerAjoutCourses(choisis: IngredientCourses[]) {
     await Promise.all(
-      recette.ingredients.map((ligne) => {
-        const { nom, quantite } = parserIngredientCourses(ligne)
+      choisis.map(({ nom, quantite }) => {
         const { rayon, enseigne } = devinerAssignation(nom)
         return addShoppingItem(supabase, userId, {
           week_start: weekStart,
@@ -84,7 +89,13 @@ export function RecetteGenereeCard({ recette, userId, weekStart }: RecetteGenere
       <Button size="sm" variant="outline" onClick={handleSave} disabled={saved} className="text-xs h-7 px-2">
         {saved ? <><Check size={11} className="mr-1" />Sauvée</> : <><Bookmark size={11} className="mr-1" />Sauvegarder</>}
       </Button>
-      <Button size="sm" variant="outline" onClick={handleAddCourses} disabled={added} className="text-xs h-7 px-2">
+      <Button
+        size="sm"
+        variant="outline"
+        onClick={(e) => { e.stopPropagation(); setDialogueCoursesOuvert(true) }}
+        disabled={added}
+        className="text-xs h-7 px-2"
+      >
         {added ? <><Check size={11} className="mr-1" />Ajoutés</> : <><ShoppingCart size={11} className="mr-1" />Courses</>}
       </Button>
     </>
@@ -174,6 +185,13 @@ export function RecetteGenereeCard({ recette, userId, weekStart }: RecetteGenere
           <DialogFooter className="flex-row! justify-start!">{boutonsAction}</DialogFooter>
         </DialogContent>
       </Dialog>
+
+      <DialogueAjoutCourses
+        ouvert={dialogueCoursesOuvert}
+        onOuvertChange={setDialogueCoursesOuvert}
+        ingredients={ingredientsCourses}
+        onConfirmer={confirmerAjoutCourses}
+      />
     </div>
   )
 }

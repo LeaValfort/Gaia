@@ -16,6 +16,7 @@ import { devinerAssignation } from '@/lib/data/courses'
 import { OPTIONS_PETIT_DEJ } from '@/lib/data/petitsdejeuners'
 import type { CycleStats, MealPlan, MealPlanComplet, BudgetMacroJour, Phase, Recipe } from '@/types'
 import CartePlanJour from './CartePlanJour'
+import { DialogueAjoutCourses } from './DialogueAjoutCourses'
 
 interface PlanSemaineProps {
   userId: string
@@ -53,6 +54,7 @@ export default function PlanSemaine({
   const [generant, setGenerant]     = useState(false)
   const [exportant, setExportant]   = useState(false)
   const [erreur, setErreur]         = useState<string | null>(null)
+  const [dialogueCoursesOuvert, setDialogueCoursesOuvert] = useState(false)
 
   const dates = Array.from({ length: 7 }, (_, i) =>
     format(addDays(parseISO(weekStart), i), 'yyyy-MM-dd')
@@ -119,15 +121,16 @@ export default function PlanSemaine({
     } finally { setGenerant(false) }
   }
 
-  const handleExportCourses = async () => {
+  const ingredientsSemaine = extraireIngredientsSemaine(plansComplets)
+
+  const confirmerExportCourses = async (choisis: { nom: string; quantite: string }[]) => {
     setExportant(true)
     try {
-      const ingredients = extraireIngredientsSemaine(plansComplets)
-      for (const ing of ingredients) {
+      for (const ing of choisis) {
         const { rayon, enseigne } = devinerAssignation(ing.nom)
         await addShoppingItem(supabase, userId, { week_start: weekStart, nom: ing.nom, quantite: ing.quantite || null, enseigne, rayon, source: 'manuel' })
       }
-      alert(`${ingredients.length} ingrédients ajoutés à la liste de courses !`)
+      alert(`${choisis.length} ingrédients ajoutés à la liste de courses !`)
     } finally { setExportant(false) }
   }
 
@@ -148,7 +151,7 @@ export default function PlanSemaine({
           <Button size="sm" onClick={handleGenerer} disabled={generant || chargement} className="alimentation-btn-primaire">
             <Sparkles size={14} className="mr-1.5" />{generant ? 'Génération…' : 'Générer la semaine'}
           </Button>
-          <Button size="sm" variant="outline" onClick={handleExportCourses} disabled={exportant}>
+          <Button size="sm" variant="outline" onClick={() => setDialogueCoursesOuvert(true)} disabled={exportant}>
             <ShoppingCart size={14} className="mr-1.5" />{exportant ? 'Export…' : 'Vers les courses'}
           </Button>
         </div>
@@ -186,6 +189,13 @@ export default function PlanSemaine({
           ))}
         </div>
       )}
+
+      <DialogueAjoutCourses
+        ouvert={dialogueCoursesOuvert}
+        onOuvertChange={setDialogueCoursesOuvert}
+        ingredients={ingredientsSemaine}
+        onConfirmer={confirmerExportCourses}
+      />
     </div>
   )
 }
