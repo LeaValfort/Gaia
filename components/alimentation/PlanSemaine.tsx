@@ -16,7 +16,7 @@ import { devinerAssignation } from '@/lib/data/courses'
 import { OPTIONS_PETIT_DEJ } from '@/lib/data/petitsdejeuners'
 import type { CycleStats, MealPlan, MealPlanComplet, BudgetMacroJour, Phase, Recipe } from '@/types'
 import CartePlanJour from './CartePlanJour'
-import { DialogueAjoutCourses } from './DialogueAjoutCourses'
+import { DialogueAjoutCourses, type IngredientConfirme } from './DialogueAjoutCourses'
 
 interface PlanSemaineProps {
   userId: string
@@ -123,14 +123,22 @@ export default function PlanSemaine({
 
   const ingredientsSemaine = extraireIngredientsSemaine(plansComplets)
 
-  const confirmerExportCourses = async (choisis: { nom: string; quantite: string }[]) => {
+  const confirmerExportCourses = async (tous: IngredientConfirme<{ nom: string; quantite: string }>[]) => {
     setExportant(true)
     try {
-      for (const ing of choisis) {
+      for (const ing of tous) {
         const { rayon, enseigne } = devinerAssignation(ing.nom)
-        await addShoppingItem(supabase, userId, { week_start: weekStart, nom: ing.nom, quantite: ing.quantite || null, enseigne, rayon, source: 'manuel' })
+        await addShoppingItem(supabase, userId, {
+          week_start: weekStart,
+          nom: ing.nom,
+          quantite: ing.quantite || null,
+          enseigne,
+          rayon,
+          source: 'manuel',
+          deja_en_stock: ing.dejaEnStock,
+        })
       }
-      alert(`${choisis.length} ingrédients ajoutés à la liste de courses !`)
+      alert(`${tous.length} ingrédients ajoutés à la liste de courses !`)
     } finally { setExportant(false) }
   }
 

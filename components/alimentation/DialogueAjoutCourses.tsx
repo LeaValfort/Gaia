@@ -12,19 +12,25 @@ interface IngredientAConfirmer {
   quantite: string | null
 }
 
+/** dejaEnStock true = coché "déjà dans le placard/frigo" (distinct de "fait"). */
+export type IngredientConfirme<T> = T & { dejaEnStock: boolean }
+
 interface DialogueAjoutCoursesProps<T extends IngredientAConfirmer> {
   ouvert: boolean
   onOuvertChange: (ouvert: boolean) => void
   ingredients: T[]
-  /** Reçoit uniquement les ingrédients à ajouter (ceux décochés "déjà en stock" exclus). */
-  onConfirmer: (aAjouter: T[]) => void
+  /** Reçoit tous les ingrédients, chacun avec son statut "déjà en stock" ou non. */
+  onConfirmer: (tous: IngredientConfirme<T>[]) => void
 }
 
 /** Avant d'ajouter les ingrédients d'une recette aux courses, propose de cocher
  *  rapidement ce qu'on a déjà : les basiques (épices, huile...) sont pré-cochés,
  *  mais tout ingrédient reste décochable/cochable, y compris ceux qui seraient
- *  sinon ajoutés automatiquement. Rien n'est mémorisé : la question est reposée
- *  à chaque ajout (choix de Léa, 20/09, Chantier 5). */
+ *  sinon ajoutés directement. Les ingrédients cochés sont quand même ajoutés à
+ *  la liste de courses, mais marqués "déjà en stock" (section dédiée dans
+ *  CarteEnseigne, distincte de "Dans le panier") : rien ne disparaît sans
+ *  laisser de trace. Rien n'est mémorisé d'un ajout à l'autre : la question
+ *  est reposée à chaque fois (choix de Léa, 20/09, Chantier 5). */
 export function DialogueAjoutCourses<T extends IngredientAConfirmer>({
   ouvert,
   onOuvertChange,
@@ -61,7 +67,7 @@ export function DialogueAjoutCourses<T extends IngredientAConfirmer>({
 
   function confirmer() {
     onOuvertChange(false)
-    onConfirmer(ingredients.filter((ing) => !dejaEnStock.has(ing.nom)))
+    onConfirmer(ingredients.map((ing) => ({ ...ing, dejaEnStock: dejaEnStock.has(ing.nom) })))
   }
 
   function ligneIngredient(ing: T, idPrefix: string, idx: number) {
@@ -111,6 +117,10 @@ export function DialogueAjoutCourses<T extends IngredientAConfirmer>({
             </div>
           ) : null}
         </div>
+
+        <p className="text-xs text-muted-foreground">
+          Ce que tu coches sera quand même ajouté, mais marqué déjà dans ton placard/frigo.
+        </p>
 
         <DialogFooter>
           <Button onClick={confirmer} className="w-full">

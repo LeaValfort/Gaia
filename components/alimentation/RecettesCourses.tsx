@@ -62,7 +62,7 @@ export function RecettesCourses({ recettesInitiales, articlesInitiaux, weekStart
     const nom = nouvelArticle.trim()
     setNouvelArticle('')
     await addShoppingItem(weekStart, nom)
-    setArticles((prev) => [...prev, { id: Date.now().toString(), user_id: '', week_start: weekStart, nom, quantite: null, categorie: null, fait: false, created_at: '' }])
+    setArticles((prev) => [...prev, { id: Date.now().toString(), user_id: '', week_start: weekStart, nom, quantite: null, categorie: null, fait: false, deja_en_stock: false, created_at: '' }])
   }
 
   async function generer() {
@@ -71,7 +71,7 @@ export function RecettesCourses({ recettesInitiales, articlesInitiaux, weekStart
     await genererListeCourses(weekStart, noms)
     setArticles((prev) => {
       const existants = new Set(prev.map((a) => a.nom.toLowerCase()))
-      const nouveaux = noms.filter((n) => !existants.has(n.toLowerCase())).map((nom, i) => ({ id: `gen-${i}`, user_id: '', week_start: weekStart, nom, quantite: null, categorie: null, fait: false, created_at: '' }))
+      const nouveaux = noms.filter((n) => !existants.has(n.toLowerCase())).map((nom, i) => ({ id: `gen-${i}`, user_id: '', week_start: weekStart, nom, quantite: null, categorie: null, fait: false, deja_en_stock: false, created_at: '' }))
       return [...prev, ...nouveaux]
     })
   }

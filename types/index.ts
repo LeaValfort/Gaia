@@ -495,6 +495,8 @@ export interface ShoppingItem {
   quantite: string | null
   categorie: string | null
   fait: boolean
+  /** true = déjà dans le placard/frigo, pas besoin de l'acheter (distinct de "fait"). */
+  deja_en_stock: boolean
   created_at: string
 }
 

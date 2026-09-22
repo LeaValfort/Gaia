@@ -7,7 +7,7 @@ import { Badge } from '@/components/ui/badge'
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog'
 import { RecetteGenereeDetail } from '@/components/alimentation/RecetteGenereeDetail'
 import { VignetteRecette } from '@/components/alimentation/VignetteRecette'
-import { DialogueAjoutCourses } from '@/components/alimentation/DialogueAjoutCourses'
+import { DialogueAjoutCourses, type IngredientConfirme } from '@/components/alimentation/DialogueAjoutCourses'
 import { supabase } from '@/lib/supabase'
 import { saveRecette } from '@/lib/db/nutrition'
 import { addShoppingItem } from '@/lib/db/courses'
@@ -67,9 +67,9 @@ export function RecetteGenereeCard({ recette, userId, weekStart }: RecetteGenere
     parserIngredientCourses(ligne)
   )
 
-  async function confirmerAjoutCourses(choisis: IngredientCourses[]) {
+  async function confirmerAjoutCourses(tous: IngredientConfirme<IngredientCourses>[]) {
     await Promise.all(
-      choisis.map(({ nom, quantite }) => {
+      tous.map(({ nom, quantite, dejaEnStock }) => {
         const { rayon, enseigne } = devinerAssignation(nom)
         return addShoppingItem(supabase, userId, {
           week_start: weekStart,
@@ -78,6 +78,7 @@ export function RecetteGenereeCard({ recette, userId, weekStart }: RecetteGenere
           enseigne,
           rayon,
           source: 'manuel',
+          deja_en_stock: dejaEnStock,
         })
       })
     )

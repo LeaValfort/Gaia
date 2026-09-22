@@ -3,7 +3,7 @@
 import { useState } from 'react'
 import { ShoppingCart, Check } from 'lucide-react'
 import { Button } from '@/components/ui/button'
-import { DialogueAjoutCourses } from '@/components/alimentation/DialogueAjoutCourses'
+import { DialogueAjoutCourses, type IngredientConfirme } from '@/components/alimentation/DialogueAjoutCourses'
 import { supabase } from '@/lib/supabase'
 import { addShoppingItem } from '@/lib/db/courses'
 import { getLundiSemaine } from '@/lib/nutrition'
@@ -26,13 +26,13 @@ export function BoutonsRecette({ recette, userId }: BoutonsRecetteProps) {
     parserIngredientCourses(ligne)
   )
 
-  async function confirmerAjoutCourses(choisis: IngredientCourses[]) {
+  async function confirmerAjoutCourses(tous: IngredientConfirme<IngredientCourses>[]) {
     if (!userId) return
     setChargement(true)
     const weekStart = getLundiSemaine(new Date())
     try {
       await Promise.all(
-        choisis.map(({ nom, quantite }) => {
+        tous.map(({ nom, quantite, dejaEnStock }) => {
           const { rayon, enseigne } = devinerAssignation(nom)
           return addShoppingItem(supabase, userId, {
             week_start: weekStart,
@@ -41,6 +41,7 @@ export function BoutonsRecette({ recette, userId }: BoutonsRecetteProps) {
             enseigne,
             rayon,
             source: 'manuel',
+            deja_en_stock: dejaEnStock,
           })
         })
       )

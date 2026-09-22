@@ -5,7 +5,7 @@ import { Plus, ShoppingCart, Trash2 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Skeleton } from '@/components/ui/skeleton'
 import { supabase } from '@/lib/supabase'
-import { getShoppingItems, toggleShoppingItem, deleteShoppingItem, deleteAllShoppingItemsForWeek } from '@/lib/db/courses'
+import { getShoppingItems, toggleShoppingItem, toggleDejaEnStock, deleteShoppingItem, deleteAllShoppingItemsForWeek } from '@/lib/db/courses'
 import { ENSEIGNES_DEFAUT } from '@/lib/data/courses'
 import { grouperArticlesCourses } from '@/lib/courses-consolidation'
 import { CarteEnseigne } from './CarteEnseigne'
@@ -30,7 +30,9 @@ export function ListeCourses({ userId, weekStart }: ListeCoursesProps) {
   }, [userId, weekStart])
 
   function nbRestants(enseigneId: string) {
-    const subset = articles.filter((a) => (a.enseigne ?? 'grande_surface') === enseigneId && !a.fait)
+    const subset = articles.filter(
+      (a) => (a.enseigne ?? 'grande_surface') === enseigneId && !a.fait && !a.deja_en_stock
+    )
     return grouperArticlesCourses(subset).length
   }
 
@@ -39,13 +41,20 @@ export function ListeCourses({ userId, weekStart }: ListeCoursesProps) {
     await Promise.all(ids.map((id) => toggleShoppingItem(supabase, id, nouvelEtatFait)))
   }
 
+  async function handleToggleDejaEnStockMany(ids: string[], nouvelEtat: boolean) {
+    setArticles((prev) => prev.map((a) => (ids.includes(a.id) ? { ...a, deja_en_stock: nouvelEtat } : a)))
+    await Promise.all(ids.map((id) => toggleDejaEnStock(supabase, id, nouvelEtat)))
+  }
+
   async function handleDeleteMany(ids: string[]) {
     setArticles((prev) => prev.filter((a) => !ids.includes(a.id)))
     await Promise.all(ids.map((id) => deleteShoppingItem(supabase, id)))
   }
 
   async function handleToutCocher(enseigneId: string) {
-    const ids = articles.filter((a) => (a.enseigne ?? 'grande_surface') === enseigneId && !a.fait).map((a) => a.id)
+    const ids = articles
+      .filter((a) => (a.enseigne ?? 'grande_surface') === enseigneId && !a.fait && !a.deja_en_stock)
+      .map((a) => a.id)
     setArticles((prev) => prev.map((a) => (ids.includes(a.id) ? { ...a, fait: true } : a)))
     await Promise.all(ids.map((id) => toggleShoppingItem(supabase, id, true)))
   }
@@ -116,6 +125,7 @@ export function ListeCourses({ userId, weekStart }: ListeCoursesProps) {
               enseigne={enseigneSelectionnee}
               articles={articles.filter((a) => (a.enseigne ?? 'grande_surface') === enseigneSelectionnee.id)}
               onToggleMany={handleToggleMany}
+              onToggleDejaEnStockMany={handleToggleDejaEnStockMany}
               onDeleteMany={handleDeleteMany}
               onToutCocher={() => handleToutCocher(enseigneSelectionnee.id)}
             />

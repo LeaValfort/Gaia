@@ -32,12 +32,14 @@ export async function addShoppingItem(
     enseigne: string | null
     rayon: Rayon | null
     source: 'manuel' | 'spoonacular' | 'open_food_facts' | 'themealdb'
+    /** true = signalé "déjà dans le placard/frigo" à l'ajout (distinct de "fait"). */
+    deja_en_stock?: boolean
   }
 ): Promise<ShoppingItemComplet | null> {
   try {
     const { data, error } = await supabase
       .from('shopping_items')
-      .insert({ ...item, user_id: userId, fait: false })
+      .insert({ ...item, user_id: userId, fait: false, deja_en_stock: item.deja_en_stock ?? false })
       .select()
       .single()
     if (error) throw error
@@ -61,6 +63,23 @@ export async function toggleShoppingItem(
     if (error) throw error
   } catch (erreur) {
     console.error('Erreur toggleShoppingItem:', erreur)
+  }
+}
+
+/** Coche/décoche un article comme "déjà dans le placard/frigo" (distinct de "fait"). */
+export async function toggleDejaEnStock(
+  supabase: SupabaseClient,
+  itemId: string,
+  dejaEnStock: boolean
+): Promise<void> {
+  try {
+    const { error } = await supabase
+      .from('shopping_items')
+      .update({ deja_en_stock: dejaEnStock })
+      .eq('id', itemId)
+    if (error) throw error
+  } catch (erreur) {
+    console.error('Erreur toggleDejaEnStock:', erreur)
   }
 }
 

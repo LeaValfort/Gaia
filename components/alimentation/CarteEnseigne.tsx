@@ -1,7 +1,7 @@
 'use client'
 
 import { useState } from 'react'
-import { CheckCheck, Trash2, ChevronDown, ChevronUp } from 'lucide-react'
+import { CheckCheck, Trash2, ChevronDown, ChevronUp, Archive } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Checkbox } from '@/components/ui/checkbox'
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible'
@@ -14,14 +14,16 @@ interface CarteEnseigneProps {
   enseigne: EnseigneConfig
   articles: ShoppingItemComplet[]
   onToggleMany: (ids: string[], nouvelEtatFait: boolean) => void
+  onToggleDejaEnStockMany: (ids: string[], nouvelEtat: boolean) => void
   onDeleteMany: (ids: string[]) => void
   onToutCocher: () => void
 }
 
-function SectionRayon({ rayon, groupes, onToggleMany, onDeleteMany }: {
+function SectionRayon({ rayon, groupes, onToggleMany, onToggleDejaEnStockMany, onDeleteMany }: {
   rayon: Rayon
   groupes: ArticleCourseGroupe[]
   onToggleMany: (ids: string[], nouvelEtatFait: boolean) => void
+  onToggleDejaEnStockMany: (ids: string[], nouvelEtat: boolean) => void
   onDeleteMany: (ids: string[]) => void
 }) {
   const config = RAYONS_CONFIG[rayon]
@@ -50,6 +52,15 @@ function SectionRayon({ rayon, groupes, onToggleMany, onDeleteMany }: {
               </span>
               <button
                 type="button"
+                onClick={() => onToggleDejaEnStockMany(g.ids, true)}
+                className="opacity-0 group-hover:opacity-100 text-neutral-400 hover:text-amber-600 dark:hover:text-amber-400 transition-all"
+                aria-label="Déjà dans le placard ou le frigo"
+                title="Déjà dans le placard ou le frigo"
+              >
+                <Archive size={13} />
+              </button>
+              <button
+                type="button"
                 onClick={() => onDeleteMany(g.ids)}
                 className="opacity-0 group-hover:opacity-100 text-neutral-400 hover:text-red-500 transition-all"
                 aria-label="Supprimer"
@@ -64,9 +75,10 @@ function SectionRayon({ rayon, groupes, onToggleMany, onDeleteMany }: {
   )
 }
 
-export function CarteEnseigne({ enseigne, articles, onToggleMany, onDeleteMany, onToutCocher }: CarteEnseigneProps) {
-  const nonCoches = articles.filter((a) => !a.fait)
-  const coches    = articles.filter((a) => a.fait)
+export function CarteEnseigne({ enseigne, articles, onToggleMany, onToggleDejaEnStockMany, onDeleteMany, onToutCocher }: CarteEnseigneProps) {
+  const dejaEnStock = articles.filter((a) => a.deja_en_stock)
+  const nonCoches   = articles.filter((a) => !a.fait && !a.deja_en_stock)
+  const coches      = articles.filter((a) => a.fait && !a.deja_en_stock)
 
   const nbRestantsGroupes = grouperArticlesCourses(nonCoches).length
 
@@ -78,6 +90,7 @@ export function CarteEnseigne({ enseigne, articles, onToggleMany, onDeleteMany, 
     .filter(({ groupes }) => groupes.length > 0)
 
   const groupesCoches = grouperArticlesCourses(coches)
+  const groupesDejaEnStock = grouperArticlesCourses(dejaEnStock)
 
   return (
     <div className={`rounded-2xl p-4 ${enseigne.couleur}`}>
@@ -100,11 +113,42 @@ export function CarteEnseigne({ enseigne, articles, onToggleMany, onDeleteMany, 
       {parRayon.length > 0 ? (
         <div className="bg-white/60 dark:bg-black/20 rounded-xl px-3 py-1">
           {parRayon.map(({ rayon, groupes }) => (
-            <SectionRayon key={rayon} rayon={rayon as Rayon} groupes={groupes} onToggleMany={onToggleMany} onDeleteMany={onDeleteMany} />
+            <SectionRayon
+              key={rayon}
+              rayon={rayon as Rayon}
+              groupes={groupes}
+              onToggleMany={onToggleMany}
+              onToggleDejaEnStockMany={onToggleDejaEnStockMany}
+              onDeleteMany={onDeleteMany}
+            />
           ))}
         </div>
       ) : (
         <p className="text-sm text-neutral-400 text-center py-4">Tous les articles sont dans le panier ✅</p>
+      )}
+
+      {groupesDejaEnStock.length > 0 && (
+        <div className="mt-3 pt-3 border-t border-neutral-200/50 dark:border-neutral-700/50">
+          <p className="text-xs text-amber-700 dark:text-amber-400 mb-1">🧺 Déjà dans le placard/frigo ({groupesDejaEnStock.length})</p>
+          <ul className="flex flex-col gap-0.5">
+            {groupesDejaEnStock.map((g) => (
+              <li key={g.ids.join('-')} className="flex items-center gap-2 py-0.5 px-2 group">
+                <Checkbox checked onCheckedChange={() => onToggleDejaEnStockMany(g.ids, false)} className="flex-shrink-0" />
+                <span className="flex-1 text-xs line-through text-neutral-400 dark:text-neutral-600">
+                  {g.nomAffiche}{g.quantiteAffiche ? ` · ${g.quantiteAffiche}` : ''}
+                </span>
+                <button
+                  type="button"
+                  onClick={() => onDeleteMany(g.ids)}
+                  className="opacity-0 group-hover:opacity-100 text-neutral-300 hover:text-red-400 transition-all"
+                  aria-label="Supprimer"
+                >
+                  <Trash2 size={11} />
+                </button>
+              </li>
+            ))}
+          </ul>
+        </div>
       )}
 
       {groupesCoches.length > 0 && (
