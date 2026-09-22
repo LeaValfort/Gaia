@@ -5,6 +5,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/u
 import { Input } from '@/components/ui/input'
 import { Button } from '@/components/ui/button'
 import { Label } from '@/components/ui/label'
+import { Checkbox } from '@/components/ui/checkbox'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { supabase } from '@/lib/supabase'
 import { addShoppingItem } from '@/lib/db/courses'
@@ -28,6 +29,7 @@ export function FormulaireArticle({ weekStart, userId, onAjoute, onFermer }: For
   const [quantite, setQuantite] = useState('')
   const [enseigne, setEnseigne] = useState(ENSEIGNE_VIDE)
   const [rayon, setRayon]       = useState(RAYON_VIDE)
+  const [dejaEnStock, setDejaEnStock] = useState(false)
   const [chargement, setChargement] = useState(false)
 
   const rayonsOrdonnes = getRayonsOrdonnes()
@@ -42,6 +44,7 @@ export function FormulaireArticle({ weekStart, userId, onAjoute, onFermer }: For
       enseigne: enseigne === ENSEIGNE_VIDE ? null : enseigne,
       rayon: rayon === RAYON_VIDE ? null : rayon as Rayon,
       source: 'manuel',
+      deja_en_stock: dejaEnStock,
     })
     setChargement(false)
     if (nouvel) {
@@ -110,6 +113,13 @@ export function FormulaireArticle({ weekStart, userId, onAjoute, onFermer }: For
                 </SelectContent>
               </Select>
             </div>
+          </div>
+
+          <div className="flex items-center gap-2">
+            <Checkbox id="deja-en-stock" checked={dejaEnStock} onCheckedChange={(c) => setDejaEnStock(c === true)} />
+            <Label htmlFor="deja-en-stock" className="text-sm font-normal cursor-pointer">
+              Je l&apos;ai déjà (placard/frigo)
+            </Label>
           </div>
 
           <Button onClick={handleSoumettre} disabled={!nom.trim() || chargement} className="alimentation-btn-primaire w-full">
