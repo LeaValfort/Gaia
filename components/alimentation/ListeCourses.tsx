@@ -9,10 +9,14 @@ import { getShoppingItems, toggleShoppingItem, toggleDejaEnStock, deleteShopping
 import { ENSEIGNES_DEFAUT } from '@/lib/data/courses'
 import { grouperArticlesCourses } from '@/lib/courses-consolidation'
 import { CarteEnseigne } from './CarteEnseigne'
+import { CarteDejaEnStock } from './CarteDejaEnStock'
 import { FormulaireArticle } from './FormulaireArticle'
 import type { ShoppingItemComplet } from '@/types'
 
 interface ListeCoursesProps { userId: string; weekStart: string }
+
+/** Identifiant spécial pour la case "Déjà en stock" dans la grille des enseignes. */
+const DEJA_EN_STOCK_ID = '__deja_en_stock__'
 
 export function ListeCourses({ userId, weekStart }: ListeCoursesProps) {
   const [articles, setArticles] = useState<ShoppingItemComplet[]>([])
@@ -35,6 +39,8 @@ export function ListeCourses({ userId, weekStart }: ListeCoursesProps) {
     )
     return grouperArticlesCourses(subset).length
   }
+
+  const nbDejaEnStock = grouperArticlesCourses(articles.filter((a) => a.deja_en_stock)).length
 
   async function handleToggleMany(ids: string[], nouvelEtatFait: boolean) {
     setArticles((prev) => prev.map((a) => (ids.includes(a.id) ? { ...a, fait: nouvelEtatFait } : a)))
@@ -78,7 +84,7 @@ export function ListeCourses({ userId, weekStart }: ListeCoursesProps) {
     <div className="flex flex-col gap-5">
       {chargement ? (
         <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-          {[1, 2, 3, 4].map((i) => <Skeleton key={i} className="h-20 rounded-2xl" />)}
+          {[1, 2, 3, 4, 5].map((i) => <Skeleton key={i} className="h-20 rounded-2xl" />)}
         </div>
       ) : (
         <>
@@ -100,6 +106,19 @@ export function ListeCourses({ userId, weekStart }: ListeCoursesProps) {
                 </button>
               )
             })}
+
+            <button
+              onClick={() => setEnseigneActive(enseigneActive === DEJA_EN_STOCK_ID ? null : DEJA_EN_STOCK_ID)}
+              className={`relative rounded-2xl p-4 text-left transition-all border-2 ${enseigneActive === DEJA_EN_STOCK_ID ? 'border-violet-500 shadow-md' : 'border-transparent'} bg-amber-100 dark:bg-amber-900/40`}
+            >
+              <p className="text-2xl mb-1">🧺</p>
+              <p className="text-sm font-medium text-neutral-800 dark:text-neutral-100 leading-tight">Déjà en stock</p>
+              {nbDejaEnStock > 0 && (
+                <span className="absolute top-2 right-2 w-5 h-5 rounded-full bg-amber-600 text-white text-[10px] font-bold flex items-center justify-center">
+                  {nbDejaEnStock}
+                </span>
+              )}
+            </button>
           </div>
 
           <div className="flex flex-wrap gap-2 items-center">
@@ -119,8 +138,14 @@ export function ListeCourses({ userId, weekStart }: ListeCoursesProps) {
             )}
           </div>
 
-          {/* Carte enseigne sélectionnée */}
-          {enseigneSelectionnee ? (
+          {/* Carte enseigne sélectionnée, ou carte "Déjà en stock" */}
+          {enseigneActive === DEJA_EN_STOCK_ID ? (
+            <CarteDejaEnStock
+              articles={articles.filter((a) => a.deja_en_stock)}
+              onToggleDejaEnStockMany={handleToggleDejaEnStockMany}
+              onDeleteMany={handleDeleteMany}
+            />
+          ) : enseigneSelectionnee ? (
             <CarteEnseigne
               enseigne={enseigneSelectionnee}
               articles={articles.filter((a) => (a.enseigne ?? 'grande_surface') === enseigneSelectionnee.id)}
