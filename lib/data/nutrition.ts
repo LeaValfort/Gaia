@@ -117,6 +117,22 @@ export const ENSEIGNES_DEFAUT: EnseigneConfig[] = [
   { id: 'grande_surface',  label: 'Grande surface', emoji: '🛒', couleur: 'bg-yellow-100 dark:bg-yellow-900/40' },
 ]
 
+/**
+ * Palette de couleurs proposée pour une enseigne de courses personnalisée.
+ * Volontairement distincte des couleurs des phases du cycle (teal/amber/coral/purple)
+ * pour ne jamais créer de confusion visuelle avec les indicateurs de phase.
+ */
+export const PALETTE_COULEURS_ENSEIGNE: { label: string; classe: string }[] = [
+  { label: 'Vert',    classe: 'bg-green-100 dark:bg-green-900/40' },
+  { label: 'Bleu',     classe: 'bg-blue-100 dark:bg-blue-900/40' },
+  { label: 'Rouge',    classe: 'bg-red-100 dark:bg-red-900/40' },
+  { label: 'Jaune',    classe: 'bg-yellow-100 dark:bg-yellow-900/40' },
+  { label: 'Orange',   classe: 'bg-orange-100 dark:bg-orange-900/40' },
+  { label: 'Rose',     classe: 'bg-pink-100 dark:bg-pink-900/40' },
+  { label: 'Indigo',   classe: 'bg-indigo-100 dark:bg-indigo-900/40' },
+  { label: 'Gris',     classe: 'bg-slate-100 dark:bg-slate-900/40' },
+]
+
 // ------------------------------------------------------------
 // Rayons de magasin
 // ------------------------------------------------------------

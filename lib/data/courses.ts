@@ -24,7 +24,7 @@ export const RAYONS_CONFIG: Record<Rayon, RayonConfig> = {
 
 // ── ASSIGNATION AUTOMATIQUE ──────────────────────────────────
 
-import type { Enseigne } from '@/types'
+import type { Enseigne, EnseigneDB } from '@/types'
 
 export interface AssignationAuto { rayon: Rayon; enseigne: Enseigne }
 
@@ -35,18 +35,36 @@ const MOTS_LEGUMES  = ['oignon','onion','ail','garlic','tomate','tomato','carott
 const MOTS_FRUITS   = ['pomme','apple','banane','banana','avocat','avocado','citron','lemon','citron vert','lime','orange','fraise','strawberry','myrtille','blueberry','framboise','raspberry','mangue','mango','ananas','pineapple','pêche','peach','raisin','grape','cerise','cherry','prune','plum','poire','pear','melon','pastèque','watermelon','noix de coco','coconut','gingembre','ginger','curcuma','turmeric','persil','parsley','coriandre','cilantro','basilic','basil','thym','thyme','romarin','rosemary','menthe','mint','aneth','dill','origan','oregano','sauge','sage']
 const MOTS_FECULENTS = ['lentille','lentil','pois chiche','chickpea','haricot','black bean','kidney bean','riz','rice','pâtes','pasta','quinoa','avoine','oat','farine','flour','pain','bread','nouille','noodle','couscous','boulgour','bulgur','orge','barley','millet','sarrasin','buckwheat','polenta','amande','almond','noix','walnut','cajou','cashew','noisette','hazelnut','pécan','pecan','pistache','pistachio','lin','flaxseed','graine de chia','chia seed','tournesol','sunflower seed','sésame','sesame']
 
-/**
- * Détermine automatiquement le rayon et l'enseigne
- * d'un ingrédient à partir de son nom (français ou anglais).
- */
-export function devinerAssignation(nom: string): AssignationAuto {
-  const n = nom.toLowerCase()
+/** Règles historiques (rayon + enseigne par défaut), indépendantes des enseignes perso. */
+function deviverAssignationDefaut(n: string): AssignationAuto {
   if (MOTS_POISSONS.some((m) => n.includes(m))) return { rayon: 'poissons_viandes', enseigne: 'grand_frais' }
   if (MOTS_VIANDES.some((m) => n.includes(m)))  return { rayon: 'poissons_viandes', enseigne: 'boucherie' }
   if (MOTS_LEGUMES.some((m) => n.includes(m)))  return { rayon: 'fruits_legumes',   enseigne: 'grand_frais' }
   if (MOTS_FRUITS.some((m) => n.includes(m)))   return { rayon: 'fruits_legumes',   enseigne: 'grand_frais' }
   if (MOTS_FECULENTS.some((m) => n.includes(m))) return { rayon: 'epicerie_seche',  enseigne: 'biocoop' }
   return { rayon: 'autre', enseigne: 'grande_surface' }
+}
+
+/**
+ * Détermine automatiquement le rayon et l'enseigne d'un ingrédient à partir
+ * de son nom (français ou anglais), en tenant compte des enseignes perso de
+ * l'utilisatrice si elle en a créé. Priorité : 1) un mot-clé perso qui
+ * correspond (le plus précis), 2) le rayon deviné s'il est coché par une
+ * enseigne perso, 3) les règles par défaut historiques.
+ */
+export function devinerAssignation(nom: string, enseignesPerso: EnseigneDB[] = []): AssignationAuto {
+  const n = nom.toLowerCase()
+  const defaut = deviverAssignationDefaut(n)
+
+  const parMotCle = enseignesPerso.find((e) =>
+    e.mots_cles.some((mc) => mc.trim() && n.includes(mc.toLowerCase()))
+  )
+  if (parMotCle) return { rayon: defaut.rayon, enseigne: parMotCle.id }
+
+  const parRayon = enseignesPerso.find((e) => e.rayons.includes(defaut.rayon))
+  if (parRayon) return { rayon: defaut.rayon, enseigne: parRayon.id }
+
+  return defaut
 }
 
 /** Retourne les rayons triés par ordre d'affichage */

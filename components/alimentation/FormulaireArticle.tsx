@@ -9,7 +9,7 @@ import { Checkbox } from '@/components/ui/checkbox'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { supabase } from '@/lib/supabase'
 import { addShoppingItem } from '@/lib/db/courses'
-import { ENSEIGNES_DEFAUT, RAYONS_CONFIG, getRayonsOrdonnes } from '@/lib/data/courses'
+import { RAYONS_CONFIG, getRayonsOrdonnes } from '@/lib/data/courses'
 import type { EnseigneConfig } from '@/lib/data/courses'
 import type { ShoppingItemComplet, Rayon } from '@/types'
 
@@ -24,7 +24,7 @@ interface FormulaireArticleProps {
 const ENSEIGNE_VIDE = '__aucune__'
 const RAYON_VIDE    = '__aucun__'
 
-export function FormulaireArticle({ weekStart, userId, onAjoute, onFermer }: FormulaireArticleProps) {
+export function FormulaireArticle({ enseignes, weekStart, userId, onAjoute, onFermer }: FormulaireArticleProps) {
   const [nom, setNom]           = useState('')
   const [quantite, setQuantite] = useState('')
   const [enseigne, setEnseigne] = useState(ENSEIGNE_VIDE)
@@ -92,7 +92,7 @@ export function FormulaireArticle({ weekStart, userId, onAjoute, onFermer }: For
                 </SelectTrigger>
                 <SelectContent>
                   <SelectItem value={ENSEIGNE_VIDE}>Aucune</SelectItem>
-                  {ENSEIGNES_DEFAUT.map((e) => (
+                  {enseignes.map((e) => (
                     <SelectItem key={e.id} value={e.id}>{e.emoji} {e.label}</SelectItem>
                   ))}
                 </SelectContent>

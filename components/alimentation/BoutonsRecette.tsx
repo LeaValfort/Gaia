@@ -9,6 +9,7 @@ import { addShoppingItem } from '@/lib/db/courses'
 import { getLundiSemaine } from '@/lib/nutrition'
 import { devinerAssignation } from '@/lib/data/courses'
 import { parserIngredientCourses, type IngredientCourses } from '@/lib/db/shopping-items'
+import { useEnseignes } from '@/hooks/useEnseignes'
 import type { Recipe } from '@/types'
 
 interface BoutonsRecetteProps {
@@ -21,6 +22,7 @@ export function BoutonsRecette({ recette, userId }: BoutonsRecetteProps) {
   const [ajoutee, setAjoutee] = useState(false)
   const [chargement, setChargement] = useState(false)
   const [dialogueOuvert, setDialogueOuvert] = useState(false)
+  const { enseignes } = useEnseignes(userId)
 
   const ingredientsCourses: IngredientCourses[] = recette.ingredients.map((ligne) =>
     parserIngredientCourses(ligne)
@@ -33,7 +35,7 @@ export function BoutonsRecette({ recette, userId }: BoutonsRecetteProps) {
     try {
       await Promise.all(
         tous.map(({ nom, quantite, dejaEnStock }) => {
-          const { rayon, enseigne } = devinerAssignation(nom)
+          const { rayon, enseigne } = devinerAssignation(nom, enseignes)
           return addShoppingItem(supabase, userId, {
             week_start: weekStart,
             nom,

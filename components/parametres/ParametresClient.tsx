@@ -10,6 +10,7 @@ import {
   Moon,
   RotateCcw,
   Settings,
+  ShoppingBasket,
   Utensils,
 } from 'lucide-react'
 import { AccordeonSection } from '@/components/parametres/AccordeonSection'
@@ -18,14 +19,15 @@ import { SectionBibliographie } from '@/components/parametres/SectionBibliograph
 import { SectionApp } from '@/components/parametres/SectionApp'
 import { SectionCalculateurMacros } from '@/components/parametres/SectionCalculateurMacros'
 import { SectionDonneesCompte } from '@/components/parametres/SectionDonneesCompte'
+import { SectionEnseignes } from '@/components/parametres/SectionEnseignes'
 import { SectionMonCycle } from '@/components/parametres/SectionMonCycle'
 import { SectionPlanningSportCalendrier } from '@/components/parametres/SectionPlanningSportCalendrier'
 import { SectionPourcentagesGaia } from '@/components/parametres/SectionPourcentagesGaia'
 import { SectionTachesRecurrentes } from '@/components/parametres/SectionTachesRecurrentes'
 import { setMacrosMode, updateUserPreferences } from '@/lib/db/parametres'
-import type { MacroProfile, MacrosMode, RecurringTodo, SeanceProfil, Source, UserPreferences } from '@/types'
+import type { EnseigneDB, MacroProfile, MacrosMode, RecurringTodo, SeanceProfil, Source, UserPreferences } from '@/types'
 
-type SectionId = 'cycle' | 'sport' | 'nutrition' | 'taches' | 'app' | 'bibliographie' | 'donnees'
+type SectionId = 'cycle' | 'sport' | 'nutrition' | 'enseignes' | 'taches' | 'app' | 'bibliographie' | 'donnees'
 
 interface ParametresClientProps {
   prefsInitiales: UserPreferences
@@ -34,6 +36,7 @@ interface ParametresClientProps {
   macroProfilInitial: MacroProfile | null
   seanceProfilsInitiales: SeanceProfil[]
   sourcesInitiales: Source[]
+  enseignesInitiales: EnseigneDB[]
   messageUrl?: string
 }
 
@@ -44,6 +47,7 @@ export function ParametresClient({
   macroProfilInitial,
   seanceProfilsInitiales,
   sourcesInitiales,
+  enseignesInitiales,
   messageUrl,
 }: ParametresClientProps) {
   const router = useRouter()
@@ -161,6 +165,16 @@ export function ParametresClient({
               onMacrosModeChange={onMacrosModeChange}
             />
           ) : null}
+        </AccordeonSection>
+
+        <AccordeonSection
+          id="enseignes"
+          titre="Enseignes de courses"
+          icone={ShoppingBasket}
+          ouvert={sectionOuverte === 'enseignes'}
+          onToggle={() => toggleSection('enseignes')}
+        >
+          <SectionEnseignes userId={userId} enseignesInitiales={enseignesInitiales} />
         </AccordeonSection>
 
         <AccordeonSection

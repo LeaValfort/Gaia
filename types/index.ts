@@ -232,6 +232,19 @@ export interface ShoppingItemComplet extends ShoppingItem {
   source: 'manuel' | 'spoonacular' | 'open_food_facts' | 'themealdb'
 }
 
+/** Une enseigne de courses personnalisée (en base), avec ses règles de rangement automatique. */
+export interface EnseigneDB {
+  id: string
+  user_id: string
+  label: string
+  emoji: string
+  couleur: string       // classe Tailwind bg-
+  rayons: Rayon[]        // rayons entiers cochés pour cette enseigne
+  mots_cles: string[]    // mots-clés libres, prioritaires sur les rayons
+  ordre: number
+  created_at: string
+}
+
 /** Macros cibles calculées pour un jour donné */
 export interface MacrosCiblesJour {
   calories: number

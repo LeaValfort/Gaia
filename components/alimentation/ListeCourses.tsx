@@ -6,8 +6,8 @@ import { Button } from '@/components/ui/button'
 import { Skeleton } from '@/components/ui/skeleton'
 import { supabase } from '@/lib/supabase'
 import { getShoppingItems, toggleShoppingItem, toggleDejaEnStock, deleteShoppingItem, deleteAllShoppingItemsForWeek } from '@/lib/db/courses'
-import { ENSEIGNES_DEFAUT } from '@/lib/data/courses'
 import { grouperArticlesCourses } from '@/lib/courses-consolidation'
+import { useEnseignes } from '@/hooks/useEnseignes'
 import { CarteEnseigne } from './CarteEnseigne'
 import { CarteDejaEnStock } from './CarteDejaEnStock'
 import { FormulaireArticle } from './FormulaireArticle'
@@ -24,6 +24,8 @@ export function ListeCourses({ userId, weekStart }: ListeCoursesProps) {
   const [enseigneActive, setEnseigneActive] = useState<string | null>(null)
   const [formulaireOuvert, setFormulaireOuvert] = useState(false)
   const [vidage, setVidage] = useState(false)
+  const { enseignes, chargement: chargementEnseignes } = useEnseignes(userId)
+  const chargementTotal = chargement || chargementEnseignes
 
   useEffect(() => {
     setChargement(true)
@@ -78,11 +80,11 @@ export function ListeCourses({ userId, weekStart }: ListeCoursesProps) {
     setVidage(false)
   }
 
-  const enseigneSelectionnee = ENSEIGNES_DEFAUT.find((e) => e.id === enseigneActive) ?? null
+  const enseigneSelectionnee = enseignes.find((e) => e.id === enseigneActive) ?? null
 
   return (
     <div className="flex flex-col gap-5">
-      {chargement ? (
+      {chargementTotal ? (
         <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
           {[1, 2, 3, 4, 5].map((i) => <Skeleton key={i} className="h-20 rounded-2xl" />)}
         </div>
@@ -90,7 +92,7 @@ export function ListeCourses({ userId, weekStart }: ListeCoursesProps) {
         <>
           {/* Grille enseignes */}
           <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-            {ENSEIGNES_DEFAUT.map((e) => {
+            {enseignes.map((e) => {
               const nb = nbRestants(e.id)
               const actif = enseigneActive === e.id
               return (
@@ -168,7 +170,7 @@ export function ListeCourses({ userId, weekStart }: ListeCoursesProps) {
       {/* Dialog formulaire */}
       {formulaireOuvert && (
         <FormulaireArticle
-          enseignes={ENSEIGNES_DEFAUT}
+          enseignes={enseignes}
           weekStart={weekStart}
           userId={userId}
           onAjoute={(a) => setArticles((prev) => [...prev, a])}

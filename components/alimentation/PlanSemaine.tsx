@@ -14,6 +14,7 @@ import { getPhasePourDateCalendrier } from '@/lib/cycle'
 import { calculerBudgetMacroJour, genererPlanAuto, extraireIngredientsSemaine } from '@/lib/mealplan'
 import { devinerAssignation } from '@/lib/data/courses'
 import { OPTIONS_PETIT_DEJ } from '@/lib/data/petitsdejeuners'
+import { useEnseignes } from '@/hooks/useEnseignes'
 import type { CycleStats, MealPlan, MealPlanComplet, BudgetMacroJour, Phase, Recipe } from '@/types'
 import CartePlanJour from './CartePlanJour'
 import { DialogueAjoutCourses, type IngredientConfirme } from './DialogueAjoutCourses'
@@ -55,6 +56,7 @@ export default function PlanSemaine({
   const [exportant, setExportant]   = useState(false)
   const [erreur, setErreur]         = useState<string | null>(null)
   const [dialogueCoursesOuvert, setDialogueCoursesOuvert] = useState(false)
+  const { enseignes } = useEnseignes(userId)
 
   const dates = Array.from({ length: 7 }, (_, i) =>
     format(addDays(parseISO(weekStart), i), 'yyyy-MM-dd')
@@ -127,7 +129,7 @@ export default function PlanSemaine({
     setExportant(true)
     try {
       for (const ing of tous) {
-        const { rayon, enseigne } = devinerAssignation(ing.nom)
+        const { rayon, enseigne } = devinerAssignation(ing.nom, enseignes)
         await addShoppingItem(supabase, userId, {
           week_start: weekStart,
           nom: ing.nom,

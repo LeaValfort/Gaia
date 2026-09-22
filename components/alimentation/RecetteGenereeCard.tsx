@@ -13,6 +13,7 @@ import { saveRecette } from '@/lib/db/nutrition'
 import { addShoppingItem } from '@/lib/db/courses'
 import { devinerAssignation } from '@/lib/data/courses'
 import { parserIngredientCourses, type IngredientCourses } from '@/lib/db/shopping-items'
+import { useEnseignes } from '@/hooks/useEnseignes'
 import type { RecetteGeneree } from '@/types'
 
 interface RecetteGenereeCardProps {
@@ -29,6 +30,7 @@ export function RecetteGenereeCard({ recette, userId, weekStart }: RecetteGenere
   const [added, setAdded] = useState(false)
   const [ouverte, setOuverte] = useState(false)
   const [dialogueCoursesOuvert, setDialogueCoursesOuvert] = useState(false)
+  const { enseignes } = useEnseignes(userId)
 
   const macrosDisponibles = recette.calories !== null
   const macros = macrosDisponibles
@@ -70,7 +72,7 @@ export function RecetteGenereeCard({ recette, userId, weekStart }: RecetteGenere
   async function confirmerAjoutCourses(tous: IngredientConfirme<IngredientCourses>[]) {
     await Promise.all(
       tous.map(({ nom, quantite, dejaEnStock }) => {
-        const { rayon, enseigne } = devinerAssignation(nom)
+        const { rayon, enseigne } = devinerAssignation(nom, enseignes)
         return addShoppingItem(supabase, userId, {
           week_start: weekStart,
           nom,
