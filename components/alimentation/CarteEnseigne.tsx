@@ -53,19 +53,19 @@ function SectionRayon({ rayon, groupes, onToggleMany, onToggleDejaEnStockMany, o
               <button
                 type="button"
                 onClick={() => onToggleDejaEnStockMany(g.ids, true)}
-                className="opacity-0 group-hover:opacity-100 text-neutral-400 hover:text-amber-600 dark:hover:text-amber-400 transition-all"
+                className="text-neutral-400 hover:text-amber-600 dark:hover:text-amber-400 transition-colors shrink-0"
                 aria-label="Déjà dans le placard ou le frigo"
                 title="Déjà dans le placard ou le frigo"
               >
-                <Archive size={13} />
+                <Archive size={15} />
               </button>
               <button
                 type="button"
                 onClick={() => onDeleteMany(g.ids)}
-                className="opacity-0 group-hover:opacity-100 text-neutral-400 hover:text-red-500 transition-all"
+                className="text-neutral-400 hover:text-red-500 transition-colors shrink-0"
                 aria-label="Supprimer"
               >
-                <Trash2 size={13} />
+                <Trash2 size={15} />
               </button>
             </li>
           ))}
