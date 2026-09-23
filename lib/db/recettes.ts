@@ -130,3 +130,26 @@ export async function updateRecette(
     return false
   }
 }
+
+/** Bascule le favori (cœur) d'une recette sauvegardée. Renvoie false si le changement n'a pas
+ *  pu être confirmé côté serveur, pour permettre à l'appelant d'annuler la mise à jour optimiste. */
+export async function toggleFavori(
+  supabase: SupabaseClient,
+  userId: string,
+  recetteId: string,
+  favori: boolean
+): Promise<boolean> {
+  try {
+    const { data, error } = await supabase
+      .from('recipes')
+      .update({ favori })
+      .eq('id', recetteId)
+      .eq('user_id', userId)
+      .select('id')
+    if (error) throw error
+    return (data?.length ?? 0) > 0
+  } catch (erreur) {
+    console.error('Erreur toggleFavori:', erreur)
+    return false
+  }
+}

@@ -388,6 +388,9 @@ export interface Recipe {
   nutrition_100g?: Nutrition100g | null
   /** Photo ajoutée à la main via « Modifier » (URL publique Supabase Storage) */
   image_url?: string | null
+  /** Recette marquée en favori (cœur sur la carte, Chantier 5b). Défaut false en base,
+   *  optionnel ici car pas toujours renseigné à la création (comme portions, image_url...). */
+  favori?: boolean
   created_at: string
 }
 

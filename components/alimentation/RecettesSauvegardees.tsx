@@ -218,7 +218,7 @@ export function RecettesSauvegardees({
       ) : (
         <div className="flex flex-col gap-2">
           {recettesFiltrees.map((r) => (
-            <CarteRecette key={r.id} recette={r} onDelete={handleDelete} />
+            <CarteRecette key={r.id} recette={r} userId={userId} onDelete={handleDelete} />
           ))}
         </div>
       )}

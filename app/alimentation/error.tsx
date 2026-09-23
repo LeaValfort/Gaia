@@ -17,7 +17,7 @@ export default function AlimentationError({
   }, [error])
 
   return (
-    <div className="min-h-screen bg-[#F8F7FF] dark:bg-gray-950">
+    <div className="min-h-screen bg-[#FFF8F0] dark:bg-gray-950">
       <Nav phase={null} prenom="toi" />
       <div className="mx-auto max-w-lg px-4 py-12 text-center sm:px-6">
         <h1 className="text-lg font-semibold text-neutral-900 dark:text-neutral-50">

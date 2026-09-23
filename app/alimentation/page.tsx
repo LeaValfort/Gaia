@@ -1,7 +1,6 @@
 import { redirect } from 'next/navigation'
 import { parseISO } from 'date-fns'
 import { creerClientServeur } from '@/lib/supabase-server'
-import { designPhaseAffichage } from '@/lib/data/phases-design'
 import { AlimentationLayout } from '@/components/alimentation/AlimentationLayout'
 import { AlimentationOnglets } from '@/components/alimentation/AlimentationOnglets'
 import { PageHeader } from '@/components/shared/PageHeader'
@@ -72,7 +71,6 @@ export default async function PageAlimentation() {
     phase = getPhaseAvecStats(jourDuCycle, stats, cycleLength)
   }
 
-  const design = designPhaseAffichage(sansSuivi ? null : phase, { sansCycle: sansSuivi })
   const entreesResolues = suiviCalorique
     ? seancesResoluesPourDate(entreesPlanning, variantesParType.flat(), today)
     : []
@@ -98,10 +96,10 @@ export default async function PageAlimentation() {
       }
 
   return (
-    <div className="min-h-screen bg-[#F8F7FF] dark:bg-gray-950">
+    <div className="min-h-screen bg-[#FFF8F0] dark:bg-gray-950">
       <Nav phase={sansSuivi ? null : phase} sansCycle={sansSuivi} prenom={prenom} />
       <div className="mx-auto max-w-2xl px-4 py-6 pb-24 sm:px-6">
-        <AlimentationLayout design={design}>
+        <AlimentationLayout>
           <PageHeader
             title="Manger"
             className="mb-4"

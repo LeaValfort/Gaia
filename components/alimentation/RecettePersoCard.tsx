@@ -1,17 +1,35 @@
 'use client'
 
+import { useState } from 'react'
 import { ExternalLink } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import { VignetteRecette } from '@/components/alimentation/VignetteRecette'
+import { BadgesRecette } from '@/components/alimentation/BadgesRecette'
+import { supabase } from '@/lib/supabase'
+import { toggleFavori } from '@/lib/db/recettes'
 import type { Recipe } from '@/types'
 
 function macroAffichable(v: number): boolean {
   return v > 0
 }
 
+interface RecettePersoCardProps {
+  recette: Recipe
+  userId: string
+}
+
 /** Carte pour une recette perso déjà sauvegardée (a un id, sa fiche détail existe déjà). */
-export function RecettePersoCard({ recette }: { recette: Recipe }) {
+export function RecettePersoCard({ recette, userId }: RecettePersoCardProps) {
+  const [favori, setFavori] = useState(recette.favori ?? false)
+
+  async function handleToggleFavori() {
+    const suivant = !favori
+    setFavori(suivant)
+    const succes = await toggleFavori(supabase, userId, recette.id, suivant)
+    if (!succes) setFavori(!suivant)
+  }
+
   const macros = [
     macroAffichable(recette.calories ?? 0) ? { label: `${recette.calories} kcal`, className: 'text-orange-600 dark:text-orange-400' } : null,
     macroAffichable(recette.proteines ?? 0) ? { label: `${recette.proteines}g P`, className: 'text-blue-600 dark:text-blue-400' } : null,
@@ -23,6 +41,12 @@ export function RecettePersoCard({ recette }: { recette: Recipe }) {
       <div className="p-3 flex flex-col gap-2 flex-1">
         <Badge variant="outline" className="text-xs w-fit">📖 Ta recette</Badge>
         <p className="font-semibold text-sm text-neutral-900 dark:text-neutral-50 leading-snug">{recette.nom}</p>
+        <BadgesRecette
+          tempsMin={recette.temps_min}
+          nutrition100g={recette.nutrition_100g}
+          favori={favori}
+          onToggleFavori={handleToggleFavori}
+        />
         {macros.length > 0 ? (
           <div className="flex flex-wrap gap-1">
             {macros.map(({ label, className }) => (

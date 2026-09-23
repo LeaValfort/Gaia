@@ -7,6 +7,7 @@ import { Badge } from '@/components/ui/badge'
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog'
 import { RecetteGenereeDetail } from '@/components/alimentation/RecetteGenereeDetail'
 import { VignetteRecette } from '@/components/alimentation/VignetteRecette'
+import { BadgesRecette } from '@/components/alimentation/BadgesRecette'
 import { DialogueAjoutCourses, type IngredientConfirme } from '@/components/alimentation/DialogueAjoutCourses'
 import { supabase } from '@/lib/supabase'
 import { saveRecette } from '@/lib/db/nutrition'
@@ -117,6 +118,7 @@ export function RecetteGenereeCard({ recette, userId, weekStart }: RecetteGenere
         <div className="p-3 flex flex-col gap-2 flex-1">
           <Badge variant="outline" className="text-xs w-fit">✨ Suggestion IA</Badge>
           <p className="font-semibold text-sm text-neutral-900 dark:text-neutral-50 leading-snug">{recette.nom}</p>
+          <BadgesRecette tempsMin={recette.temps_min} nutrition100g={recette.nutrition_100g} />
 
           {macrosDisponibles ? (
             <div className="flex flex-col gap-1">

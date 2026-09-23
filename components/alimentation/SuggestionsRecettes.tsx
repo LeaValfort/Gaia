@@ -140,7 +140,7 @@ export function SuggestionsRecettes({
 
       {!chargement && total > 0 && (
         <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
-          {perso.map((r) => <RecettePersoCard key={r.id} recette={r} />)}
+          {perso.map((r) => <RecettePersoCard key={r.id} recette={r} userId={userId} />)}
           {generees.map((r, i) => (
             <RecetteGenereeCard key={`${r.nom}-${i}`} recette={r} userId={userId} weekStart={weekStart} />
           ))}

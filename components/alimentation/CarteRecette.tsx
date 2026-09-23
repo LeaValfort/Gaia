@@ -2,9 +2,12 @@
 
 import { useState, type MouseEvent } from 'react'
 import Link from 'next/link'
-import { ChevronRight, Clock, Trash2 } from 'lucide-react'
+import { ChevronRight, Heart, Trash2 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { VignetteRecette } from '@/components/alimentation/VignetteRecette'
+import { BadgesRecette } from '@/components/alimentation/BadgesRecette'
+import { supabase } from '@/lib/supabase'
+import { toggleFavori } from '@/lib/db/recettes'
 import type { Recipe } from '@/types'
 import { cn } from '@/lib/utils'
 
@@ -24,11 +27,13 @@ const PHASE_LABELS: Record<string, string> = {
 
 interface CarteRecetteProps {
   recette: Recipe
+  userId: string
   onDelete: (id: string) => void
 }
 
-export function CarteRecette({ recette, onDelete }: CarteRecetteProps) {
+export function CarteRecette({ recette, userId, onDelete }: CarteRecetteProps) {
   const [confirmation, setConfirmation] = useState(false)
+  const [favori, setFavori] = useState(recette.favori ?? false)
 
   const urlRecette = `/alimentation/recette/${recette.id}`
 
@@ -40,6 +45,15 @@ export function CarteRecette({ recette, onDelete }: CarteRecetteProps) {
       return
     }
     onDelete(recette.id)
+  }
+
+  async function handleToggleFavori(e: MouseEvent<HTMLButtonElement>) {
+    e.preventDefault()
+    e.stopPropagation()
+    const suivant = !favori
+    setFavori(suivant)
+    const succes = await toggleFavori(supabase, userId, recette.id, suivant)
+    if (!succes) setFavori(!suivant)
   }
 
   const contenu = (
@@ -65,16 +79,22 @@ export function CarteRecette({ recette, onDelete }: CarteRecetteProps) {
               {PHASE_LABELS[recette.phase] ?? recette.phase}
             </span>
           ) : null}
-          {recette.temps_min ? (
-            <span className="inline-flex items-center gap-0.5 text-[10px] text-muted-foreground">
-              <Clock className="size-3" aria-hidden />
-              {recette.temps_min} min
-            </span>
-          ) : null}
+          <BadgesRecette tempsMin={recette.temps_min} nutrition100g={recette.nutrition_100g} />
         </div>
       </div>
 
       <div className="flex shrink-0 items-center gap-0.5">
+        <Button
+          type="button"
+          size="icon-sm"
+          variant="ghost"
+          onClick={handleToggleFavori}
+          className="text-muted-foreground hover:text-rose-500"
+          aria-label={favori ? 'Retirer des favoris' : 'Ajouter aux favoris'}
+          aria-pressed={favori}
+        >
+          <Heart className={cn('size-4', favori && 'fill-rose-500 text-rose-500')} />
+        </Button>
         <Button
           type="button"
           size="icon-sm"
