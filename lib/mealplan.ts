@@ -68,7 +68,7 @@ export function calculerMacrosAvecPortions(
 // Génération automatique d'un plan semaine
 // ------------------------------------------------------------
 
-const TYPES_REPAS_HORS_PD = ['dejeuner', 'collation', 'diner'] as const
+export const TYPES_REPAS_HORS_PD = ['dejeuner', 'collation', 'diner'] as const
 
 /**
  * Attribue automatiquement des recettes sur la semaine.

@@ -6,12 +6,15 @@ import { fr } from 'date-fns/locale'
 import { ChevronLeft, ChevronRight, Sparkles, ShoppingCart } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Skeleton } from '@/components/ui/skeleton'
+import { Switch } from '@/components/ui/switch'
+import { Label } from '@/components/ui/label'
 import { supabase } from '@/lib/supabase'
 import { getMealPlanSemaine, upsertMealPlan, deleteMealPlan, getRecettesPourPlanning } from '@/lib/db/mealplan'
 import { addShoppingItem } from '@/lib/db/courses'
 import { getLundiSemaine, getTypeJournee } from '@/lib/nutrition'
 import { getPhasePourDateCalendrier } from '@/lib/cycle'
 import { calculerBudgetMacroJour, genererPlanAuto, extraireIngredientsSemaine } from '@/lib/mealplan'
+import { completerRecettesAvecIA } from '@/lib/ia/completer-plan-semaine'
 import { devinerAssignation } from '@/lib/data/courses'
 import { OPTIONS_PETIT_DEJ } from '@/lib/data/petitsdejeuners'
 import { useEnseignes } from '@/hooks/useEnseignes'
@@ -56,6 +59,7 @@ export default function PlanSemaine({
   const [exportant, setExportant]   = useState(false)
   const [erreur, setErreur]         = useState<string | null>(null)
   const [dialogueCoursesOuvert, setDialogueCoursesOuvert] = useState(false)
+  const [avecIA, setAvecIA] = useState(true)
   const { enseignes } = useEnseignes(userId)
 
   const dates = Array.from({ length: 7 }, (_, i) =>
@@ -113,7 +117,23 @@ export default function PlanSemaine({
     try {
       const phases = dates.map((d) => phasePourDatePlan(d, sansSuiviCycle, effectiveStart, cycleLength, stats))
       const types = dates.map((d) => getTypeJournee(parseISO(d)))
-      const nouveaux = genererPlanAuto(dates, phases, types, recettes, OPTIONS_PETIT_DEJ, {
+
+      let recettesPourGeneration = recettes
+      if (avecIA) {
+        const suggestionsSauvegardees = await completerRecettesAvecIA(
+          supabase,
+          userId,
+          recettes,
+          phases[0] ?? 'folliculaire',
+          types[0] ?? 'repos'
+        )
+        if (suggestionsSauvegardees.length > 0) {
+          recettesPourGeneration = [...recettes, ...suggestionsSauvegardees]
+          setRecettes(recettesPourGeneration)
+        }
+      }
+
+      const nouveaux = genererPlanAuto(dates, phases, types, recettesPourGeneration, OPTIONS_PETIT_DEJ, {
         sansSuiviCycle: Boolean(sansSuiviCycle),
       })
       for (const p of nouveaux) {
@@ -157,7 +177,13 @@ export default function PlanSemaine({
           </span>
           <Button variant="outline" size="icon" onClick={semaineSuivante}><ChevronRight size={16} /></Button>
         </div>
-        <div className="flex gap-2 sm:ml-auto">
+        <div className="flex flex-wrap items-center gap-2 sm:ml-auto">
+          <div className="flex items-center gap-1.5">
+            <Switch id="plan-semaine-avec-ia" size="sm" checked={avecIA} onCheckedChange={setAvecIA} />
+            <Label htmlFor="plan-semaine-avec-ia" className="text-xs text-neutral-600 dark:text-neutral-400">
+              Avec IA
+            </Label>
+          </div>
           <Button size="sm" onClick={handleGenerer} disabled={generant || chargement} className="alimentation-btn-primaire">
             <Sparkles size={14} className="mr-1.5" />{generant ? 'Génération…' : 'Générer la semaine'}
           </Button>
@@ -166,6 +192,12 @@ export default function PlanSemaine({
           </Button>
         </div>
       </div>
+
+      {avecIA && (
+        <p className="text-xs text-neutral-500 dark:text-neutral-400">
+          Quand tu génères la semaine, Gaia complète avec quelques suggestions IA pour les repas où tu as peu de recettes enregistrées — elles sont sauvegardées comme des recettes normales, modifiables ou supprimables comme les autres.
+        </p>
+      )}
 
       {recettes.length === 0 && !chargement && (
         <p className="text-xs text-amber-600 dark:text-amber-400 bg-amber-50 dark:bg-amber-900/20 rounded-lg px-3 py-2">

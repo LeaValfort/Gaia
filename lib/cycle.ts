@@ -454,7 +454,17 @@ export function getPhaseEtConseilAvecApprentissage(
   if (!anchorISO) return null
   const today = new Date()
   const lastStart = parseISO(anchorISO)
-  const jourDuCycle = getCycleDay(lastStart, today, cycleLengthEffectif)
+  // Bug corrigé le 23/09 : `getCycleDay` boucle par modulo (nécessaire pour le calendrier,
+  // qui doit colorer les jours passés/futurs sur plusieurs cycles). Mais utilisé tel quel
+  // ici pour le jour "aujourd'hui", dès que le cycle dépasse sa longueur habituelle sans
+  // qu'aucune nouvelle ligne `cycles` n'ait été enregistrée, le modulo repart à 1 : l'appli
+  // affichait alors « Menstruation, jour 1 » comme si les règles avaient été confirmées,
+  // alors que rien n'a été saisi. On reste bloquée en fin de phase lutéale (dernier jour du
+  // cycle attendu) tant qu'aucun nouveau cycle n'est réellement enregistré par l'utilisatrice.
+  const diffJours = differenceInCalendarDays(startOfDay(today), startOfDay(lastStart))
+  const L = Math.max(1, Math.round(cycleLengthEffectif))
+  const jourDuCycle =
+    diffJours >= L ? L : getCycleDay(lastStart, today, cycleLengthEffectif)
   const phase = getPhaseAvecStats(jourDuCycle, stats, cycleLengthEffectif)
   const fiabilite = stats?.fiabilite ?? 'faible'
   return { jourDuCycle, phase, infos: getInfosPhase(phase), fiabilite }

@@ -134,33 +134,18 @@ export async function supprimerTodo(id: string): Promise<void> {
   }
 }
 
-/** Todo auto généré déjà présent pour ce jour et ce libellé. */
-export async function todoAutoExiste(
-  userId: string,
-  date: string,
-  text: string
-): Promise<boolean> {
-  try {
-    const supabase = await creerClientServeur()
-    const { data, error } = await supabase
-      .from('todos')
-      .select('id')
-      .eq('user_id', userId)
-      .eq('date', date)
-      .eq('text', text)
-      .eq('auto', true)
-      .maybeSingle()
-
-    if (error) throw error
-    return data != null
-  } catch (erreur) {
-    console.error('Erreur todoAutoExiste:', erreur)
-    return false
-  }
-}
-
-/** Insère un todo généré automatiquement (récurrent). */
-export async function insererTodoAuto(
+/**
+ * Insère un todo généré automatiquement (récurrent), sans jamais créer de doublon
+ * pour le même user/date/texte — protégé par l'index unique partiel
+ * `todos_auto_unique_par_jour` (migration 20260930090000). Avant ce correctif, un
+ * SELECT (todoAutoExiste) suivi d'un INSERT séparé laissait une fenêtre de course :
+ * plusieurs appels rapprochés (ex. plusieurs visites de l'accueil dans la journée)
+ * pouvaient chacun passer le SELECT avant qu'un INSERT précédent soit visible, d'où
+ * des tâches récurrentes dupliquées plusieurs fois le même jour (bug signalé le 23/09).
+ * Le code Postgres 23505 (violation de contrainte unique) est silencieusement ignoré :
+ * ça veut simplement dire que la tâche du jour existe déjà.
+ */
+export async function insererTodoAutoSiAbsent(
   userId: string,
   date: string,
   text: string
@@ -173,10 +158,13 @@ export async function insererTodoAuto(
       .select()
       .single()
 
-    if (error) throw error
+    if (error) {
+      if (error.code === '23505') return null
+      throw error
+    }
     return data
   } catch (erreur) {
-    console.error('Erreur insererTodoAuto:', erreur)
+    console.error('Erreur insererTodoAutoSiAbsent:', erreur)
     return null
   }
 }

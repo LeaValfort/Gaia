@@ -1,6 +1,6 @@
 // Appels Supabase dédiés à la table recipes (recettes sauvegardées)
 import type { SupabaseClient } from '@supabase/supabase-js'
-import type { Phase, Recipe, TypeRepas } from '@/types'
+import type { Phase, Recipe, RecetteGeneree, TypeRepas } from '@/types'
 
 /** Récupère toutes les recettes sauvegardées de l'utilisatrice, plus récentes en premier */
 export async function getRecettes(
@@ -128,6 +128,49 @@ export async function updateRecette(
   } catch (erreur) {
     console.error('Erreur updateRecette:', erreur)
     return false
+  }
+}
+
+/**
+ * Sauvegarde une recette générée par l'IA (issue de `/api/recettes/generer`) et renvoie la
+ * ligne créée (avec son id), pour pouvoir l'utiliser aussitôt — ex. la lier à une case du plan
+ * de la semaine (Chantier « repas IA dans le plan de la semaine », 23/09). Contrairement à
+ * `saveRecette` (lib/db/nutrition.ts), qui ne renvoie rien : ici l'appelant a besoin de l'id
+ * tout de suite, sans recharger toute la liste des recettes.
+ */
+export async function insertRecetteGeneree(
+  supabase: SupabaseClient,
+  userId: string,
+  recette: RecetteGeneree
+): Promise<Recipe | null> {
+  try {
+    const { data, error } = await supabase
+      .from('recipes')
+      .insert({
+        user_id: userId,
+        nom: recette.nom,
+        ingredients: recette.ingredients,
+        temps_min: recette.temps_min,
+        phase: recette.phase,
+        type_repas: recette.type_repas,
+        raison: recette.raison || null,
+        spoonacular_id: null,
+        calories: recette.calories,
+        proteines: recette.proteines,
+        glucides: recette.glucides,
+        lipides: recette.lipides,
+        instructions: recette.instructions || null,
+        portions: recette.portions,
+        poids_total_g: recette.poids_total_g,
+        nutrition_100g: recette.nutrition_100g,
+      })
+      .select('*')
+      .single()
+    if (error) throw error
+    return data as Recipe
+  } catch (erreur) {
+    console.error('Erreur insertRecetteGeneree:', erreur)
+    return null
   }
 }
 

@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useState } from 'react'
 import { Heart } from 'lucide-react'
 import { useRouter } from 'next/navigation'
+import { toast } from 'sonner'
 import { DonneesRecuesSection } from '@/components/proches/DonneesRecuesSection'
 import { MesPartagesSection } from '@/components/proches/MesPartagesSection'
 import { Nav } from '@/components/shared/Nav'
@@ -39,6 +40,19 @@ export function ProchesPageInner() {
       setLoading(false)
     }
   }, [router])
+
+  // Rafraîchit juste la liste des connexions, sans repasser par l'écran "Chargement…" —
+  // contrairement à `load()`, qui remonte toute la page et referme les accordéons ouverts
+  // (Mes partages, Permissions). Utilisé après une modif de curseur/décision pour rester
+  // sur place. Bug signalé le 23/09 : chaque modif de curseur fermait l'onglet.
+  const refreshConnections = useCallback(async () => {
+    try {
+      const conns = await fetchProchesConnectionsClient()
+      setConnections(conns)
+    } catch {
+      toast.error('Impossible de rafraîchir la liste.')
+    }
+  }, [])
 
   useEffect(() => {
     void load()
@@ -78,7 +92,7 @@ export function ProchesPageInner() {
         </header>
 
         <DonneesRecuesSection />
-        <MesPartagesSection connections={connections} onRefresh={() => void load()} />
+        <MesPartagesSection connections={connections} onRefresh={() => void refreshConnections()} />
       </div>
     </div>
   )

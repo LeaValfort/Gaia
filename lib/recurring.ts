@@ -1,6 +1,6 @@
 import { format, getDate, getISODay } from 'date-fns'
 import { getRecurringTodos } from '@/lib/db/recurring-todos'
-import { insererTodoAuto, todoAutoExiste } from '@/lib/db/todo'
+import { insererTodoAutoSiAbsent } from '@/lib/db/todo'
 import type { RecurringTodo } from '@/types'
 
 /**
@@ -25,6 +25,9 @@ function doitApparaitreAujourdhui(tache: RecurringTodo, today: Date): boolean {
 
 /**
  * Génère les todos du jour à partir des récurrences actives (sans doublon auto).
+ * `insererTodoAutoSiAbsent` est protégé par une contrainte unique en base, donc
+ * appeler cette fonction plusieurs fois pour la même journée (ex. plusieurs visites
+ * de l'accueil) reste sans effet après la première insertion — voir sa doc.
  */
 export async function generateTodosForToday(userId: string, today: Date): Promise<void> {
   try {
@@ -34,11 +37,7 @@ export async function generateTodosForToday(userId: string, today: Date): Promis
 
     for (const tache of actives) {
       if (!doitApparaitreAujourdhui(tache, today)) continue
-
-      const existe = await todoAutoExiste(userId, dateStr, tache.text)
-      if (existe) continue
-
-      await insererTodoAuto(userId, dateStr, tache.text)
+      await insererTodoAutoSiAbsent(userId, dateStr, tache.text)
     }
   } catch (erreur) {
     console.error('Erreur generateTodosForToday:', erreur)

@@ -6,15 +6,10 @@ import { toast } from 'sonner'
 import { creerInvitationProche } from '@/lib/db/proches'
 import { genererLienInvitation } from '@/lib/proches'
 import { Button } from '@/components/ui/button'
-import {
-  Dialog,
-  DialogContent,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-} from '@/components/ui/dialog'
+import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
+import { CodeInvitationCree } from '@/components/proches/CodeInvitationCree'
 import { cn } from '@/lib/utils'
 import type { ProcheConnection, ProcheRelationType } from '@/types'
 
@@ -23,7 +18,6 @@ async function partagerLien(lien: string, prenomProche: string): Promise<void> {
   if (typeof navigator !== 'undefined' && typeof navigator.share === 'function') {
     try {
       await navigator.share({ title: 'Invitation Gaia', text, url: lien })
-      toast.success('Invitation partagée')
       return
     } catch (e) {
       if (e instanceof Error && e.name === 'AbortError') return
@@ -33,16 +27,32 @@ async function partagerLien(lien: string, prenomProche: string): Promise<void> {
   toast.success('Lien copié dans le presse-papier')
 }
 
+async function copierTexte(valeur: string, messageSucces: string): Promise<void> {
+  try {
+    await navigator.clipboard.writeText(valeur)
+    toast.success(messageSucces)
+  } catch {
+    toast.error('Copie impossible')
+  }
+}
+
 export function BoutonInviterProche({ onInvite }: { onInvite: (c: ProcheConnection) => void }) {
   const [ouvert, setOuvert] = useState(false)
   const [prenom, setPrenom] = useState('')
   const [relationType, setRelationType] = useState<ProcheRelationType>('partenaire')
   const [envoi, setEnvoi] = useState(false)
+  // Une fois l'invitation créée, on reste sur la boîte de dialogue pour afficher le code —
+  // avant ce correctif, la boîte se fermait tout de suite et le code n'était jamais visible
+  // (bug signalé le 23/09 : impossible de le récupérer pour le donner au proche).
+  const [connexionCreee, setConnexionCreee] = useState<ProcheConnection | null>(null)
+  const [codeCopie, setCodeCopie] = useState(false)
 
   function fermer() {
     setOuvert(false)
     setPrenom('')
     setRelationType('partenaire')
+    setConnexionCreee(null)
+    setCodeCopie(false)
   }
 
   async function inviter() {
@@ -55,15 +65,25 @@ export function BoutonInviterProche({ onInvite }: { onInvite: (c: ProcheConnecti
         toast.error(res.message)
         return
       }
-      const lien = genererLienInvitation(res.connection.invite_code)
       onInvite(res.connection)
-      fermer()
-      await partagerLien(lien, nom)
+      setConnexionCreee(res.connection)
     } catch {
       toast.error('Invitation impossible')
     } finally {
       setEnvoi(false)
     }
+  }
+
+  async function copierCode() {
+    if (!connexionCreee) return
+    await copierTexte(connexionCreee.invite_code, 'Code copié')
+    setCodeCopie(true)
+  }
+
+  async function partager() {
+    if (!connexionCreee) return
+    const lien = genererLienInvitation(connexionCreee.invite_code)
+    await partagerLien(lien, prenom.trim())
   }
 
   return (
@@ -85,45 +105,58 @@ export function BoutonInviterProche({ onInvite }: { onInvite: (c: ProcheConnecti
         }}
       >
         <DialogContent className="sm:max-w-md">
-          <DialogHeader>
-            <DialogTitle>Inviter un proche</DialogTitle>
-          </DialogHeader>
-          <div className="space-y-3 py-1">
-            <div className="space-y-1">
-              <Label htmlFor="proche-relation">Relation</Label>
-              <select
-                id="proche-relation"
-                value={relationType}
-                disabled={envoi}
-                onChange={(e) => setRelationType(e.target.value as ProcheRelationType)}
-                className={cn(
-                  'flex h-9 w-full rounded-md border border-input bg-background px-3 py-1 text-sm shadow-xs outline-none focus-visible:ring-2 focus-visible:ring-ring/50 disabled:cursor-not-allowed disabled:opacity-50 dark:bg-input/30'
-                )}
-              >
-                <option value="partenaire">Partenaire</option>
-                <option value="ami">Ami·e</option>
-                <option value="famille">Famille</option>
-              </select>
-            </div>
-            <div className="space-y-1">
-              <Label htmlFor="proche-prenom">Prénom du proche</Label>
-              <Input
-                id="proche-prenom"
-                value={prenom}
-                disabled={envoi}
-                onChange={(e) => setPrenom(e.target.value)}
-                placeholder="Ex : Alex"
-              />
-            </div>
-          </div>
-          <DialogFooter className="gap-2 sm:gap-0">
-            <Button type="button" variant="outline" disabled={envoi} onClick={fermer}>
-              Annuler
-            </Button>
-            <Button type="button" disabled={envoi || !prenom.trim()} onClick={() => void inviter()}>
-              {envoi ? 'Envoi…' : 'Inviter et partager'}
-            </Button>
-          </DialogFooter>
+          {connexionCreee ? (
+            <CodeInvitationCree
+              connexion={connexionCreee}
+              prenom={prenom.trim()}
+              codeCopie={codeCopie}
+              onCopierCode={() => void copierCode()}
+              onPartager={() => void partager()}
+              onFermer={fermer}
+            />
+          ) : (
+            <>
+              <DialogHeader>
+                <DialogTitle>Inviter un proche</DialogTitle>
+              </DialogHeader>
+              <div className="space-y-3 py-1">
+                <div className="space-y-1">
+                  <Label htmlFor="proche-relation">Relation</Label>
+                  <select
+                    id="proche-relation"
+                    value={relationType}
+                    disabled={envoi}
+                    onChange={(e) => setRelationType(e.target.value as ProcheRelationType)}
+                    className={cn(
+                      'flex h-9 w-full rounded-md border border-input bg-background px-3 py-1 text-sm shadow-xs outline-none focus-visible:ring-2 focus-visible:ring-ring/50 disabled:cursor-not-allowed disabled:opacity-50 dark:bg-input/30'
+                    )}
+                  >
+                    <option value="partenaire">Partenaire</option>
+                    <option value="ami">Ami·e</option>
+                    <option value="famille">Famille</option>
+                  </select>
+                </div>
+                <div className="space-y-1">
+                  <Label htmlFor="proche-prenom">Prénom du proche</Label>
+                  <Input
+                    id="proche-prenom"
+                    value={prenom}
+                    disabled={envoi}
+                    onChange={(e) => setPrenom(e.target.value)}
+                    placeholder="Ex : Alex"
+                  />
+                </div>
+              </div>
+              <DialogFooter className="gap-2 sm:gap-0">
+                <Button type="button" variant="outline" disabled={envoi} onClick={fermer}>
+                  Annuler
+                </Button>
+                <Button type="button" disabled={envoi || !prenom.trim()} onClick={() => void inviter()}>
+                  {envoi ? 'Envoi…' : 'Inviter'}
+                </Button>
+              </DialogFooter>
+            </>
+          )}
         </DialogContent>
       </Dialog>
     </>
