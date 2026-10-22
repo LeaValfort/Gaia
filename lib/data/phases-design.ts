@@ -102,10 +102,12 @@ export const PHASES_CALENDRIER_CELL_PREDICTION: Record<
   Phase,
   { bg: string; border: string; texte: string }
 > = {
-  menstruation: { bg: '#F5E8EA', border: '#E8B4BC', texte: '#9A8588' },
-  folliculaire: { bg: '#F5F0DC', border: '#D9CF8E', texte: '#8A8060' },
-  ovulation: { bg: '#E2F0E8', border: '#9FD4B0', texte: '#6E8A78' },
-  luteale: { bg: '#EBE8F4', border: '#B8AEE0', texte: '#8578A0' },
+  // Version claire et nette de la couleur de la phase (plus de gris délavé) ;
+  // le cadre en pointillés suffit à signaler l'estimation.
+  menstruation: { bg: '#FFEEF0', border: '#F9A8B4', texte: '#B42335' },
+  folliculaire: { bg: '#FEF9D7', border: '#F5D04A', texte: '#8A5A0B' },
+  ovulation: { bg: '#E6FBEE', border: '#6EE7A0', texte: '#17683A' },
+  luteale: { bg: '#F1EDFF', border: '#B9A7FB', texte: '#5B2BB5' },
 }
 
 export const CALENDRIER_PREDICTION = {

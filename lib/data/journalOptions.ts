@@ -38,6 +38,12 @@ export const APPETIT_OPTIONS = [
 
 export const FLOT_OPTIONS = ['Léger', 'Moyen', 'Abondant'] as const
 
+/**
+ * Saignement noté en dehors des règles (spotting) : stocké dans `flow_intensity`
+ * comme le flux, mais ne démarre jamais de cycle (seul « Début des règles » le fait).
+ */
+export const SAIGNEMENT_HORS_REGLES_OPTIONS = ['Spotting', 'Léger', 'Moyen'] as const
+
 export const EXTENDED_LOG_INITIAL: ExtendedLogData = {
   emotions: [],
   symptoms: [],

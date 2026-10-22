@@ -8,6 +8,7 @@ import {
   APPETIT_OPTIONS,
   EMOTIONS,
   FLOT_OPTIONS,
+  SAIGNEMENT_HORS_REGLES_OPTIONS,
   LIBIDO_OPTIONS,
   SOMMEIL_OPTIONS,
   STRESS_OPTIONS,
@@ -59,7 +60,15 @@ export function DailyLogSectionEtendue({ data, onChange, phase }: DailyLogSectio
           onChange={(v) => maj(data, onChange, 'flow_intensity', depuisPillUnique(v))}
           multiSelect={false}
         />
-      ) : null}
+      ) : (
+        <PillsSelector
+          label="Saignement / spotting (ne démarre pas de cycle)"
+          options={SAIGNEMENT_HORS_REGLES_OPTIONS}
+          selected={data.flow_intensity ? [data.flow_intensity] : []}
+          onChange={(v) => maj(data, onChange, 'flow_intensity', depuisPillUnique(v))}
+          multiSelect={false}
+        />
+      )}
 
       <PillsSelector
         label="Libido"

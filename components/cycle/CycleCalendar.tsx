@@ -12,7 +12,7 @@ import {
   startOfDay,
 } from 'date-fns'
 import { fr } from 'date-fns/locale'
-import { ChevronLeft, ChevronRight, Star } from 'lucide-react'
+import { ChevronLeft, ChevronRight, Droplet, Star } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import {
   Dialog,
@@ -222,7 +222,6 @@ export function CycleCalendar({
                     ${dansMois ? 'cursor-pointer hover:brightness-[0.97] dark:hover:brightness-110' : 'cursor-default opacity-60'}
                     ${selectionne ? 'z-[1] ring-2 ring-inset ring-neutral-900 dark:ring-white' : ''}
                     ${retardVisuel && dansMois ? 'motion-safe:animate-pulse motion-reduce:animate-none' : ''}
-                    ${estPrediction && dansMois ? 'opacity-90 saturate-[0.72]' : ''}
                   `}
                 >
                   {aRapport && dansMois ? (
@@ -230,6 +229,14 @@ export function CycleCalendar({
                       className="pointer-events-none absolute right-1 top-1 z-[1] size-2.5 text-amber-500 md:size-3"
                       fill="currentColor"
                       aria-label="Rapport signalé ce jour"
+                    />
+                  ) : null}
+                  {/* Spotting : saignement noté hors règles, sans démarrer de cycle */}
+                  {dansMois && logsParDate[dateStr]?.flow_intensity && phaseJour !== 'menstruation' ? (
+                    <Droplet
+                      className="pointer-events-none absolute left-1 top-1 z-[1] size-2.5 text-rose-500 md:size-3"
+                      fill="currentColor"
+                      aria-label="Spotting ce jour"
                     />
                   ) : null}
                   {estPrediction && dansMois ? (
@@ -281,13 +288,13 @@ export function CycleCalendar({
         })}
         <div className="flex items-center gap-1.5">
           <span
-            className="h-3 w-3 shrink-0 rounded-sm border border-dashed opacity-90 saturate-[0.72]"
+            className="h-3 w-3 shrink-0 rounded-sm border border-dashed"
             style={{
               backgroundColor: PHASES_CALENDRIER_CELL_PREDICTION.folliculaire.bg,
               borderColor: PHASES_CALENDRIER_CELL_PREDICTION.folliculaire.border,
             }}
           />
-          <span className="text-neutral-600 dark:text-neutral-300">Estimé (à venir, teintes atténuées)</span>
+          <span className="text-neutral-600 dark:text-neutral-300">Estimé (à venir, cadre pointillé)</span>
         </div>
         <div className="flex items-center gap-1.5">
           <span
@@ -298,6 +305,10 @@ export function CycleCalendar({
             }}
           />
           <span className="text-neutral-600 dark:text-neutral-300">Retard</span>
+        </div>
+        <div className="flex items-center gap-1.5">
+          <Droplet className="size-3 shrink-0 text-rose-500" fill="currentColor" aria-hidden />
+          <span className="text-neutral-600 dark:text-neutral-300">Spotting</span>
         </div>
       </div>
 
