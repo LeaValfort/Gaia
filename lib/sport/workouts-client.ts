@@ -1,4 +1,5 @@
 import { supabase } from '@/lib/supabase'
+import { parseContenuSeanceLibre } from '@/lib/sport/seance-libre'
 import { updateChargesSeance, type SaisieChargeSeance } from '@/lib/db/charges'
 import type {
   Lieu,
@@ -202,6 +203,7 @@ export async function getSeancesDuJourClient(date: string): Promise<{
           notes: (muscuRaw.notes as string | null) ?? null,
           sets: (muscuRaw.workout_sets as WorkoutMuscuComplet['sets']) ?? [],
           ...ciblesDepuisRow(muscuRaw),
+          contenu_libre: parseContenuSeanceLibre(muscuRaw.contenu_libre),
         }
       : null,
     natation:
@@ -213,6 +215,7 @@ export async function getSeancesDuJourClient(date: string): Promise<{
             notes: (natRaw.notes as string | null) ?? null,
             swim: natRaw.swim_logs[0] as WorkoutNatationComplet['swim'],
             ...ciblesDepuisRow(natRaw),
+            contenu_libre: parseContenuSeanceLibre(natRaw.contenu_libre),
           }
         : null,
     yoga: yogaRaw
@@ -223,6 +226,7 @@ export async function getSeancesDuJourClient(date: string): Promise<{
           feeling: (yogaRaw.feeling as number | null) ?? null,
           notes: (yogaRaw.notes as string | null) ?? null,
           ...ciblesDepuisRow(yogaRaw),
+          contenu_libre: parseContenuSeanceLibre(yogaRaw.contenu_libre),
         }
       : null,
   }

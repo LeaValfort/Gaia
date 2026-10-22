@@ -14,11 +14,16 @@ interface EditeurSeanceLibreProps {
   /** Sport choisi : décide quels types de lignes sont proposés en premier. */
   sport: TypeActivite | null
   titre?: string
+  /** Texte affiché quand il n'y a encore aucune ligne. */
+  aideVide?: string
   onChange: (lignes: LigneSeanceLibre[]) => void
+  /** Mode « séance » : identifiants des lignes cochées comme faites. */
+  faits?: Set<string>
+  onToggleFait?: (id: string) => void
 }
 
 /** Contenu d'une séance libre : lignes de types variés, noms libres, réordonnables. */
-export function EditeurSeanceLibre({ lignes, dernieresCharges, sport, titre, onChange }: EditeurSeanceLibreProps) {
+export function EditeurSeanceLibre({ lignes, dernieresCharges, sport, titre, aideVide, onChange, faits, onToggleFait }: EditeurSeanceLibreProps) {
   const [plus, setPlus] = useState(false)
   const { suggeres, autres } = typesLigneSuggeres(sport)
   const duree = dureeBlocsMin(lignes)
@@ -50,7 +55,7 @@ export function EditeurSeanceLibre({ lignes, dernieresCharges, sport, titre, onC
       </p>
       {lignes.length === 0 ? (
         <p className="text-xs text-muted-foreground">
-          Ajoute ce que tu fais : exercices, mouvements avec minuteur, blocs de distance, intervalles…
+          {aideVide ?? 'Ajoute ce que tu fais : exercices, mouvements avec minuteur, blocs de distance, intervalles…'}
         </p>
       ) : (
         lignes.map((l, i) => (
@@ -62,6 +67,8 @@ export function EditeurSeanceLibre({ lignes, dernieresCharges, sport, titre, onC
             onMonter={() => deplacer(i, -1)}
             onDescendre={() => deplacer(i, 1)}
             onSupprimer={() => sup(i)}
+            fait={faits?.has(l.id)}
+            onToggleFait={onToggleFait ? () => onToggleFait(l.id) : undefined}
           />
         ))
       )}

@@ -1,5 +1,7 @@
 'use client'
 
+import { LignesProgramme } from '@/components/sport/libre/LignesProgramme'
+import { enregistrerContenuLibreSeance } from '@/lib/db/lignes-programme'
 import { useEffect, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { Pencil } from 'lucide-react'
@@ -27,6 +29,7 @@ import {
 import { supabase } from '@/lib/supabase'
 import { PHASES_DESIGN } from '@/lib/data/phases-design'
 import type {
+  LigneSeanceLibre,
   IntensiteEffort,
   Phase,
   PostureYoga,
@@ -74,6 +77,7 @@ export function OngletYoga({
   const [res, setRes] = useState(seanceExistante?.feeling ?? 0)
   const [notes, setNotes] = useState(() => (seanceExistante?.notes ?? '').replace(/^\[\w+\]\s*/, ''))
   const [ch, setCh] = useState(false)
+  const [lignesFaites, setLignesFaites] = useState<LigneSeanceLibre[]>(() => seanceExistante?.contenu_libre ?? [])
   const [variantes, setVariantes] = useState<SportVariante[]>([])
   const [varianteActiveId, setVarianteActiveId] = useState<string | null>(null)
   const [modalePostures, setModalePostures] = useState(false)
@@ -196,6 +200,7 @@ export function OngletYoga({
       const p = { type, dureeMin: seance.dureeMin, feeling: res > 0 ? res : null, notes: notes || null }
       if (edit && seanceExistante) await modifierSeanceYogaClient(seanceExistante.id, p)
       else await loggerSeanceYogaClient({ date, ...p })
+      await enregistrerContenuLibreSeance(supabase, userId, date, 'yoga', lignesFaites, !!seanceExistante?.contenu_libre?.length)
       toast.success(edit ? 'Séance yoga mise à jour ! 🧘' : 'Séance yoga enregistrée ! 🧘')
       onEnregistre?.()
       r.refresh()
@@ -278,6 +283,16 @@ export function OngletYoga({
       ) : (
         <TimerYoga postures={postures} />
       )}
+      <LignesProgramme
+        key={`yoga-${varianteActiveId ?? 'defaut'}-${seanceExistante?.id ?? 'nouvelle'}`}
+        userId={userId}
+        typeSeance="yoga"
+        lieu="na"
+        varianteId={varianteActiveId}
+        sportSuggestions="pilates"
+        lignesSeance={seanceExistante?.contenu_libre}
+        onFaitesChange={setLignesFaites}
+      />
       <MuscuRessentiEmojis ressenti={res > 0 ? res : null} onChange={(n) => setRes(n ?? 0)} phase={phase} />
       <Textarea value={notes} onChange={(e) => setNotes(e.target.value)} rows={2} className="text-sm" placeholder="Notes" />
       {userId ? (

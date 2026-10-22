@@ -1,5 +1,7 @@
 'use client'
 
+import { LignesProgramme } from '@/components/sport/libre/LignesProgramme'
+import { enregistrerContenuLibreSeance } from '@/lib/db/lignes-programme'
 import { useCallback, useEffect, useMemo, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { toast } from 'sonner'
@@ -36,6 +38,7 @@ import {
 import { exercicesDepuisCustom, exercicesToCustom, typeMuscuVersPlanning } from '@/lib/sport/muscuCustomMap'
 import { POURCENTAGES_GAIA_DEFAUT } from '@/types'
 import type {
+  LigneSeanceLibre,
   DerniereCharge,
   ExerciceCustom,
   IntensiteEffort,
@@ -88,6 +91,7 @@ export function OngletMuscu({
   const [ressenti, setRessenti] = useState<number | null>(seanceExistante?.feeling ?? null)
   const [modale, setModale] = useState(false)
   const [ch, setCh] = useState(false)
+  const [lignesFaites, setLignesFaites] = useState<LigneSeanceLibre[]>(() => seanceExistante?.contenu_libre ?? [])
   const pPh = phase ?? 'folliculaire'
 
   useEffect(() => {
@@ -282,6 +286,16 @@ export function OngletMuscu({
           />
         ))}
       </div>
+      <LignesProgramme
+        key={`${typeSeance}-${lieu}-${varianteActiveId ?? 'defaut'}-${seanceExistante?.id ?? 'nouvelle'}`}
+        userId={userId}
+        typeSeance={typeMuscuVersPlanning(typeSeance)}
+        lieu={lieu}
+        varianteId={varianteActiveId}
+        sportSuggestions="muscu_libre"
+        lignesSeance={seanceExistante?.contenu_libre}
+        onFaitesChange={setLignesFaites}
+      />
       <MuscuRessentiEmojis ressenti={ressenti} onChange={setRessenti} phase={phase} />
       <BilanSeance exercices={aff} exercicesFaits={exercicesFaits} typeSeance={typeSeance} />
       {userId && pPh ? (
@@ -317,6 +331,8 @@ export function OngletMuscu({
               edit,
               seanceExistante: seanceExistante ?? null,
             })
+              // Lignes perso cochées, rattachées à la séance juste enregistrée.
+              .then(() => enregistrerContenuLibreSeance(supabase, userId, date, 'muscu', lignesFaites, !!seanceExistante?.contenu_libre?.length))
               .then(() => {
                 toast.success(edit ? 'Séance mise à jour ! 💪' : 'Séance enregistrée ! 💪')
                 setExercicesFaits([])

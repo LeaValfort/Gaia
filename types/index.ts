@@ -659,6 +659,8 @@ export interface WorkoutMuscuComplet {
   proteines_cibles?: number | null
   glucides_cibles?: number | null
   lipides_cibles?: number | null
+  /** Lignes perso cochées lors de cette séance (B3b) */
+  contenu_libre?: LigneSeanceLibre[] | null
 }
 
 export interface WorkoutNatationComplet {
@@ -677,6 +679,8 @@ export interface WorkoutNatationComplet {
   proteines_cibles?: number | null
   glucides_cibles?: number | null
   lipides_cibles?: number | null
+  /** Lignes perso cochées lors de cette séance (B3b) */
+  contenu_libre?: LigneSeanceLibre[] | null
 }
 
 export interface WorkoutYogaComplet {
@@ -689,6 +693,8 @@ export interface WorkoutYogaComplet {
   proteines_cibles?: number | null
   glucides_cibles?: number | null
   lipides_cibles?: number | null
+  /** Lignes perso cochées lors de cette séance (B3b) */
+  contenu_libre?: LigneSeanceLibre[] | null
 }
 
 // ------------------------------------------------------------

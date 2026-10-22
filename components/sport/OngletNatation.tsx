@@ -1,5 +1,7 @@
 'use client'
 
+import { LignesProgramme } from '@/components/sport/libre/LignesProgramme'
+import { enregistrerContenuLibreSeance } from '@/lib/db/lignes-programme'
 import { useEffect, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { Pencil } from 'lucide-react'
@@ -31,6 +33,7 @@ import {
   SWIM_LEVEL_MAX,
   SWIM_LEVEL_MIN,
   type BlocNatation,
+  type LigneSeanceLibre,
   type IntensiteEffort,
   type Phase,
   type PourcentagesGaia,
@@ -77,6 +80,7 @@ export function OngletNatation({
   const [notes, setNotes] = useState(seanceExistante?.notes ?? '')
   const [res, setRes] = useState(seanceExistante?.feeling ?? 0)
   const [ch, setCh] = useState(false)
+  const [lignesFaites, setLignesFaites] = useState<LigneSeanceLibre[]>(() => seanceExistante?.contenu_libre ?? [])
   const [mode, setMode] = useState<'normale' | 'gaia'>('normale')
   const [variantes, setVariantes] = useState<SportVariante[]>([])
   const [varianteActiveId, setVarianteActiveId] = useState<string | null>(null)
@@ -240,6 +244,7 @@ export function OngletNatation({
       } else {
         await loggerSeanceNatationClient({ date, feeling: res || null, notes: notes || null, natation: nat })
       }
+      await enregistrerContenuLibreSeance(supabase, userId, date, 'natation', lignesFaites, !!seanceExistante?.contenu_libre?.length)
       toast.success('Séance enregistrée ! 🏊')
       onEnregistre?.()
       router.refresh()
@@ -311,6 +316,16 @@ export function OngletNatation({
           placeholder={`ex. ${distanceCible}`}
         />
       </div>
+      <LignesProgramme
+        key={`natation-${varianteActiveId ?? 'defaut'}-${seanceExistante?.id ?? 'nouvelle'}`}
+        userId={userId}
+        typeSeance="natation"
+        lieu="na"
+        varianteId={varianteActiveId}
+        sportSuggestions="natation_libre"
+        lignesSeance={seanceExistante?.contenu_libre}
+        onFaitesChange={setLignesFaites}
+      />
       <Textarea value={notes} onChange={(e) => setNotes(e.target.value)} rows={2} className="border-emerald-200 text-sm dark:border-emerald-800" placeholder="Notes (optionnel)" />
       <div>
         <p className="mb-1 text-xs font-semibold text-[#059669] dark:text-emerald-200">Ressenti</p>
