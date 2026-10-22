@@ -563,7 +563,43 @@ export interface ActivityLog {
   repetitions: number | null
   feeling: string | null
   notes: string | null
+  /** Lot B2 : lignes détaillées de la séance libre (null pour les anciennes activités) */
+  contenu?: LigneSeanceLibre[] | null
   created_at: string
+}
+
+/**
+ * Ligne d'une séance libre (« autre sport ») : un exercice (séries × reps ou
+ * secondes, charge facultative) ou un bloc (durée et/ou distance), nom libre.
+ */
+export type LigneSeanceLibre =
+  | {
+      type: 'exercice'
+      id: string
+      nom: string
+      series: number | null
+      reps: number | null
+      unite: 'reps' | 'secondes'
+      charge_kg: number | null
+    }
+  | {
+      type: 'bloc'
+      id: string
+      nom: string
+      duree_min: number | null
+      distance_m: number | null
+    }
+
+/** Modèle réutilisable de séance libre (table modeles_seance) */
+export interface ModeleSeance {
+  id: string
+  user_id: string
+  nom: string
+  sport_type: TypeActivite
+  sport_name: string | null
+  contenu: LigneSeanceLibre[]
+  created_at: string
+  updated_at: string
 }
 
 /** Données du formulaire (toutes en string, converties à la sauvegarde) */

@@ -6,18 +6,24 @@ import { toast } from 'sonner'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Textarea } from '@/components/ui/textarea'
-import { loggerActiviteClient } from '@/lib/sport/activities-client'
+import { BarreModelesSeance } from '@/components/sport/libre/BarreModelesSeance'
+import { EditeurSeanceLibre } from '@/components/sport/libre/EditeurSeanceLibre'
+import { useSeanceLibre } from '@/hooks/useSeanceLibre'
+import { enregistrerActiviteClient } from '@/lib/sport/activities-client'
+import { formDepuisActivite } from '@/lib/sport/activite-form'
+import { copierLignes, lignesRenseignees } from '@/lib/sport/seance-libre'
 import { ACTIVITY_LOG_INITIAL, getSportConfig, SPORTS_CONFIG, type ConfigChamp } from '@/lib/data/sportsConfig'
 import { cn } from '@/lib/utils'
-import type { ActivityLogFormData } from '@/types'
+import type { ActivityLog, ActivityLogFormData, LigneSeanceLibre } from '@/types'
 
 const EMOJIS = ['😴', '😕', '😊', '⚡', '🚀'] as const
+const LABEL = 'text-xs font-medium text-amber-900/80 dark:text-amber-200/80'
+const CHAMP = 'border-amber-200 dark:border-amber-800/80'
 
 function champ(c: ConfigChamp, f: ActivityLogFormData, set: (k: keyof ActivityLogFormData, v: string) => void) {
-  const v = f[c.cle] as string
   return (
     <div key={c.cle} className="space-y-1">
-      <p className="text-xs font-medium text-amber-900/80 dark:text-amber-200/80">
+      <p className={LABEL}>
         {c.label}
         {c.unite ? ` (${c.unite})` : ''}
         {c.optionnel ? ' — optionnel' : ''}
@@ -25,41 +31,41 @@ function champ(c: ConfigChamp, f: ActivityLogFormData, set: (k: keyof ActivityLo
       <Input
         type={c.type === 'nombre' || c.type === 'duree' ? 'number' : 'text'}
         min={c.type === 'duree' || c.type === 'nombre' ? 0 : undefined}
-        value={v}
+        value={f[c.cle] as string}
         onChange={(e) => set(c.cle, e.target.value)}
-        className="border-amber-200 dark:border-amber-800/80"
+        className={CHAMP}
         placeholder={c.placeholder}
       />
     </div>
   )
 }
 
-export function OngletAutreSport({
-  userId,
-  date,
-  onEnregistre,
-}: {
+interface OngletAutreSportProps {
   userId: string
   date: string
+  /** Activité à modifier (ouverte depuis « Dernières séances »). Remonter le composant via `key` pour changer. */
+  activiteExistante?: ActivityLog | null
   onEnregistre?: () => void
-}) {
+}
+
+export function OngletAutreSport({ userId, date, activiteExistante, onEnregistre }: OngletAutreSportProps) {
   const r = useRouter()
-  const [f, setF] = useState<ActivityLogFormData>(ACTIVITY_LOG_INITIAL)
+  const [f, setF] = useState<ActivityLogFormData>(() => formDepuisActivite(activiteExistante))
+  const [lignes, setLignes] = useState<LigneSeanceLibre[]>(() => activiteExistante?.contenu ?? [])
   const [ch, setCh] = useState(false)
+  const { modeles, dernieres, enregistrerModele, supprimerModele } = useSeanceLibre(userId)
   const t = f.sport_type
   const cfg = t ? getSportConfig(t) : null
   const setV = (k: keyof ActivityLogFormData, v: string) => setF((p) => ({ ...p, [k]: v }))
 
   async function save() {
-    if (!t || !userId) {
-      if (!userId) toast.error('Connecte-toi pour enregistrer')
-      return
-    }
+    if (!t) return
     setCh(true)
     try {
-      await loggerActiviteClient({ ...f, date, feeling: f.feeling || '' })
-      toast.success('Activité enregistrée ! 🎯')
+      await enregistrerActiviteClient({ ...f, date }, lignes, activiteExistante?.id)
+      toast.success(activiteExistante ? 'Séance mise à jour ! 🎯' : 'Activité enregistrée ! 🎯')
       setF(ACTIVITY_LOG_INITIAL)
+      setLignes([])
       onEnregistre?.()
       r.refresh()
     } catch (e) {
@@ -69,15 +75,39 @@ export function OngletAutreSport({
     }
   }
 
+  async function enregistrerCommeModele(nom: string): Promise<boolean> {
+    if (!t) return false
+    const ok = await enregistrerModele({ nom, sport_type: t, sport_name: f.sport_name.trim() || null, contenu: lignesRenseignees(lignes) })
+    if (ok) toast.success(`Modèle « ${ok.nom} » enregistré`)
+    else toast.error('Impossible d’enregistrer le modèle')
+    return !!ok
+  }
+
   return (
     <div className="space-y-4 rounded-xl border border-amber-200/90 bg-[#FFFBEB]/90 p-4 dark:border-amber-900/50 dark:bg-amber-950/20">
+      <BarreModelesSeance
+        modeles={modeles}
+        nomSuggere={f.sport_name || cfg?.nom || ''}
+        peutEnregistrer={!!t && lignesRenseignees(lignes).length > 0}
+        onCharger={(m) => {
+          setF({ ...ACTIVITY_LOG_INITIAL, sport_type: m.sport_type, sport_name: m.sport_name ?? '' })
+          // Copie avec de nouveaux identifiants : la séance ne modifie pas le modèle.
+          setLignes(copierLignes(m.contenu))
+        }}
+        onEnregistrer={enregistrerCommeModele}
+        onSupprimer={async (id) => {
+          const ok = await supprimerModele(id)
+          if (!ok) toast.error('Suppression du modèle impossible')
+          return ok
+        }}
+      />
       <p className="text-xs font-semibold text-[#D97706]">Type d’activité</p>
       <div className="flex flex-wrap gap-2">
         {SPORTS_CONFIG.map((c) => (
           <button
             key={c.type}
             type="button"
-            onClick={() => setF({ ...ACTIVITY_LOG_INITIAL, sport_type: c.type })}
+            onClick={() => setF((p) => ({ ...ACTIVITY_LOG_INITIAL, sport_type: c.type, sport_name: p.sport_name, feeling: p.feeling, notes: p.notes }))}
             className={cn(
               'flex items-center gap-1.5 rounded-full border px-3 py-1.5 text-sm',
               t === c.type ? 'border-[#D97706] bg-amber-100 font-medium dark:bg-amber-900/50' : 'border-amber-200/80 dark:border-amber-800'
@@ -90,31 +120,27 @@ export function OngletAutreSport({
       </div>
       {cfg ? (
         <div className="space-y-3">
-          {cfg.champs.map((c) => champ(c, f, setV))}
-        </div>
-      ) : null}
-      {t ? (
-        <>
+          <div className="space-y-1">
+            <p className={LABEL}>{t === 'autre' ? 'Nom du sport' : 'Nom de la séance — optionnel'}</p>
+            <Input value={f.sport_name} onChange={(e) => setV('sport_name', e.target.value)} className={CHAMP} placeholder={t === 'autre' ? 'Pilates, headstand, corde à sauter…' : 'Ex. Fractionné'} />
+          </div>
+          {cfg.champs.filter((c) => c.cle !== 'sport_name').map((c) => champ(c, f, setV))}
+          <EditeurSeanceLibre lignes={lignes} dernieresCharges={dernieres} onChange={setLignes} />
           <div>
-            <p className="mb-1 text-xs font-medium text-amber-900/80 dark:text-amber-200/80">Ressenti</p>
+            <p className={`mb-1 ${LABEL}`}>Ressenti</p>
             <div className="flex flex-wrap justify-center gap-1">
-              {EMOJIS.map((e, i) => (
-                <button
-                  type="button"
-                  key={e}
-                  onClick={() => setV('feeling', f.feeling === e ? '' : e)}
-                  className={cn('rounded-full border-2 p-2 text-lg', f.feeling === e ? 'border-[#D97706] bg-amber-100' : 'border-transparent')}
-                >
+              {EMOJIS.map((e) => (
+                <button type="button" key={e} onClick={() => setV('feeling', f.feeling === e ? '' : e)} className={cn('rounded-full border-2 p-2 text-lg', f.feeling === e ? 'border-[#D97706] bg-amber-100 dark:bg-amber-900/50' : 'border-transparent')}>
                   {e}
                 </button>
               ))}
             </div>
           </div>
-          <Textarea value={f.notes} onChange={(e) => setV('notes', e.target.value)} className="border-amber-200 text-sm dark:border-amber-800" rows={2} placeholder="Notes" />
-        </>
+          <Textarea value={f.notes} onChange={(e) => setV('notes', e.target.value)} className={`${CHAMP} text-sm`} rows={2} placeholder="Notes" />
+        </div>
       ) : null}
-      <Button onClick={() => void save()} disabled={ch || !t} className="w-full bg-[#D97706] hover:bg-amber-700">
-        {ch ? '…' : 'Enregistrer'}
+      <Button onClick={() => void save()} disabled={ch || !t} className="w-full bg-[#D97706] text-white hover:bg-amber-700">
+        {ch ? '…' : activiteExistante ? 'Mettre à jour la séance' : 'Enregistrer'}
       </Button>
     </div>
   )

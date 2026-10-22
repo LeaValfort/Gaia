@@ -1,5 +1,7 @@
 import { supabase } from '@/lib/supabase'
-import type { ActivityLogFormData } from '@/types'
+import { updateChargesSeance } from '@/lib/db/charges'
+import { chargesAMemoriser, dureeBlocsMin, lignesRenseignees } from '@/lib/sport/seance-libre'
+import type { ActivityLogFormData, LigneSeanceLibre } from '@/types'
 
 function parseDec(val: string): number | null {
   const n = parseFloat(val)
@@ -42,26 +44,20 @@ async function userConnecte() {
   return user
 }
 
-/** Enregistre une activité « autre sport » (activity_logs) côté client. */
-export async function loggerActiviteClient(
-  data: ActivityLogFormData & { date: string }
-): Promise<void> {
-  if (!data.sport_type) throw new Error('Choisis un type d’activité.')
-
-  const user = await userConnecte()
-
-  const { error } = await supabase.from('activity_logs').insert({
-    user_id: user.id,
-    date: data.date,
+function ligneActivite(data: ActivityLogFormData, contenu: LigneSeanceLibre[]) {
+  // Durée : celle saisie, sinon la somme des blocs.
+  const duree = parseEnt(data.duration_min) ?? dureeBlocsMin(contenu)
+  const dureeTxt = duree != null ? String(duree) : data.duration_min
+  return {
     sport_type: data.sport_type,
-    sport_name: data.sport_name || null,
-    duration_min: parseEnt(data.duration_min),
+    sport_name: data.sport_name.trim() || null,
+    duration_min: duree,
     distance_km: parseDec(data.distance_km),
     elevation_m: parseEnt(data.elevation_m),
     speed_kmh:
-      data.sport_type === 'velo' ? calculerVitesse(data.distance_km, data.duration_min) : null,
+      data.sport_type === 'velo' ? calculerVitesse(data.distance_km, dureeTxt) : null,
     pace_min_km:
-      data.sport_type === 'course' ? calculerAllure(data.distance_km, data.duration_min) : null,
+      data.sport_type === 'course' ? calculerAllure(data.distance_km, dureeTxt) : null,
     calories: parseEnt(data.calories),
     heart_rate_avg: parseEnt(data.heart_rate_avg),
     heart_rate_max: parseEnt(data.heart_rate_max),
@@ -71,7 +67,37 @@ export async function loggerActiviteClient(
     repetitions: parseEnt(data.repetitions),
     feeling: data.feeling || null,
     notes: data.notes || null,
-  })
+    contenu: contenu.length ? contenu : null,
+  }
+}
 
-  if (error) throw new Error(messageErreurSupabase(error))
+/**
+ * Enregistre (ou met à jour si `idExistant`) une activité « autre sport »,
+ * avec ses lignes libres, puis mémorise les charges des exercices.
+ */
+export async function enregistrerActiviteClient(
+  data: ActivityLogFormData & { date: string },
+  lignes: LigneSeanceLibre[],
+  idExistant?: string | null
+): Promise<void> {
+  if (!data.sport_type) throw new Error('Choisis un type d’activité.')
+  const user = await userConnecte()
+  const contenu = lignesRenseignees(lignes)
+  const ligne = ligneActivite(data, contenu)
+
+  if (idExistant) {
+    const { data: maj, error } = await supabase
+      .from('activity_logs')
+      .update({ ...ligne, date: data.date })
+      .eq('id', idExistant)
+      .select('id')
+    if (error) throw new Error(messageErreurSupabase(error))
+    if (!maj?.length) throw new Error('La modification n’a pas été enregistrée.')
+  } else {
+    const { error } = await supabase.from('activity_logs').insert({ user_id: user.id, date: data.date, ...ligne })
+    if (error) throw new Error(messageErreurSupabase(error))
+  }
+
+  const charges = chargesAMemoriser(contenu)
+  if (charges.length) await updateChargesSeance(supabase, user.id, charges, data.date)
 }

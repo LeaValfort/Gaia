@@ -5,6 +5,7 @@ import { ArrowDown, ArrowUp, RefreshCw, Trash2 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog'
 import { Input } from '@/components/ui/input'
+import { AjoutPostureLibre } from '@/components/sport/yoga/AjoutPostureLibre'
 import { SelecteurCataloguePostures } from '@/components/sport/yoga/SelecteurCataloguePostures'
 import type { PostureYoga } from '@/types'
 
@@ -97,6 +98,7 @@ export function ModaleEditPosturesYoga({
         </div>
         <div className="px-4 py-2">
           <SelecteurCataloguePostures nomsExclus={nomsExclus} onAjouter={ajouter} />
+          <AjoutPostureLibre onAjouter={ajouter} />
         </div>
         <DialogFooter className="flex-col gap-2 p-4 sm:flex-row sm:justify-between">
           <Button type="button" variant="outline" disabled={ch} onClick={defaut}>

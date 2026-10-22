@@ -15,7 +15,7 @@ import { cn } from '@/lib/utils'
 interface DernieresSeancesProps {
   userId: string
   refreshToken?: number
-  onModifier?: (date: string, type: TypeSeance) => void
+  onModifier?: (seance: SeanceHistorique) => void
   onSupprimee?: () => void
 }
 
@@ -51,7 +51,7 @@ export function DernieresSeances({ userId, refreshToken, onModifier, onSupprimee
       ) : (
         <ul className="space-y-1">
           {seances.map((s) => {
-            const cliquable = !!onModifier && s.source === 'workout' && MODIFIABLES.includes(s.type)
+            const cliquable = !!onModifier && (s.source === 'activite' || MODIFIABLES.includes(s.type))
             const contenu = (
               <>
                 <span className="text-muted-foreground">
@@ -95,7 +95,7 @@ export function DernieresSeances({ userId, refreshToken, onModifier, onSupprimee
                 {cliquable ? (
                   <button
                     type="button"
-                    onClick={() => onModifier(s.date, s.type)}
+                    onClick={() => onModifier(s)}
                     className={cn(classeLigne, 'transition-colors hover:bg-neutral-100 dark:hover:bg-neutral-800/60')}
                   >
                     {contenu}

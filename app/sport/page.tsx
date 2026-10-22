@@ -23,6 +23,8 @@ import { cartesSubstitutionJour } from '@/lib/sport/substitution-jour'
 import { BADGE_PHASE_CYCLE } from '@/lib/cycle-affichage'
 import { PHASES_DESIGN } from '@/lib/data/phases-design'
 import { getEntreesPlanning } from '@/lib/db/planning-sport-entries'
+import { getActiviteParId } from '@/lib/db/modeles-seance'
+import type { SeanceHistorique } from '@/lib/db/seances-historique'
 import { getOverridesJour, setOverrideJour, supprimerOverrideJour } from '@/lib/db/planning-overrides'
 import { getToutesVariantesPourType } from '@/lib/db/sport-variantes'
 import { seancesEffectivesJour, seancesResoluesPourDate } from '@/lib/planning-sport-jour'
@@ -31,6 +33,7 @@ import { Button } from '@/components/ui/button'
 import { cn } from '@/lib/utils'
 import { POURCENTAGES_GAIA_DEFAUT } from '@/types'
 import type {
+  ActivityLog,
   Phase,
   PlanningOverride,
   PlanningSportEntry,
@@ -38,7 +41,6 @@ import type {
   SeanceProfil,
   SportVariante,
   TypePlanningJour,
-  TypeSeance,
   TypeVarianteSport,
   WorkoutMuscuComplet,
   WorkoutNatationComplet,
@@ -83,6 +85,7 @@ export default function SportPage() {
 
   const apresEnregistrement = useCallback(() => {
     setFormOuvert(null)
+    setActiviteEditee(null)
     setRefreshSeances((n) => n + 1)
   }, [])
 
@@ -100,14 +103,38 @@ export default function SportPage() {
 
   const formRef = useRef<HTMLDivElement>(null)
 
-  function ouvrirModifier(date: string, type: TypeSeance) {
-    const form = typeSeanceVersForm(type)
-    if (!form || form === 'autre') return
-    setDateSeance(date)
-    setFormOuvert(form)
+  const [activiteEditee, setActiviteEditee] = useState<ActivityLog | null>(null)
+
+  function remonterAuFormulaire() {
     // Le formulaire s'ouvre plus haut dans la page : on y remonte, sinon le clic
     // depuis « Dernières séances » semble ne rien faire.
     requestAnimationFrame(() => formRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' }))
+  }
+
+  async function ouvrirModifier(s: SeanceHistorique) {
+    if (s.source === 'activite') {
+      const a = await getActiviteParId(supabase, s.id)
+      if (!a) {
+        toast.error('Impossible d’ouvrir cette séance.')
+        return
+      }
+      setActiviteEditee(a)
+      setDateSeance(a.date)
+      setFormOuvert('autre')
+      remonterAuFormulaire()
+      return
+    }
+    const form = typeSeanceVersForm(s.type)
+    if (!form || form === 'autre') return
+    setActiviteEditee(null)
+    setDateSeance(s.date)
+    setFormOuvert(form)
+    remonterAuFormulaire()
+  }
+
+  function ouvrirNouveau(form: FormSport | null) {
+    setActiviteEditee(null)
+    setFormOuvert(form)
   }
 
   useEffect(() => {
@@ -304,14 +331,14 @@ export default function SportPage() {
           typesJour={typesJourEffectifs}
           seanceProfils={seanceProfils}
           formOuvert={formOuvert}
-          onOuvrir={setFormOuvert}
+          onOuvrir={ouvrirNouveau}
         />
 
         {formOuvert ? (
           <div ref={formRef} className="flex scroll-mt-20 flex-col gap-3 rounded-2xl border border-neutral-200 bg-white p-4 dark:border-neutral-800 dark:bg-neutral-900/80">
             <button
               type="button"
-              onClick={() => setFormOuvert(null)}
+              onClick={() => ouvrirNouveau(null)}
               className="self-start text-sm text-muted-foreground transition-colors hover:text-neutral-900 dark:hover:text-neutral-200"
             >
               ← Retour aux séances
@@ -355,7 +382,13 @@ export default function SportPage() {
               />
             ) : null}
             {formOuvert === 'autre' && !chargementSeances ? (
-              <OngletAutreSport userId={userId} date={dateSeance} onEnregistre={apresEnregistrement} />
+              <OngletAutreSport
+                key={activiteEditee?.id ?? 'nouvelle'}
+                userId={userId}
+                date={dateSeance}
+                activiteExistante={activiteEditee}
+                onEnregistre={apresEnregistrement}
+              />
             ) : null}
           </div>
         ) : null}
