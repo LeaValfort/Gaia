@@ -568,9 +568,22 @@ export interface ActivityLog {
   created_at: string
 }
 
+/** Un mouvement d'un circuit (nom libre, durée ou répétitions). */
+export interface MouvementCircuit {
+  id: string
+  nom: string
+  duree_sec: number | null
+  reps: number | null
+}
+
 /**
- * Ligne d'une séance libre (« autre sport ») : un exercice (séries × reps ou
- * secondes, charge facultative) ou un bloc (durée et/ou distance), nom libre.
+ * Ligne d'une séance libre, nom libre dans tous les cas :
+ * - exercice : séries × reps (ou secondes), charge facultative (muscu, poids du corps)
+ * - bloc : séries × durée et/ou distance (natation, course, vélo)
+ * - mouvement : un mouvement + temps facultatif avec minuteur (pole, pilates, gainage)
+ * - intervalles : tours × (effort + récupération) (fractionné, HIIT)
+ * - circuit : liste de mouvements répétée N tours (cardio, boxe)
+ * - voie : cotation + réussie (escalade)
  */
 export type LigneSeanceLibre =
   | {
@@ -586,9 +599,23 @@ export type LigneSeanceLibre =
       type: 'bloc'
       id: string
       nom: string
+      series: number | null
       duree_min: number | null
       distance_m: number | null
     }
+  | { type: 'mouvement'; id: string; nom: string; series: number | null; duree_sec: number | null }
+  | {
+      type: 'intervalles'
+      id: string
+      nom: string
+      tours: number | null
+      effort_sec: number | null
+      recup_sec: number | null
+    }
+  | { type: 'circuit'; id: string; nom: string; tours: number | null; repos_sec: number | null; mouvements: MouvementCircuit[] }
+  | { type: 'voie'; id: string; nom: string; cotation: string; reussie: boolean }
+
+export type TypeLigneSeanceLibre = LigneSeanceLibre['type']
 
 /** Modèle réutilisable de séance libre (table modeles_seance) */
 export interface ModeleSeance {

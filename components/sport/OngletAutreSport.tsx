@@ -6,13 +6,14 @@ import { toast } from 'sonner'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Textarea } from '@/components/ui/textarea'
+import { ChoixSportLibre } from '@/components/sport/libre/ChoixSportLibre'
 import { BarreModelesSeance } from '@/components/sport/libre/BarreModelesSeance'
 import { EditeurSeanceLibre } from '@/components/sport/libre/EditeurSeanceLibre'
 import { useSeanceLibre } from '@/hooks/useSeanceLibre'
 import { enregistrerActiviteClient } from '@/lib/sport/activities-client'
 import { formDepuisActivite } from '@/lib/sport/activite-form'
 import { copierLignes, lignesRenseignees } from '@/lib/sport/seance-libre'
-import { ACTIVITY_LOG_INITIAL, getSportConfig, SPORTS_CONFIG, type ConfigChamp } from '@/lib/data/sportsConfig'
+import { ACTIVITY_LOG_INITIAL, getSportConfig, type ConfigChamp } from '@/lib/data/sportsConfig'
 import { cn } from '@/lib/utils'
 import type { ActivityLog, ActivityLogFormData, LigneSeanceLibre } from '@/types'
 
@@ -101,23 +102,10 @@ export function OngletAutreSport({ userId, date, activiteExistante, onEnregistre
           return ok
         }}
       />
-      <p className="text-xs font-semibold text-[#D97706]">Type d’activité</p>
-      <div className="flex flex-wrap gap-2">
-        {SPORTS_CONFIG.map((c) => (
-          <button
-            key={c.type}
-            type="button"
-            onClick={() => setF((p) => ({ ...ACTIVITY_LOG_INITIAL, sport_type: c.type, sport_name: p.sport_name, feeling: p.feeling, notes: p.notes }))}
-            className={cn(
-              'flex items-center gap-1.5 rounded-full border px-3 py-1.5 text-sm',
-              t === c.type ? 'border-[#D97706] bg-amber-100 font-medium dark:bg-amber-900/50' : 'border-amber-200/80 dark:border-amber-800'
-            )}
-          >
-            <c.Icone className="size-4" />
-            {c.nom}
-          </button>
-        ))}
-      </div>
+      <ChoixSportLibre
+        sport={t}
+        onChoisir={(sport) => setF((p) => ({ ...ACTIVITY_LOG_INITIAL, sport_type: sport, sport_name: p.sport_name, feeling: p.feeling, notes: p.notes }))}
+      />
       {cfg ? (
         <div className="space-y-3">
           <div className="space-y-1">
@@ -125,7 +113,7 @@ export function OngletAutreSport({ userId, date, activiteExistante, onEnregistre
             <Input value={f.sport_name} onChange={(e) => setV('sport_name', e.target.value)} className={CHAMP} placeholder={t === 'autre' ? 'Pilates, headstand, corde à sauter…' : 'Ex. Fractionné'} />
           </div>
           {cfg.champs.filter((c) => c.cle !== 'sport_name').map((c) => champ(c, f, setV))}
-          <EditeurSeanceLibre lignes={lignes} dernieresCharges={dernieres} onChange={setLignes} />
+          <EditeurSeanceLibre lignes={lignes} dernieresCharges={dernieres} sport={t} onChange={setLignes} />
           <div>
             <p className={`mb-1 ${LABEL}`}>Ressenti</p>
             <div className="flex flex-wrap justify-center gap-1">

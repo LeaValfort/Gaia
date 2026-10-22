@@ -29,6 +29,33 @@ export function ListeLoggerSeance({
   const autreSuggere = ouvrirAutrePourTypesJour(typesJour)
   const cartes = ordreCartesLogger(typesJour)
 
+  // Une séance est ouverte : les cartes se replient en une ligne de pastilles,
+  // pour laisser la place au formulaire juste en dessous.
+  if (formOuvert) {
+    return (
+      <section className="flex flex-col gap-2">
+        <h2 className="text-sm font-semibold text-neutral-900 dark:text-neutral-50">Logger une séance</h2>
+        <div className="flex flex-wrap gap-1.5">
+          {[...cartes.map((c) => ({ id: c.id as SportLoggerId | 'autre', emoji: c.emoji, nom: c.nom })), { id: 'autre' as const, emoji: '🎯', nom: 'Autre sport' }].map((c) => (
+            <button
+              key={c.id}
+              type="button"
+              onClick={() => onOuvrir(c.id)}
+              className={cn(
+                'inline-flex items-center gap-1 rounded-full border px-3 py-1 text-sm transition-colors',
+                formOuvert === c.id
+                  ? 'border-amber-400 bg-amber-100 font-medium text-amber-950 dark:border-amber-700 dark:bg-amber-900/50 dark:text-amber-50'
+                  : 'border-neutral-200 bg-white text-neutral-600 dark:border-neutral-800 dark:bg-neutral-900/80 dark:text-neutral-300'
+              )}
+            >
+              <span aria-hidden>{c.emoji}</span> {c.nom}
+            </button>
+          ))}
+        </div>
+      </section>
+    )
+  }
+
   return (
     <section className="flex flex-col gap-3">
       <h2 className="text-sm font-semibold text-neutral-900 dark:text-neutral-50">
