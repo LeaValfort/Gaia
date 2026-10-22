@@ -127,6 +127,12 @@ export function RecetteGenereeCard({ recette, userId, weekStart }: RecetteGenere
                   <Badge key={label} variant="outline" className={`text-xs ${className}`}>{label}</Badge>
                 ))}
               </div>
+              {recette.ingredients_non_reconnus.length > 0 ? (
+                <p className="text-[11px] text-amber-700 dark:text-amber-400 italic">
+                  Macros incomplètes : {recette.ingredients_non_reconnus.join(', ')} non reconnu
+                  {recette.ingredients_non_reconnus.length > 1 ? 's' : ''}
+                </p>
+              ) : null}
               {recette.ingredients_approximes.length > 0 ? (
                 <p className="text-[11px] text-neutral-500 dark:text-neutral-400 italic">
                   Estimation (moyenne CIQUAL) pour : {recette.ingredients_approximes.join(', ')}
@@ -136,8 +142,7 @@ export function RecetteGenereeCard({ recette, userId, weekStart }: RecetteGenere
           ) : (
             <p className="text-xs text-amber-600 dark:text-amber-400 flex items-start gap-1">
               <AlertTriangle size={12} className="shrink-0 mt-0.5" />
-              Macros non disponibles ({recette.ingredients_non_reconnus.join(', ')} non reconnu
-              {recette.ingredients_non_reconnus.length > 1 ? 's' : ''} dans la base nutritionnelle)
+              Macros non disponibles (aucun ingrédient reconnu dans la base nutritionnelle)
             </p>
           )}
 

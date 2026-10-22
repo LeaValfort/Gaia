@@ -18,10 +18,11 @@ import { upsertDailyMealIntake } from '@/lib/db/dailyMealIntake'
 import { objectifsRepasDefaut } from '@/lib/repartitionRepas'
 import { supabase } from '@/lib/supabase'
 import { cn } from '@/lib/utils'
-import type { DailyMealIntake, Recipe, TypeJournee, TypeRepas } from '@/types'
+import { AjoutAliment } from '@/components/alimentation/aliment/AjoutAliment'
+import type { AlimentAjoute, DailyMealIntake, Recipe, TypeJournee, TypeRepas } from '@/types'
 
 type CleMacro = 'calories' | 'proteines' | 'glucides' | 'lipides'
-type ModeSaisie = 'manuel' | 'recette'
+type ModeSaisie = 'manuel' | 'aliment' | 'recette'
 
 const CHAMPS: { cle: CleMacro; label: string; unite: string; max: number }[] = [
   { cle: 'calories', label: 'Calories', unite: 'kcal', max: 20000 },
@@ -85,6 +86,7 @@ export function ModaleSaisieRepas({
     lipides: '0',
   })
   const [sourceRecipeId, setSourceRecipeId] = useState<string | null>(null)
+  const [ajouts, setAjouts] = useState<AlimentAjoute[]>([])
   const [recherche, setRecherche] = useState('')
   const [recettes, setRecettes] = useState<Recipe[]>([])
   const [chargementRecettes, setChargementRecettes] = useState(false)
@@ -132,8 +134,21 @@ export function ModaleSaisieRepas({
       lipides: String(intake.lipides),
     })
     setErr(null)
+    setAjouts([])
     void chargerRecettes()
   }, [ouvert, intake, chargerRecettes])
+
+  /** Aliment hors recette : ses macros s'ajoutent à celles déjà saisies pour ce repas. */
+  function ajouterAliment(a: AlimentAjoute) {
+    setValeurs((v) => ({
+      calories: String(parseN(v.calories, 20000) + Math.round(a.calories)),
+      proteines: String(parseN(v.proteines, 1000) + Math.round(a.proteines)),
+      glucides: String(parseN(v.glucides, 1000) + Math.round(a.glucides)),
+      lipides: String(parseN(v.lipides, 1000) + Math.round(a.lipides)),
+    }))
+    setAjouts((l) => [...l, a])
+    setMode('manuel')
+  }
 
   function importerRecette(r: Recipe) {
     setValeurs(valeursDepuisRecette(r))
@@ -190,13 +205,14 @@ export function ModaleSaisieRepas({
         </DialogHeader>
 
         <div
-          className="grid grid-cols-2 gap-1 rounded-lg border border-neutral-200 bg-neutral-100/80 p-1 dark:border-neutral-700 dark:bg-neutral-800/50"
+          className="grid grid-cols-3 gap-1 rounded-lg border border-neutral-200 bg-neutral-100/80 p-1 dark:border-neutral-700 dark:bg-neutral-800/50"
           role="tablist"
         >
           {(
             [
-              { id: 'manuel' as const, label: 'Saisie manuelle' },
-              { id: 'recette' as const, label: 'Depuis une recette' },
+              { id: 'manuel' as const, label: 'Totaux' },
+              { id: 'aliment' as const, label: '+ Aliment' },
+              { id: 'recette' as const, label: 'Recette' },
             ] as const
           ).map(({ id, label }) => (
             <button
@@ -217,7 +233,9 @@ export function ModaleSaisieRepas({
           ))}
         </div>
 
-        {mode === 'recette' ? (
+        {mode === 'aliment' ? (
+          <AjoutAliment onAjouter={ajouterAliment} />
+        ) : mode === 'recette' ? (
           <div className="flex flex-col gap-3">
             <div className="relative">
               <Search
@@ -295,6 +313,15 @@ export function ModaleSaisieRepas({
           </div>
         ) : (
           <div className="flex flex-col gap-3">
+            {ajouts.length > 0 ? (
+              <ul className="rounded-lg bg-amber-50/70 px-3 py-2 text-xs text-amber-900 dark:bg-amber-950/30 dark:text-amber-200">
+                {ajouts.map((a, i) => (
+                  <li key={`${a.nom}-${i}`}>
+                    + {a.nom} ({a.grammes} g) : {a.calories} kcal
+                  </li>
+                ))}
+              </ul>
+            ) : null}
             {CHAMPS.map(({ cle, label, unite, max }) => (
               <div key={cle} className="flex flex-col gap-1.5">
                 <Label htmlFor={`modale-repas-${intake.type_repas}-${cle}`} className="text-sm">

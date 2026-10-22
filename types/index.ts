@@ -347,6 +347,8 @@ export interface IngredientRecette {
  */
 export interface ResultatCalculRecette {
   macrosDisponibles: boolean
+  /** Au moins un ingrédient non reconnu : le total est un minimum, affiché « incomplet ». */
+  macrosPartielles: boolean
   ingredientsApproximes: string[]
   ingredientsNonReconnus: string[]
   poidsTotalG: number
@@ -1361,4 +1363,24 @@ export interface RdvSanteAffiche {
   source: 'manuel' | 'controle_sterilet' | 'changement_contraception'
   detail?: string
   rdv?: RdvSante
+}
+
+/** Aliment CIQUAL renvoyé par /api/aliments (valeurs pour 100 g). */
+export interface AlimentRecherche {
+  code: string
+  nom: string
+  kcal: number
+  proteines: number
+  glucides: number
+  lipides: number
+}
+
+/** Macros d'un aliment ajouté à un repas (quantité déjà appliquée). */
+export interface AlimentAjoute {
+  nom: string
+  grammes: number
+  calories: number
+  proteines: number
+  glucides: number
+  lipides: number
 }
