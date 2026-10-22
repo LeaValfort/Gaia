@@ -1,6 +1,6 @@
 'use client'
 
-import { useCallback, useEffect, useState } from 'react'
+import { useCallback, useEffect, useMemo, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
 import { toast } from 'sonner'
@@ -84,7 +84,9 @@ export function MacrosSeanceCard({
   const [loading, setLoading] = useState(true)
   const router = useRouter()
   const design = PHASES_DESIGN[phase] ?? PHASE_DESIGN_ACCUEIL_NEUTRE
-  const def = macrosDefautsTypeSeance(typeSeance)
+  // Mémorisé : sans useMemo, un nouvel objet à chaque rendu relançait `load`
+  // en boucle (la carte disparaissait/réapparaissait sans fin et la page sautait).
+  const def = useMemo(() => macrosDefautsTypeSeance(typeSeance), [typeSeance])
 
   const load = useCallback(async () => {
     const list = await getMacrosSeance(supabase, userId)

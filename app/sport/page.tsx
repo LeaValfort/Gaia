@@ -1,6 +1,6 @@
 'use client'
 
-import { useCallback, useEffect, useMemo, useState } from 'react'
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { format, parseISO } from 'date-fns'
 import { toast } from 'sonner'
 import { supabase } from '@/lib/supabase'
@@ -98,11 +98,16 @@ export default function SportPage() {
     }
   }, [])
 
+  const formRef = useRef<HTMLDivElement>(null)
+
   function ouvrirModifier(date: string, type: TypeSeance) {
     const form = typeSeanceVersForm(type)
     if (!form || form === 'autre') return
     setDateSeance(date)
     setFormOuvert(form)
+    // Le formulaire s'ouvre plus haut dans la page : on y remonte, sinon le clic
+    // depuis « Dernières séances » semble ne rien faire.
+    requestAnimationFrame(() => formRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' }))
   }
 
   useEffect(() => {
@@ -127,7 +132,7 @@ export default function SportPage() {
             'toi'
         )
 
-        const [{ data: prefs, error: errPrefs }, { data: profils, error: errProfils }, entrees, ...variantesParType] =
+        const [{ data: prefs, error: errPrefs }, { data: profils, error: errProfils }, entrees, overrides, ...variantesParType] =
           await Promise.all([
             supabase
               .from('user_preferences')
@@ -136,6 +141,7 @@ export default function SportPage() {
               .maybeSingle(),
             supabase.from('seance_profils').select('*').eq('user_id', user.id),
             getEntreesPlanning(supabase, user.id),
+            getOverridesJour(today),
             ...TYPES_VARIANTES_MACROS.map((t) => getToutesVariantesPourType(supabase, user.id, t)),
           ])
 
@@ -165,7 +171,7 @@ export default function SportPage() {
         setSeanceProfils((profils ?? []) as SeanceProfil[])
         setEntreesPlanning(entrees)
         setVariantesMacros(variantesParType.flat())
-        setOverridesAuj(await getOverridesJour(today))
+        setOverridesAuj(overrides)
       } catch (e) {
         setErreur(e instanceof Error ? e.message : 'Erreur de chargement.')
       } finally {
@@ -302,7 +308,7 @@ export default function SportPage() {
         />
 
         {formOuvert ? (
-          <div className="flex flex-col gap-3 rounded-2xl border border-neutral-200 bg-white p-4 dark:border-neutral-800 dark:bg-neutral-900/80">
+          <div ref={formRef} className="flex scroll-mt-20 flex-col gap-3 rounded-2xl border border-neutral-200 bg-white p-4 dark:border-neutral-800 dark:bg-neutral-900/80">
             <button
               type="button"
               onClick={() => setFormOuvert(null)}
@@ -358,6 +364,10 @@ export default function SportPage() {
           userId={userId}
           refreshToken={refreshSeances}
           onModifier={ouvrirModifier}
+          onSupprimee={() => {
+            // Si la séance supprimée était ouverte dans le formulaire, on le recharge.
+            if (formOuvert) void chargerSeancesJour(dateSeance)
+          }}
         />
       </div>
     </div>

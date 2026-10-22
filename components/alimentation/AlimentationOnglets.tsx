@@ -5,7 +5,6 @@ import {
   AlimentationNav,
   type VueAlimentation,
 } from '@/components/alimentation/AlimentationNav'
-import { ChecklistJour } from '@/components/alimentation/ChecklistJour'
 import { ListeCourses } from '@/components/alimentation/ListeCourses'
 import { SuggestionsRecettes } from '@/components/alimentation/SuggestionsRecettes'
 import { OngletAujourdhui } from '@/components/alimentation/OngletAujourdhui'
@@ -33,7 +32,7 @@ export interface AlimentationOngletsProps {
   cookTimeMinutes: number
 }
 
-const VUES_PLUS: VueAlimentation[] = ['recettes', 'semaine', 'checklist', 'courses']
+const VUES_PLUS: VueAlimentation[] = ['recettes', 'semaine', 'courses']
 
 export function AlimentationOnglets(p: AlimentationOngletsProps) {
   const vueInitiale: VueAlimentation = p.suiviCalorique ? 'aujourdhui' : 'recettes'
@@ -93,16 +92,6 @@ export function AlimentationOnglets(p: AlimentationOngletsProps) {
             effectiveStart={p.effectiveStart}
             cycleLength={p.cycleLength}
             stats={p.stats}
-          />
-        ) : null}
-
-        {vue === 'checklist' ? (
-          <ChecklistJour
-            userId={p.userId}
-            todayIso={p.todayIso}
-            weekStart={p.weekStart}
-            phase={p.phase}
-            typeJournee={p.macrosCibles.typeJournee}
           />
         ) : null}
 
