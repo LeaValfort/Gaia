@@ -12,6 +12,7 @@ import {
   Settings,
   ShoppingBasket,
   Utensils,
+  HeartPulse,
 } from 'lucide-react'
 import { AccordeonSection } from '@/components/parametres/AccordeonSection'
 import { SectionAlimentation } from '@/components/parametres/SectionAlimentation'
@@ -23,11 +24,12 @@ import { SectionEnseignes } from '@/components/parametres/SectionEnseignes'
 import { SectionMonCycle } from '@/components/parametres/SectionMonCycle'
 import { SectionPlanningSportCalendrier } from '@/components/parametres/SectionPlanningSportCalendrier'
 import { SectionPourcentagesGaia } from '@/components/parametres/SectionPourcentagesGaia'
+import { SectionSante } from '@/components/parametres/SectionSante'
 import { SectionTachesRecurrentes } from '@/components/parametres/SectionTachesRecurrentes'
 import { setMacrosMode, updateUserPreferences } from '@/lib/db/parametres'
 import type { EnseigneDB, MacroProfile, MacrosMode, RecurringTodo, SeanceProfil, Source, UserPreferences } from '@/types'
 
-type SectionId = 'cycle' | 'sport' | 'nutrition' | 'enseignes' | 'taches' | 'app' | 'bibliographie' | 'donnees'
+type SectionId = 'cycle' | 'sante' | 'sport' | 'nutrition' | 'enseignes' | 'taches' | 'app' | 'bibliographie' | 'donnees'
 
 interface ParametresClientProps {
   prefsInitiales: UserPreferences
@@ -175,6 +177,16 @@ export function ParametresClient({
           onToggle={() => toggleSection('enseignes')}
         >
           <SectionEnseignes userId={userId} enseignesInitiales={enseignesInitiales} />
+        </AccordeonSection>
+
+        <AccordeonSection
+          id="sante"
+          titre="Santé & rendez-vous"
+          icone={HeartPulse}
+          ouvert={sectionOuverte === 'sante'}
+          onToggle={() => toggleSection('sante')}
+        >
+          <SectionSante userId={userId} />
         </AccordeonSection>
 
         <AccordeonSection

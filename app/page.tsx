@@ -1,4 +1,7 @@
 import Link from 'next/link'
+import { RdvSanteProches } from '@/components/accueil/RdvSanteProches'
+import { getRdvSante, getSanteProfil } from '@/lib/db/sante'
+import { rdvProches, tousLesRdv } from '@/lib/sante/rdv'
 import { format, parseISO } from 'date-fns'
 import { fr } from 'date-fns/locale'
 import { Heart } from 'lucide-react'
@@ -72,7 +75,7 @@ export default async function PageAujourdhui({
 
   // Vague 1 : tout ce qui ne dépend que de l'utilisatrice part en parallèle
   // (avant, ces requêtes s'enchaînaient les unes après les autres).
-  const [, donnees, logDuJour, overridesJour, planning] = await Promise.all([
+  const [, donnees, logDuJour, overridesJour, planning, sante] = await Promise.all([
     userId ? generateTodosForToday(userId, aujourdhui) : Promise.resolve(),
     getDonneesCyclePourAffichage(),
     getDailyLogParDate(dateStr),
@@ -83,7 +86,11 @@ export default async function PageAujourdhui({
           ...TYPES_VARIANTES_MACROS.map((t) => getToutesVariantesPourType(supabase, userId, t)),
         ])
       : Promise.resolve(null),
+    userId
+      ? Promise.all([getSanteProfil(supabase, userId), getRdvSante(supabase, userId)])
+      : Promise.resolve(null),
   ])
+  const rdvSante = sante ? rdvProches(tousLesRdv(sante[0], sante[1], aujourdhui), aujourdhui) : []
   const suiviCaloriqueActif = donnees.prefs?.suivi_calorique !== false
   // Vague 2 : les todos après leur génération, les macros si le suivi calorique est actif.
   const [todos, macrosJour] = await Promise.all([
@@ -173,6 +180,7 @@ export default async function PageAujourdhui({
         </header>
 
         <div className="flex flex-col gap-4">
+          <RdvSanteProches rdvs={rdvSante} />
           {suiviCalorique && macrosCibles ? (
             <MacrosCibles
               phase={phaseHeader}

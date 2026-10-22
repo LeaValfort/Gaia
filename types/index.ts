@@ -1300,3 +1300,65 @@ export const PROFILS_DEFAUT: Record<string, ProfilEffort> = {
   escalade: { intensite: 'moderee', type_effort: 'mixte', duree_min: 90 },
   repos: { intensite: 'legere', type_effort: 'aucun', duree_min: 0 },
 }
+
+// ------------------------------------------------------------
+// Santé — contraception, conditions, rendez-vous (lot C, 22/10)
+// ------------------------------------------------------------
+
+export type TypeContraception =
+  | 'aucune'
+  | 'sterilet_cuivre'
+  | 'sterilet_hormonal'
+  | 'pilule'
+  | 'implant'
+  | 'anneau'
+  | 'patch'
+  | 'injection'
+  | 'preservatif'
+  | 'autre'
+
+export type ConditionSante =
+  | 'hypothyroidie'
+  | 'hyperthyroidie'
+  | 'hashimoto'
+  | 'sopk'
+  | 'endometriose'
+  | 'adenomyose'
+  | 'anemie'
+  | 'spm_tdpm'
+  | 'sii'
+  | 'migraines_menstruelles'
+  | 'resistance_insuline'
+
+/** Table sante_profil (une ligne par utilisatrice) */
+export interface SanteProfil {
+  user_id: string
+  contraception: TypeContraception
+  date_pose: string | null
+  duree_ans: number | null
+  dernier_controle: string | null
+  conditions: ConditionSante[]
+  updated_at: string
+}
+
+/** Table rdv_sante : rendez-vous manuels (gynéco, frottis, prise de sang…) */
+export interface RdvSante {
+  id: string
+  user_id: string
+  titre: string
+  date: string
+  recurrence_mois: number | null
+  notes: string | null
+  fait: boolean
+  created_at: string
+}
+
+/** Rendez-vous affiché : manuel, ou calculé depuis la contraception. */
+export interface RdvSanteAffiche {
+  cle: string
+  titre: string
+  date: string | null
+  source: 'manuel' | 'controle_sterilet' | 'changement_contraception'
+  detail?: string
+  rdv?: RdvSante
+}
