@@ -70,16 +70,28 @@ export default async function PageAujourdhui({
   const dateAffichee = format(aujourdhui, 'EEEE d MMMM yyyy', { locale: fr })
   const userId = user?.id ?? ''
 
-  if (userId) {
-    await generateTodosForToday(userId, aujourdhui)
-  }
-
-  const [donnees, logDuJour, overridesJour] = await Promise.all([
+  // Vague 1 : tout ce qui ne dépend que de l'utilisatrice part en parallèle
+  // (avant, ces requêtes s'enchaînaient les unes après les autres).
+  const [, donnees, logDuJour, overridesJour, planning] = await Promise.all([
+    userId ? generateTodosForToday(userId, aujourdhui) : Promise.resolve(),
     getDonneesCyclePourAffichage(),
     getDailyLogParDate(dateStr),
     getOverridesJour(dateStr),
+    userId
+      ? Promise.all([
+          getEntreesPlanning(supabase, userId),
+          ...TYPES_VARIANTES_MACROS.map((t) => getToutesVariantesPourType(supabase, userId, t)),
+        ])
+      : Promise.resolve(null),
   ])
-  const todos = userId ? await getTodosParDatePourUtilisateur(userId, dateStr) : []
+  const suiviCaloriqueActif = donnees.prefs?.suivi_calorique !== false
+  // Vague 2 : les todos après leur génération, les macros si le suivi calorique est actif.
+  const [todos, macrosJour] = await Promise.all([
+    userId ? getTodosParDatePourUtilisateur(userId, dateStr) : Promise.resolve([]),
+    userId && suiviCaloriqueActif
+      ? Promise.all([getDailyMealIntakesJour(supabase, userId, dateStr), getMacroProfile(userId)])
+      : Promise.resolve(null),
+  ])
 
   const { prefs, stats, effectiveStart, cycleLength } = donnees
   const mode = prefs?.mode_utilisateur ?? DEFAULT_MODE_UTILISATEUR
@@ -99,18 +111,12 @@ export default async function PageAujourdhui({
   let macrosCibles: MacrosCiblesJour | null = null
 
   if (userId) {
-    const [entreesPlanning, ...variantesParType] = await Promise.all([
-      getEntreesPlanning(supabase, userId),
-      ...TYPES_VARIANTES_MACROS.map((t) => getToutesVariantesPourType(supabase, userId, t)),
-    ])
+    const [entreesPlanning, ...variantesParType] = planning ?? [[]]
     const entreesResolues = seancesResoluesPourDate(entreesPlanning, variantesParType.flat(), aujourdhui)
     seancesEffectives = seancesEffectivesJour(entreesResolues, overridesJour)
 
-    if (suiviCalorique) {
-      const [intakesJour, macroProfil] = await Promise.all([
-        getDailyMealIntakesJour(supabase, userId, dateStr),
-        getMacroProfile(userId),
-      ])
+    if (suiviCalorique && macrosJour) {
+      const [intakesJour, macroProfil] = macrosJour
       consoJour = totauxDepuisIntakes(fusionIntakesJour(dateStr, intakesJour))
       macrosCibles = macrosCiblesPourJour({
         profil: macroProfil,

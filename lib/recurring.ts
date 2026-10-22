@@ -35,10 +35,13 @@ export async function generateTodosForToday(userId: string, today: Date): Promis
     const recurring = await getRecurringTodos(userId)
     const actives = recurring.filter((t) => t.active)
 
-    for (const tache of actives) {
-      if (!doitApparaitreAujourdhui(tache, today)) continue
-      await insererTodoAutoSiAbsent(userId, dateStr, tache.text)
-    }
+    // En parallèle : l'index unique en base empêche déjà les doublons,
+    // inutile d'attendre chaque insertion avant la suivante.
+    await Promise.all(
+      actives
+        .filter((tache) => doitApparaitreAujourdhui(tache, today))
+        .map((tache) => insererTodoAutoSiAbsent(userId, dateStr, tache.text))
+    )
   } catch (erreur) {
     console.error('Erreur generateTodosForToday:', erreur)
   }
