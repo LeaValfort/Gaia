@@ -6,6 +6,9 @@ import { Nav } from '@/components/shared/Nav'
 import { PageHeader } from '@/components/shared/PageHeader'
 import { BoutonDebutRegles } from '@/components/cycle/BoutonDebutRegles'
 import { ConseilsPhase } from '@/components/cycle/ConseilsPhase'
+import { ConseilsProfilSante } from '@/components/cycle/ConseilsProfilSante'
+import { getSanteProfil } from '@/lib/db/sante'
+import { conseilsConditions } from '@/lib/data/conditions-sante'
 import { genererNouveauxConseilsSiNecessaire } from '@/lib/conseils-ia'
 import { getConseilsPhaseDuJour } from '@/lib/db/conseils'
 import { CycleCalendar } from '@/components/cycle/CycleCalendar'
@@ -50,10 +53,12 @@ export default async function PageCycle({ searchParams }: PageProps) {
   const [annee, mois] = moisActuel.split('-').map(Number)
   const moisIdx = mois - 1
 
-  const [donnees, logsParDate] = await Promise.all([
+  const [donnees, logsParDate, profilSante] = await Promise.all([
     getDonneesCyclePourAffichage(),
     getDailyLogsParMois(annee, mois),
+    user ? getSanteProfil(supabase, user.id) : Promise.resolve(null),
   ])
+  const conseilsSante = conseilsConditions(profilSante?.conditions ?? [])
 
   const { prefs, effectiveStart, cycleLength, stats, cycles } = donnees
   const dernierCycle = cycles[0] ?? null
@@ -147,6 +152,7 @@ export default async function PageCycle({ searchParams }: PageProps) {
                 {conseilAujourdhui && conseilsDuJour ? (
                   <ConseilsPhase phase={conseilAujourdhui.phase} conseils={conseilsDuJour} />
                 ) : null}
+                <ConseilsProfilSante conseils={conseilsSante} />
               </div>
 
               {conseilAujourdhui ? (

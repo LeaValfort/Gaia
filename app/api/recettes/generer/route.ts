@@ -3,6 +3,8 @@
 
 import { NextRequest, NextResponse } from 'next/server'
 import { genererRecettes } from '@/lib/ia/generation-recette'
+import { getSanteProfil } from '@/lib/db/sante'
+import { consigneRecettesConditions } from '@/lib/data/conditions-sante'
 import type { RecetteBase } from '@/lib/ia/recette-brute'
 import { calculerMacrosRecette, ajusterPourCalories, versNutrition100g, versMacrosParPortion } from '@/lib/nutrition/calcul-recette'
 import { objectifsRepasDefaut } from '@/lib/repartitionRepas'
@@ -79,7 +81,7 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ erreur: 'Non authentifiée' }, { status: 401 })
     }
 
-    const toutesRecettes = await getRecettes(supabase, user.id)
+    const [toutesRecettes, profilSante] = await Promise.all([getRecettes(supabase, user.id), getSanteProfil(supabase, user.id)])
     const perso = filtrerRecettesPersonnelles(toutesRecettes, query, phase)
 
     const objectif = objectifsRepasDefaut(typeJournee, typeRepas)
@@ -92,6 +94,7 @@ export async function GET(request: NextRequest) {
           allergies,
           tempsMax,
           recherche: query || undefined,
+          consigneSante: consigneRecettesConditions(profilSante?.conditions ?? []),
         })
       : []
     const generees = bases.map((b) => finaliserRecette(b, typeRepas, objectif.calories))

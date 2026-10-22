@@ -26,6 +26,8 @@ export interface ParametresGeneration {
   /** Recherche libre optionnelle (ingrédient, mot-clé) — oriente sans forcer strictement. */
   recherche?: string
   nombre?: number
+  /** Consigne liée au profil santé (thyroïde, SOPK…), déjà rédigée ; vide si aucun. */
+  consigneSante?: string
 }
 
 const LABEL_REPAS: Record<TypeRepas, string> = {
@@ -57,6 +59,7 @@ Objectif nutritionnel approximatif pour UNE portion de ce repas : ${o.calories} 
 Aliments particulièrement adaptés à cette phase : ${alimentsStars}
 Allergies / intolérances à éviter absolument : ${allergies}
 Temps de préparation maximum : ${params.tempsMax} minutes
+${params.consigneSante ?? ''}
 ${recherche ? `Doit inclure ou s'inspirer de : "${recherche}"` : ''}
 
 Propose exactement ${nombre} recettes complètes, adaptées à ce créneau, cette phase et cet objectif.

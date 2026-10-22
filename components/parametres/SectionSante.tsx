@@ -2,6 +2,7 @@
 
 import { FormulaireContraception } from '@/components/parametres/sante/FormulaireContraception'
 import { FormulaireRdv } from '@/components/parametres/sante/FormulaireRdv'
+import { SelecteurConditions } from '@/components/parametres/sante/SelecteurConditions'
 import { ListeRdvSante } from '@/components/parametres/sante/ListeRdvSante'
 import { useSante } from '@/hooks/useSante'
 import { tousLesRdv } from '@/lib/sante/rdv'
@@ -13,6 +14,10 @@ export function SectionSante({ userId }: { userId: string }) {
 
   return (
     <div className="space-y-6">
+      <section className="space-y-2">
+        <h3 className="text-sm font-semibold text-neutral-900 dark:text-neutral-50">Mon profil santé</h3>
+        <SelecteurConditions conditions={s.profil.conditions} onChange={(conditions) => s.majProfil({ conditions })} />
+      </section>
       <section className="space-y-2">
         <h3 className="text-sm font-semibold text-neutral-900 dark:text-neutral-50">Contraception</h3>
         <FormulaireContraception userId={userId} profil={s.profil} onMaj={s.majProfil} />

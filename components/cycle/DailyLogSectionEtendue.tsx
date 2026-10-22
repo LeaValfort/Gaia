@@ -14,6 +14,8 @@ import {
   STRESS_OPTIONS,
   SYMPTOMES,
 } from '@/lib/data/journalOptions'
+import { useConditionsSante } from '@/hooks/useConditionsSante'
+import { symptomesConditions } from '@/lib/data/conditions-sante'
 import type { ExtendedLogData, Phase } from '@/types'
 
 interface DailyLogSectionEtendueProps {
@@ -36,6 +38,10 @@ function depuisPillUnique(tableau: string[]): string | null {
 }
 
 export function DailyLogSectionEtendue({ data, onChange, phase }: DailyLogSectionEtendueProps) {
+  // Symptômes propres au profil santé (thyroïde, SOPK, endométriose…), ajoutés à la liste de base.
+  const conditions = useConditionsSante()
+  const symptomes = [...new Set([...SYMPTOMES, ...symptomesConditions(conditions)])]
+
   return (
     <div className="flex flex-col gap-4 border-t border-neutral-200 pt-4 dark:border-neutral-800">
       <PillsSelector
@@ -47,7 +53,7 @@ export function DailyLogSectionEtendue({ data, onChange, phase }: DailyLogSectio
 
       <PillsSelector
         label="Symptômes"
-        options={SYMPTOMES}
+        options={symptomes}
         selected={data.symptoms}
         onChange={(v) => maj(data, onChange, 'symptoms', v)}
       />
