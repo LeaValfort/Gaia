@@ -10,7 +10,8 @@ export interface ExerciceItemProps {
   fait: boolean
   charge: number | null
   onToggle: () => void
-  onChargeChange: (charge: number) => void
+  /** `null` quand le champ est vidé (on retombe alors sur la dernière charge). */
+  onChargeChange: (charge: number | null) => void
   enCours?: boolean
   phase?: Phase | null
   domId?: string
@@ -78,13 +79,16 @@ export function ExerciceItem({
           <span>Charge (kg) :</span>
           <input
             type="number"
+            inputMode="decimal"
             step="0.5"
-            className="w-20 rounded border border-neutral-200 bg-white px-1.5 py-1 dark:border-neutral-600 dark:bg-neutral-900"
+            className="w-20 rounded border border-neutral-200 bg-white px-1.5 py-1 placeholder:text-neutral-300 dark:border-neutral-600 dark:bg-neutral-900 dark:placeholder:text-neutral-600"
             value={charge ?? ''}
-            onChange={(e) => onChargeChange(Number(e.target.value))}
+            // Dernière charge en gris clair : si le champ reste vide, c'est elle qui est enregistrée.
+            placeholder={ex.chargeOriginale != null && ex.chargeOriginale > 0 ? String(ex.chargeOriginale) : undefined}
+            onChange={(e) => onChargeChange(e.target.value === '' ? null : Number(e.target.value))}
           />
-          {ex.chargeOriginale != null && ex.chargeOriginale > 0 ? (
-            <span className="text-neutral-400">Dernière : {ex.chargeOriginale} kg</span>
+          {ex.chargeOriginale != null && ex.chargeOriginale > 0 && charge != null && charge !== ex.chargeOriginale ? (
+            <span className="text-neutral-400 dark:text-neutral-500">Dernière : {ex.chargeOriginale} kg</span>
           ) : null}
         </div>
       )}

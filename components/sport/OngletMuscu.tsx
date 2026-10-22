@@ -138,12 +138,9 @@ export function OngletMuscu({
       const active = vs.find((v) => v.est_active) ?? null
       setVarianteActiveId(active?.id ?? null)
       setCustom(active?.exercices?.length ? active.exercices : null)
+      // Les dernières charges ne pré-remplissent plus `charges` : elles écrasaient
+      // la charge proposée par Gaia. Elles servent de placeholder gris clair.
       setDernieres(d)
-      const o: Record<string, number> = {}
-      d.forEach((e) => {
-        o[e.exercise_name] = e.weight_kg
-      })
-      setCharges((s) => ({ ...o, ...s }))
     })()
     return () => {
       actif = false
@@ -270,9 +267,16 @@ export function OngletMuscu({
             domId={`exo-${e.nom.replace(/\s/g, '-')}`}
             exercice={e}
             fait={exercicesFaits.includes(e.nom)}
-            charge={charges[e.nom] ?? e.chargeProposee ?? null}
+            charge={charges[e.nom] ?? (mode === 'gaia' ? e.chargeProposee : null)}
             onToggle={() => togg(e.nom)}
-            onChargeChange={(c) => setCharges((s) => ({ ...s, [e.nom]: c }))}
+            onChargeChange={(c) =>
+              setCharges((s) => {
+                const n = { ...s }
+                if (c == null) delete n[e.nom]
+                else n[e.nom] = c
+                return n
+              })
+            }
             enCours={e.nom === enCours}
             phase={phase}
           />
