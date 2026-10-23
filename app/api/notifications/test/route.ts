@@ -15,7 +15,14 @@ export async function POST() {
   if (!user) return NextResponse.json({ erreur: 'Non authentifiée' }, { status: 401 })
 
   const admin = clientAdmin()
-  if (!admin) return NextResponse.json({ erreur: 'Clé SUPABASE_SERVICE_ROLE_KEY absente sur Vercel' }, { status: 500 })
+  if (!admin) {
+    // Diagnostic : noms des variables proches (jamais leurs valeurs) et si elles sont vides.
+    const proches = Object.keys(process.env)
+      .filter((k) => /SERVICE|ROLE|SECRET/i.test(k) && !k.startsWith('VERCEL'))
+      .map((k) => `« ${k} »${process.env[k] ? '' : ' (vide)'}`)
+    const detail = proches.length ? `Variables trouvées : ${proches.join(', ')}` : 'Aucune variable de ce type trouvée'
+    return NextResponse.json({ erreur: `Clé SUPABASE_SERVICE_ROLE_KEY absente sur Vercel. ${detail}` }, { status: 500 })
+  }
   if (!process.env.VAPID_PRIVATE_KEY) return NextResponse.json({ erreur: 'Clé VAPID_PRIVATE_KEY absente sur Vercel' }, { status: 500 })
 
   const { count, error } = await admin.from('push_subscriptions').select('id', { count: 'exact', head: true }).eq('user_id', user.id)
