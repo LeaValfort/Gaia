@@ -46,6 +46,18 @@ export function CarteNotificationsProches({ userId }: { userId: string }) {
     }
   }
 
+  async function tester() {
+    setCh(true)
+    try {
+      const r = await fetch('/api/notifications/test', { method: 'POST' })
+      const d = (await r.json().catch(() => ({}))) as { erreur?: string }
+      if (r.ok) toast.success('Test envoyé : la notification arrive dans quelques secondes')
+      else toast.error(d.erreur ?? 'Test impossible')
+    } finally {
+      setCh(false)
+    }
+  }
+
   async function changerRecap(v: boolean) {
     setRecap(v)
     if (!(await setRecapActif(supabase, userId, v))) {
@@ -71,6 +83,11 @@ export function CarteNotificationsProches({ userId }: { userId: string }) {
         <Button type="button" size="sm" variant={etat === 'actif' ? 'outline' : 'default'} disabled={ch} onClick={() => void basculer()} className="w-full">
           {etat === 'actif' ? <BellOff className="mr-1.5 size-4" /> : <Bell className="mr-1.5 size-4" />}
           {ch ? '…' : etat === 'actif' ? 'Désactiver sur cet appareil' : 'Activer les notifications'}
+        </Button>
+      ) : null}
+      {etat === 'actif' ? (
+        <Button type="button" size="sm" variant="ghost" disabled={ch} onClick={() => void tester()} className="w-full">
+          Envoyer une notification de test
         </Button>
       ) : null}
       <div className="flex items-center justify-between gap-3 border-t border-neutral-100 pt-3 dark:border-neutral-800">
