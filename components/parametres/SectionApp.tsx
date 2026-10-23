@@ -55,6 +55,15 @@ export function SectionApp({ prefs, onUpdate }: SectionAppProps) {
           onCheckedChange={(checked) => void onUpdate({ notifications: checked })}
         />
       </div>
+
+      <div className="flex items-center justify-between gap-4 py-1">
+        <Label htmlFor="repas-accueil">Repas prévus du jour sur l’accueil</Label>
+        <Switch
+          id="repas-accueil"
+          checked={prefs.repas_jour_accueil !== false}
+          onCheckedChange={(checked) => void onUpdate({ repas_jour_accueil: checked })}
+        />
+      </div>
     </>
   )
 }

@@ -75,3 +75,28 @@ export async function getRecettesPourPlanning(
     return []
   }
 }
+
+/** Semaines qui ont au moins un repas planifié, de la plus récente à la plus ancienne. */
+export async function getSemainesPlanifiees(supabase: SupabaseClient, userId: string, limite = 12): Promise<string[]> {
+  const { data, error } = await supabase
+    .from('meal_plans')
+    .select('week_start')
+    .eq('user_id', userId)
+    .order('week_start', { ascending: false })
+    .limit(500)
+  if (error) {
+    console.error('getSemainesPlanifiees', JSON.stringify({ message: error.message, code: error.code }))
+    return []
+  }
+  return [...new Set((data ?? []).map((r) => r.week_start as string))].slice(0, limite)
+}
+
+/** Repas planifiés d'une date, avec leur recette (pour l'accueil). */
+export async function getMealPlanJour(supabase: SupabaseClient, userId: string, date: string): Promise<{ plans: MealPlan[]; recettes: Recipe[] }> {
+  const { data, error } = await supabase.from('meal_plans').select('*').eq('user_id', userId).eq('date', date)
+  if (error || !data?.length) return { plans: [], recettes: [] }
+  const ids = [...new Set(data.map((p) => p.recette_id as string | null).filter((x): x is string => !!x))]
+  if (!ids.length) return { plans: data as MealPlan[], recettes: [] }
+  const r = await supabase.from('recipes').select('*').in('id', ids)
+  return { plans: data as MealPlan[], recettes: (r.data ?? []) as Recipe[] }
+}

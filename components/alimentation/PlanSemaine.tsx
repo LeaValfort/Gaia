@@ -21,6 +21,9 @@ import { OPTIONS_PETIT_DEJ } from '@/lib/data/petitsdejeuners'
 import { useEnseignes } from '@/hooks/useEnseignes'
 import type { CycleStats, MealPlan, MealPlanComplet, BudgetMacroJour, Phase, Recipe } from '@/types'
 import CartePlanJour from './CartePlanJour'
+import { HistoriqueSemaines } from './HistoriqueSemaines'
+import { RecapSemaine } from './RecapSemaine'
+import { useSemainesPlanifiees } from '@/hooks/useSemainesPlanifiees'
 import { DialogueAjoutCourses, type IngredientConfirme } from './DialogueAjoutCourses'
 
 interface PlanSemaineProps {
@@ -61,7 +64,9 @@ export default function PlanSemaine({
   const [erreur, setErreur]         = useState<string | null>(null)
   const [dialogueCoursesOuvert, setDialogueCoursesOuvert] = useState(false)
   const [avecIA, setAvecIA] = useState(true)
+  const [vue, setVue] = useState<'detail' | 'recap'>('detail')
   const { enseignes } = useEnseignes(userId)
+  const semainesPlanifiees = useSemainesPlanifiees(userId, plans.length)
 
   const dates = Array.from({ length: 7 }, (_, i) =>
     format(addDays(parseISO(weekStart), i), 'yyyy-MM-dd')
@@ -200,6 +205,21 @@ export default function PlanSemaine({
         </div>
       </div>
 
+      <HistoriqueSemaines semaines={semainesPlanifiees} active={weekStart} onChoisir={setWeekStart} />
+
+      <div className="grid grid-cols-2 gap-1 rounded-lg border border-neutral-200 bg-neutral-100/80 p-1 text-sm dark:border-neutral-700 dark:bg-neutral-800/50">
+        {(['detail', 'recap'] as const).map((v) => (
+          <button
+            key={v}
+            type="button"
+            onClick={() => setVue(v)}
+            className={vue === v ? 'rounded-md bg-white py-1.5 font-medium shadow-sm dark:bg-neutral-900' : 'rounded-md py-1.5 text-muted-foreground'}
+          >
+            {v === 'detail' ? 'Détail par jour' : 'Récap de la semaine'}
+          </button>
+        ))}
+      </div>
+
       {avecIA && (
         <p className="text-xs text-neutral-500 dark:text-neutral-400">
           Quand tu génères la semaine, Gaia complète avec quelques suggestions IA pour les repas où tu as peu de recettes enregistrées — elles sont sauvegardées comme des recettes normales, modifiables ou supprimables comme les autres.
@@ -218,6 +238,8 @@ export default function PlanSemaine({
         </div>
       ) : erreur ? (
         <p className="text-sm text-red-500">{erreur}</p>
+      ) : vue === 'recap' ? (
+        <RecapSemaine dates={dates} plans={plansComplets} />
       ) : (
         <div className="flex flex-col gap-3">
           {dates.map((date, i) => (

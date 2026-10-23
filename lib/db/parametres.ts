@@ -26,6 +26,7 @@ function mapPrefs(row: Record<string, unknown>): UserPreferences {
     mode_utilisateur:
       r.mode_utilisateur === 'sans_cycle' ? 'sans_cycle' : DEFAULT_MODE_UTILISATEUR,
     google_calendar_enabled: r.google_calendar_enabled !== false,
+    repas_jour_accueil: r.repas_jour_accueil !== false,
     suivi_calorique: r.suivi_calorique !== false,
     macros_mode,
     pourcentages_gaia: pourcentagesEffectifs(r.pourcentages_gaia),

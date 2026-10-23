@@ -853,6 +853,8 @@ export interface UserPreferences {
   notifications: boolean
   /** Afficher / utiliser l’agenda Google intégré sur l’accueil (défaut true si absent en base) */
   google_calendar_enabled?: boolean
+  /** Repas prévus du jour sur l'accueil (désactivable dans Paramètres > Application) */
+  repas_jour_accueil?: boolean
   /** Objectifs macros par défaut (jour de sport) */
   calories_defaut?: number | null
   proteines_defaut?: number | null
@@ -1383,4 +1385,16 @@ export interface AlimentAjoute {
   proteines: number
   glucides: number
   lipides: number
+}
+
+/** Repas prévu au planning pour une date, prêt à afficher (accueil, récap semaine). */
+export interface RepasPrevu {
+  type_repas: TypeRepas
+  nom: string
+  portions: number
+  calories: number
+  proteines: number
+  glucides: number
+  lipides: number
+  recette_id: string | null
 }

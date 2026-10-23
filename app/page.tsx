@@ -1,5 +1,9 @@
 import Link from 'next/link'
 import { RdvSanteProches } from '@/components/accueil/RdvSanteProches'
+import { RepasPrevusDuJour } from '@/components/accueil/RepasPrevusDuJour'
+import { getMealPlanJour } from '@/lib/db/mealplan'
+import { repasPrevus } from '@/lib/alimentation/repas-prevus'
+import { OPTIONS_PETIT_DEJ } from '@/lib/data/petitsdejeuners'
 import { getRdvSante, getSanteProfil } from '@/lib/db/sante'
 import { rdvProches, tousLesRdv } from '@/lib/sante/rdv'
 import { format, parseISO } from 'date-fns'
@@ -93,12 +97,25 @@ export default async function PageAujourdhui({
   const rdvSante = sante ? rdvProches(tousLesRdv(sante[0], sante[1], aujourdhui), aujourdhui) : []
   const suiviCaloriqueActif = donnees.prefs?.suivi_calorique !== false
   // Vague 2 : les todos après leur génération, les macros si le suivi calorique est actif.
-  const [todos, macrosJour] = await Promise.all([
+  const afficherRepasJour = Boolean(userId) && donnees.prefs?.repas_jour_accueil !== false
+  const [todos, macrosJour, planJour] = await Promise.all([
     userId ? getTodosParDatePourUtilisateur(userId, dateStr) : Promise.resolve([]),
     userId && suiviCaloriqueActif
       ? Promise.all([getDailyMealIntakesJour(supabase, userId, dateStr), getMacroProfile(userId)])
       : Promise.resolve(null),
+    afficherRepasJour ? getMealPlanJour(supabase, userId, dateStr) : Promise.resolve(null),
   ])
+  // Repas prévus au planning aujourd'hui (recettes et petits-déj résolus).
+  const repasDuJour = planJour
+    ? repasPrevus(
+        planJour.plans.map((p) => ({
+          ...p,
+          recette: planJour.recettes.find((r) => r.id === p.recette_id) ?? null,
+          petitDej: OPTIONS_PETIT_DEJ.find((pd) => pd.id === p.petit_dej_id) ?? null,
+        }))
+      )
+    : []
+  const repasDejaNotes = (macrosJour?.[0] ?? []).filter((i) => i.calories > 0).map((i) => i.type_repas)
 
   const { prefs, stats, effectiveStart, cycleLength } = donnees
   const mode = prefs?.mode_utilisateur ?? DEFAULT_MODE_UTILISATEUR
@@ -181,6 +198,7 @@ export default async function PageAujourdhui({
 
         <div className="flex flex-col gap-4">
           <RdvSanteProches rdvs={rdvSante} />
+          <RepasPrevusDuJour userId={userId} date={dateStr} repas={repasDuJour} dejaNotes={repasDejaNotes} />
           {suiviCalorique && macrosCibles ? (
             <MacrosCibles
               phase={phaseHeader}
