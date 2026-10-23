@@ -5,6 +5,7 @@ import {
   AlimentationNav,
   type VueAlimentation,
 } from '@/components/alimentation/AlimentationNav'
+import { OngletBatchCooking } from '@/components/alimentation/batch/OngletBatchCooking'
 import { ListeCourses } from '@/components/alimentation/ListeCourses'
 import { SuggestionsRecettes } from '@/components/alimentation/SuggestionsRecettes'
 import { OngletAujourdhui } from '@/components/alimentation/OngletAujourdhui'
@@ -32,7 +33,7 @@ export interface AlimentationOngletsProps {
   cookTimeMinutes: number
 }
 
-const VUES_PLUS: VueAlimentation[] = ['recettes', 'semaine', 'courses']
+const VUES_PLUS: VueAlimentation[] = ['recettes', 'semaine', 'batch', 'courses']
 
 export function AlimentationOnglets(p: AlimentationOngletsProps) {
   const vueInitiale: VueAlimentation = p.suiviCalorique ? 'aujourdhui' : 'recettes'
@@ -94,6 +95,8 @@ export function AlimentationOnglets(p: AlimentationOngletsProps) {
             stats={p.stats}
           />
         ) : null}
+
+        {vue === 'batch' ? <OngletBatchCooking userId={p.userId} weekStart={p.weekStart} phase={p.phase} /> : null}
 
         {vue === 'courses' ? (
           <ListeCourses userId={p.userId} weekStart={p.weekStart} />

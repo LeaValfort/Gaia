@@ -6,6 +6,7 @@ import { genererRecettes } from '@/lib/ia/generation-recette'
 import { getSanteProfil } from '@/lib/db/sante'
 import { consigneRecettesConditions } from '@/lib/data/conditions-sante'
 import { consigneSaison } from '@/lib/data/saison'
+import { CONSIGNE_RECETTES_LIEES } from '@/lib/ia/batch-cooking'
 import type { RecetteBase } from '@/lib/ia/recette-brute'
 import { calculerMacrosRecette, ajusterPourCalories, versNutrition100g, versMacrosParPortion } from '@/lib/nutrition/calcul-recette'
 import { objectifsRepasDefaut } from '@/lib/repartitionRepas'
@@ -71,6 +72,8 @@ export async function GET(request: NextRequest) {
   // Désactivable depuis l'UI pour ne pas consommer de crédits IA quand on cherche juste
   // parmi ses propres recettes déjà enregistrées.
   const avecIA = searchParams.get('avecIA') !== 'false'
+  // Batch cooking : recettes liées entre elles (bases communes, 3 portions chacune).
+  const liees = searchParams.get('liees') === 'true'
 
   try {
     const supabase = await creerClientServeur()
@@ -95,7 +98,14 @@ export async function GET(request: NextRequest) {
           allergies,
           tempsMax,
           recherche: query || undefined,
-          consigneSante: [consigneRecettesConditions(profilSante?.conditions ?? []), consigneSaison(new Date())].filter(Boolean).join('\n'),
+          consigneSante: [
+            consigneRecettesConditions(profilSante?.conditions ?? []),
+            consigneSaison(new Date()),
+            liees ? CONSIGNE_RECETTES_LIEES : '',
+          ]
+            .filter(Boolean)
+            .join('\n'),
+          nombre: liees ? 4 : undefined,
         })
       : []
     const generees = bases.map((b) => finaliserRecette(b, typeRepas, objectif.calories))

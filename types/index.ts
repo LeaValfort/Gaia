@@ -1398,3 +1398,42 @@ export interface RepasPrevu {
   lipides: number
   recette_id: string | null
 }
+
+// ------------------------------------------------------------
+// Batch cooking (lot E3, 23/10)
+// ------------------------------------------------------------
+
+/** Une étape du déroulé commun de batch cooking. */
+export interface EtapeBatch {
+  id: string
+  titre: string
+  detail: string
+  /** Durée active ou d'attente (cuisson…), pour le minuteur ; null si non pertinent. */
+  duree_min: number | null
+  /** À faire pendant qu'une étape précédente tourne (four, cuisson…). */
+  en_parallele: boolean
+  recettes: string[]
+}
+
+export interface ConservationBatch {
+  recette: string
+  conseil: string
+  jours: number | null
+}
+
+export interface DerouleBatch {
+  etapes: EtapeBatch[]
+  conservation: ConservationBatch[]
+  duree_totale_min: number | null
+}
+
+/** Table batch_sessions : une session par semaine. */
+export interface SessionBatch {
+  id: string
+  user_id: string
+  week_start: string
+  recette_ids: string[]
+  deroule: DerouleBatch | null
+  faits: string[]
+  updated_at: string
+}
