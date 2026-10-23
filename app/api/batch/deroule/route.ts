@@ -3,7 +3,10 @@ import { creerClientServeur } from '@/lib/supabase-server'
 import { genererDerouleBatch } from '@/lib/ia/batch-cooking'
 import type { Recipe } from '@/types'
 
-const MAX_RECETTES = 6
+const MAX_RECETTES = 12
+
+// Un déroulé pour 12 recettes peut prendre du temps à générer.
+export const maxDuration = 60
 
 /** POST { recetteIds: string[] } → déroulé commun de batch cooking généré par l'IA. */
 export async function POST(request: NextRequest) {

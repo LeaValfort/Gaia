@@ -69,7 +69,8 @@ export async function genererDerouleBatch(recettes: Recipe[]): Promise<DerouleBa
     const client = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY })
     const message = await client.messages.create({
       model: 'claude-haiku-4-5-20251001',
-      max_tokens: 4096,
+      // Jusqu'à 12 recettes : assez de place pour ne pas couper le JSON en route.
+      max_tokens: 8192,
       messages: [{ role: 'user', content: construirePrompt(recettes) }],
     })
     const contenu = message.content[0]

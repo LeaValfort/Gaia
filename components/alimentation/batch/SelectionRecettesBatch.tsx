@@ -6,7 +6,8 @@ import { Button } from '@/components/ui/button'
 import { Checkbox } from '@/components/ui/checkbox'
 import type { Recipe } from '@/types'
 
-const MAX = 6
+/** Au-delà, le déroulé devient trop long pour une seule session. */
+export const MAX_RECETTES_BATCH = 12
 
 interface SelectionRecettesBatchProps {
   recettes: Recipe[]
@@ -16,17 +17,37 @@ interface SelectionRecettesBatchProps {
   onGenerer: (ids: string[]) => void
 }
 
-/** Choix des recettes à cuisiner en une session (6 max). Remonter via `key` pour réinitialiser. */
+/** Choix des recettes à cuisiner en une session (12 max). Remonter via `key` pour réinitialiser. */
 export function SelectionRecettesBatch({ recettes, planifiees, generation, onGenerer }: SelectionRecettesBatchProps) {
-  const [choisies, setChoisies] = useState<string[]>(() => planifiees.slice(0, MAX))
+  const [choisies, setChoisies] = useState<string[]>(() => planifiees.slice(0, MAX_RECETTES_BATCH))
   const triees = [...recettes].sort((a, b) => Number(planifiees.includes(b.id)) - Number(planifiees.includes(a.id)))
 
   const basculer = (id: string) =>
-    setChoisies((c) => (c.includes(id) ? c.filter((x) => x !== id) : c.length < MAX ? [...c, id] : c))
+    setChoisies((c) => (c.includes(id) ? c.filter((x) => x !== id) : c.length < MAX_RECETTES_BATCH ? [...c, id] : c))
 
   return (
     <section className="space-y-2">
-      <h3 className="text-sm font-semibold text-neutral-900 dark:text-neutral-50">Recettes à préparer</h3>
+      <div className="flex items-baseline justify-between gap-2">
+        <h3 className="text-sm font-semibold text-neutral-900 dark:text-neutral-50">Recettes à préparer</h3>
+        <span className="flex gap-3 text-xs">
+          {planifiees.length ? (
+            <button type="button" className="text-amber-700 hover:underline dark:text-amber-300" onClick={() => setChoisies(planifiees.slice(0, MAX_RECETTES_BATCH))}>
+              Toute la semaine
+            </button>
+          ) : null}
+          <button type="button" className="text-amber-700 hover:underline dark:text-amber-300" onClick={() => setChoisies(triees.slice(0, MAX_RECETTES_BATCH).map((r) => r.id))}>
+            Tout
+          </button>
+          {choisies.length ? (
+            <button type="button" className="text-muted-foreground hover:underline" onClick={() => setChoisies([])}>
+              Aucune
+            </button>
+          ) : null}
+        </span>
+      </div>
+      {choisies.length >= MAX_RECETTES_BATCH ? (
+        <p className="text-xs text-muted-foreground">{MAX_RECETTES_BATCH} recettes au maximum par session.</p>
+      ) : null}
       {recettes.length === 0 ? (
         <p className="text-sm text-muted-foreground">Aucune recette enregistrée : demande des recettes liées ci-dessous.</p>
       ) : (
