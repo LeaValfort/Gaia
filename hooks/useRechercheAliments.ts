@@ -6,7 +6,7 @@ import type { AlimentRecherche } from '@/types'
 const DELAI_MS = 250
 
 /** Recherche CIQUAL via /api/aliments, avec un léger délai pendant la frappe. */
-export function useRechercheAliments(q: string) {
+export function useRechercheAliments(q: string, relance = 0) {
   const [resultats, setResultats] = useState<AlimentRecherche[]>([])
   const [chargement, setChargement] = useState(false)
   const [erreur, setErreur] = useState(false)
@@ -21,7 +21,11 @@ export function useRechercheAliments(q: string) {
       }
       setChargement(true)
       fetch(`/api/aliments?q=${encodeURIComponent(t)}`)
-        .then((r) => (r.ok ? (r.json() as Promise<AlimentRecherche[]>) : Promise.reject(new Error(String(r.status)))))
+        .then((r) => {
+          // Une redirection vers la connexion renvoie du HTML : on la traite comme une erreur.
+          const json = r.headers.get('content-type')?.includes('application/json')
+          return r.ok && json ? (r.json() as Promise<AlimentRecherche[]>) : Promise.reject(new Error(String(r.status)))
+        })
         .then((d) => {
           if (annule) return
           setResultats(d)
@@ -34,7 +38,7 @@ export function useRechercheAliments(q: string) {
       annule = true
       window.clearTimeout(id)
     }
-  }, [q])
+  }, [q, relance])
 
   return { resultats, chargement, erreur }
 }

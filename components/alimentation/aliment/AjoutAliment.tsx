@@ -2,6 +2,8 @@
 
 import { useState } from 'react'
 import { Search } from 'lucide-react'
+import { toast } from 'sonner'
+import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { EtiquetteAliment } from '@/components/alimentation/aliment/EtiquetteAliment'
 import { PortionAliment } from '@/components/alimentation/aliment/PortionAliment'
@@ -20,11 +22,13 @@ export function AjoutAliment({ onAjouter }: { onAjouter: (a: AlimentAjoute) => v
   const [source, setSource] = useState<Source>('recherche')
   const [q, setQ] = useState('')
   const [choisi, setChoisi] = useState<{ aliment: AlimentRecherche; grammes: number } | null>(null)
-  const { resultats, chargement, erreur } = useRechercheAliments(q)
+  const [relance, setRelance] = useState(0)
+  const { resultats, chargement, erreur } = useRechercheAliments(q, relance)
 
   async function raccourci(code: string, grammes: number, label: string) {
     const [a] = await alimentsParCodes([code])
     if (a) setChoisi({ aliment: { ...a, nom: label }, grammes })
+    else toast.error('Aliment introuvable pour le moment, réessaie.')
   }
 
   return (
@@ -61,11 +65,33 @@ export function AjoutAliment({ onAjouter }: { onAjouter: (a: AlimentAjoute) => v
               </button>
             ))}
           </div>
-          <div className="relative">
-            <Search className="pointer-events-none absolute left-2.5 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" aria-hidden />
-            <Input type="search" value={q} onChange={(e) => setQ(e.target.value)} placeholder="Chercher un aliment (ex. riz, saumon)…" className="h-10 pl-9" />
-          </div>
-          {erreur ? <p className="text-sm text-red-600 dark:text-red-400">Recherche impossible pour le moment.</p> : null}
+          <form
+            className="flex gap-2"
+            onSubmit={(e) => {
+              e.preventDefault()
+              setChoisi(null)
+              setRelance((n) => n + 1)
+            }}
+          >
+            <div className="relative flex-1">
+              <Search className="pointer-events-none absolute left-2.5 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" aria-hidden />
+              <Input
+                type="search"
+                enterKeyHint="search"
+                value={q}
+                onChange={(e) => {
+                  setQ(e.target.value)
+                  setChoisi(null)
+                }}
+                placeholder="Chercher un aliment (ex. riz, saumon)…"
+                className="h-10 pl-9"
+              />
+            </div>
+            <Button type="submit" variant="outline" className="h-10 shrink-0" disabled={q.trim().length < 2}>
+              {chargement ? '…' : 'Chercher'}
+            </Button>
+          </form>
+          {erreur ? <p className="text-sm text-red-600 dark:text-red-400">Recherche impossible pour le moment. Réessaie dans un instant ou passe par l’étiquette du paquet.</p> : null}
           {q.trim().length >= 2 && !chargement && !resultats.length && !erreur ? (
             <p className="text-sm text-muted-foreground">Aucun aliment trouvé : essaie l’onglet Étiquette du paquet.</p>
           ) : null}

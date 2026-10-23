@@ -45,8 +45,12 @@ export async function proxy(request: NextRequest) {
   const estLienProchePublic = pathname.startsWith('/proches/')
 
   // Redirige vers /login si non connectée (sauf pour /login et /auth/*)
+  // /api/aliments : table CIQUAL (données publiques ANSES), sans donnée personnelle.
   const estPagePublique =
-    pathname.startsWith('/login') || pathname.startsWith('/auth') || estLienProchePublic
+    pathname.startsWith('/login') ||
+    pathname.startsWith('/auth') ||
+    estLienProchePublic ||
+    pathname.startsWith('/api/aliments')
   if (!user && !estPagePublique) {
     return NextResponse.redirect(new URL('/login', request.url))
   }

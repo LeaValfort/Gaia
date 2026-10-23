@@ -34,9 +34,15 @@ export function EtiquetteAliment({ onAjouter }: { onAjouter: (a: AlimentAjoute) 
           ))}
         </div>
       </div>
-      {pour100g.kcal > 0 ? (
-        <PortionAliment nom={nom.trim() || 'Produit (étiquette)'} pour100g={pour100g} grammesInitial={100} onAjouter={onAjouter} />
-      ) : null}
+      {/* Toujours visible : la quantité mangée se saisit tout de suite, le calcul suit les valeurs pour 100 g. */}
+      <PortionAliment
+        nom={nom.trim() || 'Produit (étiquette)'}
+        pour100g={pour100g}
+        grammesInitial={100}
+        desactive={pour100g.kcal <= 0}
+        onAjouter={onAjouter}
+      />
+      {pour100g.kcal <= 0 ? <p className="text-xs text-muted-foreground">Renseigne au moins les kcal pour 100 g pour pouvoir ajouter.</p> : null}
     </div>
   )
 }
