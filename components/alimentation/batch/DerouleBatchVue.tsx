@@ -3,15 +3,18 @@
 import { Snowflake } from 'lucide-react'
 import { Progress } from '@/components/ui/progress'
 import { EtapeBatchItem } from '@/components/alimentation/batch/EtapeBatchItem'
-import type { SessionBatch } from '@/types'
+import { IngredientsBatch } from '@/components/alimentation/batch/IngredientsBatch'
+import type { Recipe, SessionBatch } from '@/types'
 
 interface DerouleBatchVueProps {
   session: SessionBatch
+  /** Recettes de la session, pour la liste totale des ingrédients. */
+  recettes: Recipe[]
   onBasculer: (id: string) => void
 }
 
 /** Le déroulé de la session : progression, étapes à cocher, conservation. */
-export function DerouleBatchVue({ session, onBasculer }: DerouleBatchVueProps) {
+export function DerouleBatchVue({ session, recettes, onBasculer }: DerouleBatchVueProps) {
   const d = session.deroule
   if (!d) return null
   const faites = d.etapes.filter((e) => session.faits.includes(e.id)).length
@@ -28,6 +31,7 @@ export function DerouleBatchVue({ session, onBasculer }: DerouleBatchVueProps) {
         </div>
         <Progress value={pct} />
       </div>
+      <IngredientsBatch recettes={recettes} />
       <ol className="space-y-2">
         {d.etapes.map((e, i) => (
           <EtapeBatchItem key={e.id} etape={e} numero={i + 1} fait={session.faits.includes(e.id)} onBasculer={() => onBasculer(e.id)} />

@@ -69,7 +69,11 @@ export function OngletBatchCooking({ userId, weekStart, phase }: OngletBatchCook
           ↺ Refaire un déroulé avec d’autres recettes
         </button>
       )}
-      {b.session?.deroule ? <DerouleBatchVue session={b.session} onBasculer={(id) => void b.basculerEtape(id)} /> : null}
+      {b.session?.deroule ? <DerouleBatchVue
+          session={b.session}
+          recettes={b.recettes.filter((r) => b.session?.recette_ids.includes(r.id))}
+          onBasculer={(id) => void b.basculerEtape(id)}
+        /> : null}
     </div>
   )
 }
