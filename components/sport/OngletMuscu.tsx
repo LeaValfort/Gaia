@@ -313,10 +313,10 @@ export function OngletMuscu({
         </Button>
         <Button
           className="bg-rose-600 text-white hover:bg-rose-700"
-          disabled={ch || !exercicesFaits.length}
+          disabled={ch || (!exercicesFaits.length && !lignesFaites.length)}
           onClick={() => {
-            if (!exercicesFaits.length) {
-              toast.message('Coche au moins un exercice réalisé avant d’enregistrer.')
+            if (!exercicesFaits.length && !lignesFaites.length) {
+              toast.message('Coche au moins un exercice ou une ligne perso avant d’enregistrer.')
               return
             }
             setCh(true)
@@ -330,6 +330,8 @@ export function OngletMuscu({
               charges,
               edit,
               seanceExistante: seanceExistante ?? null,
+              // Séance faite uniquement de lignes perso : on crée quand même la séance.
+              autoriserSansExercice: lignesFaites.length > 0,
             })
               // Lignes perso cochées, rattachées à la séance juste enregistrée.
               .then(() => enregistrerContenuLibreSeance(supabase, userId, date, 'muscu', lignesFaites, !!seanceExistante?.contenu_libre?.length))
@@ -349,8 +351,8 @@ export function OngletMuscu({
           {ch ? '…' : edit ? 'Mettre à jour la séance' : 'Enregistrer la séance'}
         </Button>
       </div>
-      {!exercicesFaits.length ? (
-        <p className="text-xs text-muted-foreground">Coche les exercices que tu as faits pour activer l’enregistrement.</p>
+      {!exercicesFaits.length && !lignesFaites.length ? (
+        <p className="text-xs text-muted-foreground">Coche les exercices ou les lignes perso que tu as faits pour activer l’enregistrement.</p>
       ) : null}
       {modale ? (
         <ModaleEditSeance

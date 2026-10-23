@@ -18,10 +18,12 @@ export async function enregistrerSeanceMuscuComplet(opts: {
   charges: Record<string, number>
   edit: boolean
   seanceExistante: WorkoutMuscuComplet | null
+  /** Vrai quand seules des lignes perso ont été cochées : la séance est créée sans série. */
+  autoriserSansExercice?: boolean
 }): Promise<void> {
   const { date, lieu, typeSeance, ressenti, afficher, exercicesFaits, charges, edit, seanceExistante } = opts
   const ok = afficher.filter((e) => exercicesFaits.includes(e.nom))
-  if (!ok.length) return
+  if (!ok.length && !opts.autoriserSansExercice) return
   const ex = ok.map((e) => ({
     nom: e.nom,
     series: e.seriesAdaptees,
