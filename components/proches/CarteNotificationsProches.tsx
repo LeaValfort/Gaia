@@ -12,7 +12,8 @@ import { supabase } from '@/lib/supabase'
 
 const AIDE: Partial<Record<ReturnType<typeof useNotificationsPush>['etat'], string>> = {
   ios_ecran_accueil: 'Sur iPhone : ouvre Gaia dans Safari, Partager → « Sur l’écran d’accueil », puis ouvre Gaia depuis l’icône pour activer les notifications.',
-  non_supporte: 'Ce navigateur ne gère pas les notifications.',
+  chargement: 'Vérification de cet appareil…',
+  non_supporte: 'Notifications indisponibles ici. Sur iPhone : ouvre Gaia depuis l’icône de l’écran d’accueil (iOS 16.4 ou plus).',
   refuse: 'Les notifications sont bloquées pour Gaia : autorise-les dans les réglages du téléphone ou du navigateur.',
 }
 

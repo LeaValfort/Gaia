@@ -19,6 +19,16 @@ function estIosHorsEcranAccueil(): boolean {
   return ios && !standalone
 }
 
+/**
+ * next-pwa n'enregistre pas toujours le service worker avec l'App Router :
+ * on l'enregistre nous-mêmes (sans effet s'il l'est déjà), avec un délai max.
+ */
+function serviceWorkerPret(): Promise<ServiceWorkerRegistration> {
+  const enregistrement = navigator.serviceWorker.register('/sw.js').then(() => navigator.serviceWorker.ready)
+  const delai = new Promise<never>((_, rejeter) => window.setTimeout(() => rejeter(new Error('Service worker indisponible')), 8000))
+  return Promise.race([enregistrement, delai])
+}
+
 /** Abonnement de cet appareil aux notifications push (activer / désactiver). */
 export function useNotificationsPush() {
   const [etat, setEtat] = useState<EtatPush>('chargement')
@@ -31,7 +41,7 @@ export function useNotificationsPush() {
     } else if (Notification.permission === 'denied') {
       Promise.resolve().then(() => fixer('refuse'))
     } else {
-      navigator.serviceWorker.ready
+      serviceWorkerPret()
         .then((reg) => reg.pushManager.getSubscription())
         .then((s) => fixer(s ? 'actif' : 'inactif'))
         .catch(() => fixer('non_supporte'))
@@ -48,7 +58,7 @@ export function useNotificationsPush() {
       setEtat(permission === 'denied' ? 'refuse' : 'inactif')
       throw new Error('Notifications non autorisées sur cet appareil.')
     }
-    const reg = await navigator.serviceWorker.ready
+    const reg = await serviceWorkerPret()
     const sub = await reg.pushManager.subscribe({ userVisibleOnly: true, applicationServerKey: versUint8(CLE_PUBLIQUE_VAPID) })
     const rep = await fetch('/api/notifications/abonnement', {
       method: 'POST',
