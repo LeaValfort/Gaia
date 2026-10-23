@@ -19,7 +19,7 @@ const AIDE: Partial<Record<ReturnType<typeof useNotificationsPush>['etat'], stri
 
 /** Proches : activer les notifications sur cet appareil + récap quotidien (côté proche qui reçoit). */
 export function CarteNotificationsProches({ userId }: { userId: string }) {
-  const { etat, activer, desactiver } = useNotificationsPush()
+  const { etat, raison, activer, desactiver } = useNotificationsPush()
   const [recap, setRecap] = useState(true)
   const [ch, setCh] = useState(false)
 
@@ -64,6 +64,7 @@ export function CarteNotificationsProches({ userId }: { userId: string }) {
             Sois prévenue quand une personne que tu suis a ses règles ou une douleur forte, selon ce qu’elle t’autorise.
           </p>
           {AIDE[etat] ? <p className="text-xs text-amber-700 dark:text-amber-300">{AIDE[etat]}</p> : null}
+          {raison ? <p className="text-[11px] text-muted-foreground">Détail : {raison}</p> : null}
         </div>
       </div>
       {etat === 'actif' || etat === 'inactif' ? (

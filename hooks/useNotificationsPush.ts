@@ -32,19 +32,28 @@ function serviceWorkerPret(): Promise<ServiceWorkerRegistration> {
 /** Abonnement de cet appareil aux notifications push (activer / désactiver). */
 export function useNotificationsPush() {
   const [etat, setEtat] = useState<EtatPush>('chargement')
+  // Détail technique affiché quand c'est indisponible, pour comprendre la cause.
+  const [raison, setRaison] = useState('')
 
   useEffect(() => {
     let annule = false
     const fixer = (e: EtatPush) => !annule && setEtat(e)
-    if (!('serviceWorker' in navigator) || !('PushManager' in window) || !('Notification' in window)) {
-      Promise.resolve().then(() => fixer(estIosHorsEcranAccueil() ? 'ios_ecran_accueil' : 'non_supporte'))
+    const manquant = ['serviceWorker' in navigator ? '' : 'serviceWorker', 'PushManager' in window ? '' : 'PushManager', 'Notification' in window ? '' : 'Notification'].filter(Boolean)
+    if (manquant.length) {
+      Promise.resolve().then(() => {
+        if (!annule) setRaison(`absent : ${manquant.join(', ')}`)
+        fixer(estIosHorsEcranAccueil() ? 'ios_ecran_accueil' : 'non_supporte')
+      })
     } else if (Notification.permission === 'denied') {
       Promise.resolve().then(() => fixer('refuse'))
     } else {
       serviceWorkerPret()
         .then((reg) => reg.pushManager.getSubscription())
         .then((s) => fixer(s ? 'actif' : 'inactif'))
-        .catch(() => fixer('non_supporte'))
+        .catch((e: unknown) => {
+          if (!annule) setRaison(e instanceof Error ? e.message : 'service worker')
+          fixer('non_supporte')
+        })
     }
     return () => {
       annule = true
@@ -79,5 +88,5 @@ export function useNotificationsPush() {
     setEtat('inactif')
   }, [])
 
-  return { etat, activer, desactiver }
+  return { etat, raison, activer, desactiver }
 }
