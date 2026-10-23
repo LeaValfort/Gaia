@@ -27,6 +27,7 @@ export function procheFromRow(row: Record<string, unknown>, ownerName?: string |
     notif_debut_regles: Boolean(row.notif_debut_regles),
     notif_energie_basse: Boolean(row.notif_energie_basse),
     notif_douleur_haute: Boolean(row.notif_douleur_haute),
+    notif_humeur_difficile: row.notif_humeur_difficile !== false,
     voir_phase: row.voir_phase === undefined ? true : boolDef(row.voir_phase, true),
     voir_energie: row.voir_energie === undefined ? true : boolDef(row.voir_energie, true),
     voir_douleur: row.voir_douleur === undefined ? true : boolDef(row.voir_douleur, true),

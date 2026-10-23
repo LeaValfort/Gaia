@@ -77,6 +77,7 @@ export function procheDepuisLienPublic(
     partner_name: meta.partnerName,
     owner_display_name: meta.ownerName,
     notif_debut_regles: false,
+    notif_humeur_difficile: false,
     notif_energie_basse: false,
     notif_douleur_haute: false,
     voir_phase: true,

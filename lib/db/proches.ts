@@ -220,6 +220,7 @@ export type PatchProcheConnection = Partial<{
   notif_debut_regles: boolean
   notif_energie_basse: boolean
   notif_douleur_haute: boolean
+  notif_humeur_difficile: boolean
   voir_phase: boolean
   voir_energie: boolean
   voir_douleur: boolean

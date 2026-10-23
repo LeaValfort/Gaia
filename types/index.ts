@@ -768,6 +768,8 @@ export interface ProcheConnection {
   notif_debut_regles: boolean
   notif_energie_basse: boolean
   notif_douleur_haute: boolean
+  /** Récap du soir si humeur difficile (colonne ajoutée le 23/10) */
+  notif_humeur_difficile: boolean
   voir_phase: boolean
   voir_energie: boolean
   voir_douleur: boolean

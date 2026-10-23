@@ -50,7 +50,9 @@ export async function proxy(request: NextRequest) {
     pathname.startsWith('/login') ||
     pathname.startsWith('/auth') ||
     estLienProchePublic ||
-    pathname.startsWith('/api/aliments')
+    pathname.startsWith('/api/aliments') ||
+    // Tâche quotidienne Vercel : sans session, protégée par CRON_SECRET dans la route.
+    pathname.startsWith('/api/cron/')
   if (!user && !estPagePublique) {
     return NextResponse.redirect(new URL('/login', request.url))
   }

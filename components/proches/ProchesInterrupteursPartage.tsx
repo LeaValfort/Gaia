@@ -27,6 +27,8 @@ export function ProchesInterrupteursPartage({
   setR2,
   r3,
   setR3,
+  r4,
+  setR4,
 }: {
   sync: (p: PatchProcheConnection) => void
   vp: boolean
@@ -49,6 +51,8 @@ export function ProchesInterrupteursPartage({
   setR2: Dispatch<SetStateAction<boolean>>
   r3: boolean
   setR3: Dispatch<SetStateAction<boolean>>
+  r4: boolean
+  setR4: Dispatch<SetStateAction<boolean>>
 }) {
   return (
     <>
@@ -80,12 +84,13 @@ export function ProchesInterrupteursPartage({
       </div>
       <div>
         <p className="text-xs font-medium text-neutral-600 dark:text-neutral-300 flex items-center gap-1 mb-2">
-          <Bell size={12} /> Notifications proche (v1 — rappels à brancher)
+          <Bell size={12} /> Ce qui le ou la prévient
         </p>
         <div className="flex flex-col gap-2">
-          <L sync={sync} k="notif_debut_regles" v={r1} set={setR1} label="🩸 Début des règles" />
-          <L sync={sync} k="notif_energie_basse" v={r2} set={setR2} label="⚡ Énergie basse" />
-          <L sync={sync} k="notif_douleur_haute" v={r3} set={setR3} label="😣 Douleur élevée" />
+          <L sync={sync} k="notif_debut_regles" v={r1} set={setR1} label="🩸 Début des règles (immédiat)" />
+          <L sync={sync} k="notif_douleur_haute" v={r3} set={setR3} label="😣 Douleur élevée (7/10 ou plus)" />
+          <L sync={sync} k="notif_energie_basse" v={r2} set={setR2} label="⚡ Énergie basse — récap du soir" />
+          <L sync={sync} k="notif_humeur_difficile" v={r4} set={setR4} label="🌧️ Humeur difficile — récap du soir" />
         </div>
       </div>
     </>

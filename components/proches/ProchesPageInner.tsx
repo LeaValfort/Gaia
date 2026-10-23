@@ -1,6 +1,7 @@
 'use client'
 
 import { useCallback, useEffect, useState } from 'react'
+import { CarteNotificationsProches } from '@/components/proches/CarteNotificationsProches'
 import { Heart } from 'lucide-react'
 import { useRouter } from 'next/navigation'
 import { toast } from 'sonner'
@@ -19,6 +20,7 @@ export function ProchesPageInner() {
   const [phase, setPhase] = useState<Phase>('folliculaire')
   const [sansCycle, setSansCycle] = useState(false)
   const [prenom, setPrenom] = useState<string | null>(null)
+  const [userId, setUserId] = useState<string | null>(null)
 
   const load = useCallback(async () => {
     setLoading(true)
@@ -30,6 +32,7 @@ export function ProchesPageInner() {
         return
       }
       setPrenom(ctx.prenom)
+      setUserId(ctx.userId)
       setPhase(ctx.phase)
       setSansCycle(ctx.sansCycle)
       const conns = await fetchProchesConnectionsClient()
@@ -91,6 +94,7 @@ export function ProchesPageInner() {
           <h1 className="text-2xl font-semibold text-neutral-900 dark:text-neutral-50">Proches</h1>
         </header>
 
+        {userId ? <CarteNotificationsProches userId={userId} /> : null}
         <DonneesRecuesSection />
         <MesPartagesSection connections={connections} onRefresh={() => void refreshConnections()} />
       </div>

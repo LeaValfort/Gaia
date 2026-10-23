@@ -1,5 +1,8 @@
 'use server'
 
+import { after } from 'next/server'
+import { douleurHaute } from '@/lib/push/alertes'
+import { notifierProches } from '@/lib/push/notifier-proches'
 import { creerClientServeur } from '@/lib/supabase-server'
 import type { DailyLog } from '@/types'
 
@@ -77,6 +80,11 @@ export async function upsertDailyLog(
       .upsert({ ...log, user_id: user.id }, { onConflict: 'user_id,date' })
 
     if (error) throw error
+    // Douleur élevée : alerte immédiate aux proches autorisés, après la réponse.
+    if (douleurHaute(log)) {
+      const ownerId = user.id
+      after(() => notifierProches(ownerId, 'douleur_haute', log.date))
+    }
   } catch (erreur) {
     console.error('Erreur upsertDailyLog:', erreur)
     throw erreur

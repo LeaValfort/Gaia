@@ -52,6 +52,7 @@ export function PanneauDetailProche({
   const [r1, setR1] = useState(connection.notif_debut_regles)
   const [r2, setR2] = useState(connection.notif_energie_basse)
   const [r3, setR3] = useState(connection.notif_douleur_haute)
+  const [r4, setR4] = useState(connection.notif_humeur_difficile)
   const [vp, setVp] = useState(connection.voir_phase)
   const [ve, setVe] = useState(connection.voir_energie)
   const [vd, setVd] = useState(connection.voir_douleur)
@@ -65,6 +66,7 @@ export function PanneauDetailProche({
     setR1(connection.notif_debut_regles)
     setR2(connection.notif_energie_basse)
     setR3(connection.notif_douleur_haute)
+    setR4(connection.notif_humeur_difficile)
     setVp(connection.voir_phase)
     setVe(connection.voir_energie)
     setVd(connection.voir_douleur)
@@ -93,6 +95,7 @@ export function PanneauDetailProche({
       notif_debut_regles: r1,
       notif_energie_basse: r2,
       notif_douleur_haute: r3,
+      notif_humeur_difficile: r4,
       voir_phase: vp,
       voir_energie: ve,
       voir_douleur: vd,
@@ -266,6 +269,8 @@ export function PanneauDetailProche({
         setR2={setR2}
         r3={r3}
         setR3={setR3}
+          r4={r4}
+          setR4={setR4}
       />
 
       <Button

@@ -1,6 +1,8 @@
 'use server'
 
-import { format, parseISO, subDays } from 'date-fns'
+import { after } from 'next/server'
+import { differenceInCalendarDays, format, parseISO, subDays } from 'date-fns'
+import { notifierProches } from '@/lib/push/notifier-proches'
 import { calculerStatsCycles } from '@/lib/cycle'
 import { creerClientServeur } from '@/lib/supabase-server'
 import type { Cycle, CycleStats, UserPreferences } from '@/types'
@@ -326,6 +328,12 @@ export async function signalerDebutCycle(
       cycle_length: cycleLenSafe,
     })
     await recalculerCycleStats()
+    // Prévient les proches, après la réponse (ne ralentit pas l'enregistrement),
+    // seulement pour des règles récentes : pas pour un cycle passé saisi après coup.
+    if (Math.abs(differenceInCalendarDays(new Date(), parseISO(d))) <= 2) {
+      const ownerId = user.id
+      after(() => notifierProches(ownerId, 'debut_regles', d))
+    }
     return { ok: true }
   } catch (e) {
     console.error('signalerDebutCycle:', e)
