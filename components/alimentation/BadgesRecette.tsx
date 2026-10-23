@@ -5,6 +5,7 @@
 // déjà sauvegardée, donc togglable). Évite de dupliquer cette logique dans chaque carte.
 import { Clock, Heart } from 'lucide-react'
 import { calculerNutriScore } from '@/lib/nutrition/nutri-score'
+import { ingredientsDeSaison } from '@/lib/data/saison'
 import { cn } from '@/lib/utils'
 import type { Nutrition100g } from '@/types'
 
@@ -22,13 +23,16 @@ interface BadgesRecetteProps {
   /** Omis pour une recette pas encore sauvegardée (pas d'id à basculer). */
   favori?: boolean
   onToggleFavori?: () => void
+  /** Ingrédients de la recette : badge « de saison » s'ils contiennent un produit du mois. */
+  ingredients?: string[]
   className?: string
 }
 
-export function BadgesRecette({ tempsMin, nutrition100g, favori, onToggleFavori, className }: BadgesRecetteProps) {
+export function BadgesRecette({ tempsMin, nutrition100g, favori, onToggleFavori, ingredients, className }: BadgesRecetteProps) {
   const nutriScore = nutrition100g ? calculerNutriScore(nutrition100g) : null
+  const saison = ingredients ? ingredientsDeSaison(ingredients, new Date()) : []
 
-  if (!tempsMin && !nutriScore && !onToggleFavori) return null
+  if (!tempsMin && !nutriScore && !onToggleFavori && !saison.length) return null
 
   return (
     <div className={cn('flex items-center gap-1.5', className)}>
@@ -36,6 +40,14 @@ export function BadgesRecette({ tempsMin, nutrition100g, favori, onToggleFavori,
         <span className="inline-flex items-center gap-0.5 text-[10px] text-muted-foreground">
           <Clock className="size-3" aria-hidden />
           {tempsMin} min
+        </span>
+      ) : null}
+      {saison.length ? (
+        <span
+          title={`De saison : ${saison.join(', ')}`}
+          className="inline-flex items-center rounded-full bg-green-100 px-1.5 py-0.5 text-[10px] font-medium text-green-800 dark:bg-green-900/40 dark:text-green-200"
+        >
+          🌱 De saison
         </span>
       ) : null}
 

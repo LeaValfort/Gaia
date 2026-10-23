@@ -5,6 +5,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { genererRecettes } from '@/lib/ia/generation-recette'
 import { getSanteProfil } from '@/lib/db/sante'
 import { consigneRecettesConditions } from '@/lib/data/conditions-sante'
+import { consigneSaison } from '@/lib/data/saison'
 import type { RecetteBase } from '@/lib/ia/recette-brute'
 import { calculerMacrosRecette, ajusterPourCalories, versNutrition100g, versMacrosParPortion } from '@/lib/nutrition/calcul-recette'
 import { objectifsRepasDefaut } from '@/lib/repartitionRepas'
@@ -94,7 +95,7 @@ export async function GET(request: NextRequest) {
           allergies,
           tempsMax,
           recherche: query || undefined,
-          consigneSante: consigneRecettesConditions(profilSante?.conditions ?? []),
+          consigneSante: [consigneRecettesConditions(profilSante?.conditions ?? []), consigneSaison(new Date())].filter(Boolean).join('\n'),
         })
       : []
     const generees = bases.map((b) => finaliserRecette(b, typeRepas, objectif.calories))

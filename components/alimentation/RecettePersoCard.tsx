@@ -46,6 +46,7 @@ export function RecettePersoCard({ recette, userId }: RecettePersoCardProps) {
           nutrition100g={recette.nutrition_100g}
           favori={favori}
           onToggleFavori={handleToggleFavori}
+          ingredients={recette.ingredients}
         />
         {macros.length > 0 ? (
           <div className="flex flex-wrap gap-1">

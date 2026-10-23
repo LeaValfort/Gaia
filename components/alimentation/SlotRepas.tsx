@@ -5,7 +5,8 @@ import { Plus, Minus, X, UtensilsCrossed } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover'
 import { Badge } from '@/components/ui/badge'
-import type { TypeRepas, MealPlan, MealPlanComplet, Recipe, OptionPetitDej } from '@/types'
+import type { TypeRepas, MealPlan, MealPlanComplet, Recipe, OptionPetitDej, Phase } from '@/types'
+import { ModaleRemplacerRecette } from './ModaleRemplacerRecette'
 import { calculerMacrosAvecPortions } from '@/lib/mealplan'
 
 const LABELS_REPAS: Record<TypeRepas, string> = {
@@ -24,12 +25,15 @@ interface SlotRepasProps {
   weekStart: string
   onUpdate: (plan: Omit<MealPlan, 'id' | 'user_id' | 'created_at'>) => void
   onDelete: (planId: string) => void
+  /** Phase du jour, pour orienter les idées IA lors d'un remplacement. */
+  phase?: Phase
 }
 
 export default function SlotRepas({
-  typeRepas, plan, recettesDisponibles, optionsPetitDej, date, weekStart, onUpdate, onDelete,
+  typeRepas, plan, recettesDisponibles, optionsPetitDej, date, weekStart, onUpdate, onDelete, phase = 'folliculaire',
 }: SlotRepasProps) {
   const [ouvert, setOuvert] = useState(false)
+  const [remplacer, setRemplacer] = useState(false)
 
   const recettesFiltrees = typeRepas === 'petit-dej'
     ? []
@@ -63,9 +67,18 @@ export default function SlotRepas({
     return (
       <div className="rounded-lg border border-neutral-200 dark:border-neutral-700 bg-white dark:bg-neutral-800 p-2 text-xs flex flex-col gap-1">
         <div className="flex items-start justify-between gap-1">
-          <span className="font-medium text-neutral-800 dark:text-neutral-200 leading-tight line-clamp-2">
-            {nom}
-          </span>
+          {plan.recette ? (
+            // Clic sur la recette : la remplacer (mes recettes ou idées IA).
+            <button
+              type="button"
+              onClick={() => setRemplacer(true)}
+              className="text-left font-medium text-neutral-800 underline-offset-2 hover:underline dark:text-neutral-200 leading-tight line-clamp-2"
+            >
+              {nom}
+            </button>
+          ) : (
+            <span className="font-medium text-neutral-800 dark:text-neutral-200 leading-tight line-clamp-2">{nom}</span>
+          )}
           <button
             onClick={() => onDelete(plan.id)}
             className="text-neutral-400 hover:text-red-500 shrink-0 mt-0.5"
@@ -89,6 +102,19 @@ export default function SlotRepas({
             <Plus size={12} />
           </button>
         </div>
+        {plan.recette ? (
+          <ModaleRemplacerRecette
+            ouvert={remplacer}
+            onOuvertChange={setRemplacer}
+            typeRepas={typeRepas}
+            phase={phase}
+            recettes={recettesDisponibles}
+            onChoisir={(r) => {
+              onUpdate({ week_start: weekStart, date, type_repas: typeRepas, recette_id: r.id, petit_dej_id: null, portions: plan.portions, notes: plan.notes })
+              setRemplacer(false)
+            }}
+          />
+        ) : null}
       </div>
     )
   }

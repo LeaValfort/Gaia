@@ -87,7 +87,7 @@ export default function CartePlanJour({
         <div className="grid grid-cols-2 gap-2">
           <div>
             <p className="text-xs text-neutral-400 mb-1">🌅 Petit-déj</p>
-            <SlotRepas
+            <SlotRepas phase={phase}
               typeRepas="petit-dej"
               plan={planPd}
               recettesDisponibles={recettesDisponibles}
@@ -100,7 +100,7 @@ export default function CartePlanJour({
           </div>
           <div>
             <p className="text-xs text-neutral-400 mb-1">☀️ Déjeuner</p>
-            <SlotRepas
+            <SlotRepas phase={phase}
               typeRepas="dejeuner"
               plan={planDej}
               recettesDisponibles={recettesDisponibles}
@@ -118,11 +118,11 @@ export default function CartePlanJour({
           <div className="grid grid-cols-2 gap-2 pt-1 border-t border-neutral-100 dark:border-neutral-800">
             <div>
               <p className="text-xs text-neutral-400 mb-1">🍎 Collation</p>
-              <SlotRepas typeRepas="collation" plan={planColl} recettesDisponibles={recettesDisponibles} optionsPetitDej={optionsPetitDej} date={date} weekStart={weekStart} onUpdate={onUpdate} onDelete={onDelete} />
+              <SlotRepas phase={phase} typeRepas="collation" plan={planColl} recettesDisponibles={recettesDisponibles} optionsPetitDej={optionsPetitDej} date={date} weekStart={weekStart} onUpdate={onUpdate} onDelete={onDelete} />
             </div>
             <div>
               <p className="text-xs text-neutral-400 mb-1">🌙 Dîner</p>
-              <SlotRepas typeRepas="diner" plan={planDiner} recettesDisponibles={recettesDisponibles} optionsPetitDej={optionsPetitDej} date={date} weekStart={weekStart} onUpdate={onUpdate} onDelete={onDelete} />
+              <SlotRepas phase={phase} typeRepas="diner" plan={planDiner} recettesDisponibles={recettesDisponibles} optionsPetitDej={optionsPetitDej} date={date} weekStart={weekStart} onUpdate={onUpdate} onDelete={onDelete} />
             </div>
           </div>
         )}

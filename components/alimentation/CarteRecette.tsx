@@ -79,7 +79,7 @@ export function CarteRecette({ recette, userId, onDelete }: CarteRecetteProps) {
               {PHASE_LABELS[recette.phase] ?? recette.phase}
             </span>
           ) : null}
-          <BadgesRecette tempsMin={recette.temps_min} nutrition100g={recette.nutrition_100g} />
+          <BadgesRecette tempsMin={recette.temps_min} nutrition100g={recette.nutrition_100g} ingredients={recette.ingredients} />
         </div>
       </div>
 
