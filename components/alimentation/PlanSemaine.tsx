@@ -4,6 +4,7 @@ import { useEffect, useState, useCallback } from 'react'
 import { addDays, format, parseISO } from 'date-fns'
 import { fr } from 'date-fns/locale'
 import { ChevronLeft, ChevronRight, Sparkles, ShoppingCart } from 'lucide-react'
+import { toast } from 'sonner'
 import { Button } from '@/components/ui/button'
 import { Skeleton } from '@/components/ui/skeleton'
 import { Switch } from '@/components/ui/switch'
@@ -103,13 +104,14 @@ export default function PlanSemaine({
   })
 
   const handleUpdate = async (plan: Omit<MealPlan, 'id' | 'user_id' | 'created_at'>) => {
-    await upsertMealPlan(supabase, userId, plan)
+    const res = await upsertMealPlan(supabase, userId, plan)
+    if (!res.ok) toast.error(`Repas non enregistré : ${res.message}`)
     await charger()
   }
 
   const handleDelete = async (planId: string) => {
-    await deleteMealPlan(supabase, planId)
-    setPlans((prev) => prev.filter((p) => p.id !== planId))
+    if (await deleteMealPlan(supabase, planId)) setPlans((prev) => prev.filter((p) => p.id !== planId))
+    else toast.error('Suppression impossible')
   }
 
   const handleGenerer = async () => {
@@ -136,9 +138,14 @@ export default function PlanSemaine({
       const nouveaux = genererPlanAuto(dates, phases, types, recettesPourGeneration, OPTIONS_PETIT_DEJ, {
         sansSuiviCycle: Boolean(sansSuiviCycle),
       })
+      // Premier échec affiché tel quel (souvent une règle d'accès ou une contrainte en base).
+      let echec: string | null = null
       for (const p of nouveaux) {
-        await upsertMealPlan(supabase, userId, p)
+        const res = await upsertMealPlan(supabase, userId, p)
+        if (!res.ok && !echec) echec = res.message
       }
+      if (echec) toast.error(`La semaine n’a pas pu être enregistrée : ${echec}`)
+      else if (nouveaux.length) toast.success('Semaine enregistrée')
       await charger()
     } finally { setGenerant(false) }
   }
