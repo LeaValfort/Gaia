@@ -1,11 +1,11 @@
 'use client'
 
 import { useState } from 'react'
-import { ArrowDown, ArrowUp, Plus, RefreshCw, Trash2 } from 'lucide-react'
+import { ArrowDown, ArrowUp, Plus, Trash2 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog'
 import { Input } from '@/components/ui/input'
-import { blocsDefautPourNiveau, LABELS_NAGE, PRESETS_NAGE } from '@/lib/data/swimming'
+import { LABELS_NAGE, PRESETS_NAGE } from '@/lib/data/swimming'
 import type { BlocNatation, TypeNage } from '@/types'
 
 /** Valeur du <select> déclenchant l'affichage du champ texte libre pour une nage personnalisée. */
@@ -20,7 +20,6 @@ function deplacer<T>(liste: T[], i: number, sens: -1 | 1): T[] {
 }
 
 export interface ModaleEditBlocsNatationProps {
-  niveauActuel: number
   blocsActuels: BlocNatation[]
   onSauvegarde: (blocs: BlocNatation[]) => Promise<void>
   onFermer: () => void
@@ -31,14 +30,11 @@ export interface ModaleEditBlocsNatationProps {
  * purement contrôlé : la persistance est déléguée au parent.
  */
 export function ModaleEditBlocsNatation({
-  niveauActuel,
   blocsActuels,
   onSauvegarde,
   onFermer,
 }: ModaleEditBlocsNatationProps) {
-  const [blocs, setBlocs] = useState<BlocNatation[]>(
-    blocsActuels.length ? blocsActuels : blocsDefautPourNiveau(niveauActuel)
-  )
+  const [blocs, setBlocs] = useState<BlocNatation[]>(blocsActuels)
   const [ch, setCh] = useState(false)
 
   const maj = (i: number, u: Partial<BlocNatation>) =>
@@ -47,7 +43,6 @@ export function ModaleEditBlocsNatation({
   const monter = (i: number) => setBlocs((p) => deplacer(p, i, -1))
   const descendre = (i: number) => setBlocs((p) => deplacer(p, i, 1))
   const ajouter = () => setBlocs((p) => [...p, { nage: 'crawl', distanceM: 100 }])
-  const defaut = () => setBlocs(blocsDefautPourNiveau(niveauActuel))
 
   async function save() {
     if (!blocs.length) return
@@ -127,10 +122,7 @@ export function ModaleEditBlocsNatation({
           </Button>
         </div>
         <DialogFooter className="flex-col gap-2 p-4 sm:flex-row sm:justify-between">
-          <Button type="button" variant="outline" disabled={ch} onClick={defaut}>
-            <RefreshCw className="mr-1 size-4" />
-            Remettre par défaut
-          </Button>
+          <span />
           <div className="flex gap-2">
             <Button type="button" variant="secondary" onClick={onFermer} disabled={ch}>
               Annuler

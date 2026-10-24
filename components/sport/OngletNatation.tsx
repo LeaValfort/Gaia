@@ -10,11 +10,12 @@ import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Textarea } from '@/components/ui/textarea'
 import { loggerSeanceNatationClient, modifierSeanceNatationClient } from '@/lib/sport/workouts-client'
-import { blocsDefautPourNiveau, totauxDepuisBlocs } from '@/lib/data/swimming'
+import { totauxDepuisBlocs } from '@/lib/data/swimming'
 import { MacrosSeanceCard } from '@/components/sport/MacrosSeanceCard'
 import { BannerSuggestionGaia } from '@/components/sport/BannerSuggestionGaia'
 import { CarteIntensiteSeance } from '@/components/parametres/CarteIntensiteSeance'
-import { SelecteurVariante, type OngletFixeVariante } from '@/components/sport/SelecteurVariante'
+import { SelecteurVariante } from '@/components/sport/SelecteurVariante'
+import { ProgrammeVide } from '@/components/sport/ProgrammeVide'
 import { ModaleEditBlocsNatation } from '@/components/sport/ModaleEditBlocsNatation'
 import { BlocNatationLigne } from '@/components/sport/natation/BlocNatationLigne'
 import { appliquerPourcentage, messagePourcentageGaia } from '@/lib/planning-sport'
@@ -30,8 +31,6 @@ import {
 import { supabase } from '@/lib/supabase'
 import {
   POURCENTAGES_GAIA_DEFAUT,
-  SWIM_LEVEL_MAX,
-  SWIM_LEVEL_MIN,
   type BlocNatation,
   type LigneSeanceLibre,
   type IntensiteEffort,
@@ -47,13 +46,6 @@ import { cn } from '@/lib/utils'
 const RESS = ['😴', '😕', '😊', '⚡', '🚀'] as const
 /** Distance en natation arrondie au 25m le plus proche (usage courant en piscine). */
 const ARRONDI_DISTANCE_M = 25
-
-/** Préfixe des ids d'onglets fixes représentant un niveau du catalogue (ex. "niveau:3"). */
-const PREFIXE_NIVEAU = 'niveau:'
-const NIVEAUX_ONGLETS: OngletFixeVariante[] = Array.from(
-  { length: SWIM_LEVEL_MAX - SWIM_LEVEL_MIN + 1 },
-  (_, i) => i + SWIM_LEVEL_MIN
-).map((n) => ({ id: `${PREFIXE_NIVEAU}${n}`, label: `Niveau ${n}` }))
 
 export function OngletNatation({
   phase,
@@ -86,6 +78,7 @@ export function OngletNatation({
   const [varianteActiveId, setVarianteActiveId] = useState<string | null>(null)
   const [blocs, setBlocs] = useState<BlocNatation[] | null>(null)
   const [modaleBlocs, setModaleBlocs] = useState(false)
+  const [pret, setPret] = useState(false)
 
   useEffect(() => {
     setNiv(seanceExistante?.swim.level ?? 1)
@@ -102,9 +95,11 @@ export function OngletNatation({
       const vs = await getVariantes(supabase, userId, 'natation', 'na')
       if (!actif) return
       setVariantes(vs)
-      const active = vs.find((v) => v.est_active) ?? null
+      // Sans programme actif, on ouvre le premier programme existant.
+      const active = vs.find((v) => v.est_active) ?? vs[0] ?? null
       setVarianteActiveId(active?.id ?? null)
-      setBlocs(active?.blocs_natation?.length ? active.blocs_natation : null)
+      setBlocs(active?.blocs_natation ?? null)
+      setPret(true)
     })()
     return () => {
       actif = false
@@ -140,32 +135,20 @@ export function OngletNatation({
     setVarianteActiveId(id)
     const v = id ? variantes.find((x) => x.id === id) ?? null : null
     if (v?.niveau_natation) setNiv(v.niveau_natation)
-    setBlocs(v?.blocs_natation?.length ? v.blocs_natation : null)
-  }
-
-  /** Gère la sélection dans la rangée d'onglets fusionnée : niveaux fixes du catalogue + variantes perso. */
-  async function choisirOnglet(id: string) {
-    if (id.startsWith(PREFIXE_NIVEAU)) {
-      const n = parseInt(id.slice(PREFIXE_NIVEAU.length), 10)
-      if (!Number.isFinite(n)) return
-      if (varianteActiveId) await selectionnerVarianteNatation(null)
-      setNiv(n)
-      return
-    }
-    await selectionnerVarianteNatation(id)
+    setBlocs(v?.blocs_natation ?? null)
   }
 
   async function creerVarianteNatation(nom: string) {
-    const v = await creerVariante(supabase, userId, 'natation', 'na', nom, {
-      niveauNatation: niv,
-      ...(blocs ? { blocsNatation: blocs } : {}),
-    })
+    // Un nouveau programme démarre vide : on ouvre directement l'ajout de blocs.
+    const v = await creerVariante(supabase, userId, 'natation', 'na', nom, { niveauNatation: niv, blocsNatation: [] })
     if (!v) {
       toast.error('Création de la variante impossible.')
       return
     }
     setVariantes((prev) => [...prev, v])
     setVarianteActiveId(v.id)
+    setBlocs([])
+    setModaleBlocs(true)
   }
 
   async function renommerVarianteNatation(id: string, nom: string) {
@@ -182,8 +165,9 @@ export function OngletNatation({
     }
     setVariantes((prev) => prev.filter((v) => v.id !== id))
     if (varianteActiveId === id) {
-      setVarianteActiveId(null)
-      setBlocs(null)
+      const suivante = variantes.find((v) => v.id !== id) ?? null
+      setVarianteActiveId(suivante?.id ?? null)
+      setBlocs(suivante?.blocs_natation ?? null)
     }
   }
 
@@ -212,9 +196,8 @@ export function OngletNatation({
     toast.success('Blocs enregistrés')
   }
 
-  // Blocs affichés/utilisés pour les calculs : les blocs perso s'ils existent, sinon le
-  // point de départ dérivé du niveau — toujours affichés en lignes séparées (une par exercice).
-  const blocsAffiches = blocs ?? blocsDefautPourNiveau(niv)
+  // Plus de séance intégrée par niveau : uniquement les blocs du programme.
+  const blocsAffiches = blocs ?? []
   const effectif = totauxDepuisBlocs(blocsAffiches)
   const distanceCible = phase && mode === 'gaia'
     ? appliquerPourcentage(effectif.distanceTotale, pourcentages[phase], ARRONDI_DISTANCE_M)
@@ -256,8 +239,18 @@ export function OngletNatation({
     }
   }
 
+  const cadre = 'flex flex-col gap-4 rounded-xl border border-emerald-200/80 bg-[#ECFDF5]/80 p-4 dark:border-emerald-900/50 dark:bg-emerald-950/20'
+  if (!pret) return <p className="text-sm text-muted-foreground">Chargement…</p>
+  if (!varianteActive) {
+    return (
+      <div className={cadre}>
+        <ProgrammeVide sport="natation" onCreer={(nom) => void creerVarianteNatation(nom)} />
+      </div>
+    )
+  }
+
   return (
-    <div className="flex flex-col gap-4 rounded-xl border border-emerald-200/80 bg-[#ECFDF5]/80 p-4 dark:border-emerald-900/50 dark:bg-emerald-950/20">
+    <div className={cadre}>
       {edit ? (
         <div className="flex items-center gap-2 text-sm text-[#065F46] dark:text-emerald-200">
           <Pencil className="size-4" /> Modification
@@ -265,12 +258,12 @@ export function OngletNatation({
       ) : null}
       <SelecteurVariante
         variantes={variantes}
-        activeId={varianteActiveId ?? `${PREFIXE_NIVEAU}${niv}`}
-        onSelect={(id) => void choisirOnglet(id)}
+        activeId={varianteActive.id}
+        onSelect={(id) => void selectionnerVarianteNatation(id)}
         onCreer={(nom) => void creerVarianteNatation(nom)}
         onRenommer={(id, nom) => void renommerVarianteNatation(id, nom)}
         onSupprimer={(id) => void supprimerVarianteNatation(id)}
-        onglets={NIVEAUX_ONGLETS}
+        onglets={[]}
         couleurActif="bg-[#059669] text-white"
       />
       {varianteActive ? (
@@ -285,13 +278,14 @@ export function OngletNatation({
       <div className="flex flex-col gap-2 rounded-lg border border-emerald-200/60 bg-white/60 p-3 text-sm dark:border-emerald-800 dark:bg-emerald-950/30">
         <div className="flex items-center justify-between gap-2">
           <p className="min-w-0 flex-1 font-medium text-neutral-900 dark:text-neutral-50">
-            {blocs ? 'Blocs personnalisés' : 'Structure de la séance'}
+            Structure de la séance
           </p>
           <Button type="button" size="sm" variant="outline" onClick={() => setModaleBlocs(true)} className="shrink-0">
             <Pencil className="mr-1 size-3" /> Modifier
           </Button>
         </div>
         <div className="flex flex-col gap-1.5">
+          {blocsAffiches.length === 0 ? <p className="text-xs text-muted-foreground">Aucun bloc : appuie sur « Modifier » pour en ajouter.</p> : null}
           {blocsAffiches.map((b, i) => (
             <BlocNatationLigne key={i} bloc={b} />
           ))}
@@ -348,7 +342,7 @@ export function OngletNatation({
       <div className="rounded-xl border border-[#059669]/30 bg-[#ECFDF5] px-4 py-3 text-sm text-[#065F46] dark:border-emerald-800 dark:bg-emerald-950/40 dark:text-emerald-100">
         <p className="font-semibold">Bilan</p>
         <p>
-          Niveau {niv} · {totalM} m prévus{mode === 'gaia' && totalM !== effectif.distanceTotale ? ' (ajusté)' : ''} · Nage libre + Brasse
+          {totalM} m prévus{mode === 'gaia' && totalM !== effectif.distanceTotale ? ' (ajusté)' : ''} · Nage libre + Brasse
         </p>
       </div>
       {userId ? (
@@ -365,7 +359,6 @@ export function OngletNatation({
       </Button>
       {modaleBlocs ? (
         <ModaleEditBlocsNatation
-          niveauActuel={niv}
           blocsActuels={blocs ?? []}
           onFermer={() => setModaleBlocs(false)}
           onSauvegarde={sauvegarderBlocsNatation}

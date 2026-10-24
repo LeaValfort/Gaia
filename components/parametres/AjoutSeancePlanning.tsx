@@ -94,7 +94,7 @@ export function AjoutSeancePlanning({ variantesParType, modeles, activitesLoggee
             </p>
             <div className="flex flex-wrap gap-1.5">
               <button type="button" onClick={() => setProgramme(null)} className={cn(PILL, programme === null ? PILL_ACTIVE : PILL_INACTIF)}>
-                {sport.type === 'autre' ? 'Séance libre' : 'Programme Gaia par défaut'}
+                Séance libre (choisie le jour même)
               </button>
               {options.map((o) => (
                 <button key={o.id} type="button" onClick={() => setProgramme(o.id)} className={cn(PILL, programme === o.id ? PILL_ACTIVE : PILL_INACTIF)}>

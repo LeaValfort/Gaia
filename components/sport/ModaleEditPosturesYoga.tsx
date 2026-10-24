@@ -1,7 +1,7 @@
 'use client'
 
 import { useMemo, useState } from 'react'
-import { ArrowDown, ArrowUp, RefreshCw, Trash2 } from 'lucide-react'
+import { ArrowDown, ArrowUp, Trash2 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog'
 import { Input } from '@/components/ui/input'
@@ -19,7 +19,6 @@ function deplacer<T>(liste: T[], i: number, sens: -1 | 1): T[] {
 
 export interface ModaleEditPosturesYogaProps {
   posturesActuelles: PostureYoga[]
-  posturesDefaut: PostureYoga[]
   onSauvegarde: (postures: PostureYoga[]) => Promise<void>
   onFermer: () => void
 }
@@ -30,7 +29,6 @@ export interface ModaleEditPosturesYogaProps {
  */
 export function ModaleEditPosturesYoga({
   posturesActuelles,
-  posturesDefaut,
   onSauvegarde,
   onFermer,
 }: ModaleEditPosturesYogaProps) {
@@ -43,7 +41,6 @@ export function ModaleEditPosturesYoga({
   const majDuree = (i: number, sec: number) =>
     setPostures((p) => p.map((post, j) => (j === i ? { ...post, dureeSec: sec } : post)))
   const ajouter = (p: PostureYoga) => setPostures((prev) => [...prev, p])
-  const defaut = () => setPostures([...posturesDefaut])
 
   const nomsExclus = useMemo(() => new Set(postures.map((p) => p.nom)), [postures])
 
@@ -101,10 +98,7 @@ export function ModaleEditPosturesYoga({
           <AjoutPostureLibre onAjouter={ajouter} />
         </div>
         <DialogFooter className="flex-col gap-2 p-4 sm:flex-row sm:justify-between">
-          <Button type="button" variant="outline" disabled={ch} onClick={defaut}>
-            <RefreshCw className="mr-1 size-4" />
-            Remettre par défaut
-          </Button>
+          <span />
           <div className="flex gap-2">
             <Button type="button" variant="secondary" onClick={onFermer} disabled={ch}>
               Annuler

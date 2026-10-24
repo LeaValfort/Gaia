@@ -13,9 +13,9 @@ import { YogaPostureLigne } from '@/components/sport/yoga/YogaPostureLigne'
 import { MacrosSeanceCard } from '@/components/sport/MacrosSeanceCard'
 import { CarteIntensiteSeance } from '@/components/parametres/CarteIntensiteSeance'
 import { MuscuRessentiEmojis } from '@/components/sport/muscu/MuscuRessentiEmojis'
-import { ONGLET_DEFAUT_ID, SelecteurVariante } from '@/components/sport/SelecteurVariante'
+import { SelecteurVariante } from '@/components/sport/SelecteurVariante'
+import { ProgrammeVide } from '@/components/sport/ProgrammeVide'
 import { ModaleEditPosturesYoga } from '@/components/sport/ModaleEditPosturesYoga'
-import { getSeanceParPhase, getSeanceYoga } from '@/lib/data/yoga'
 import { loggerSeanceYogaClient, modifierSeanceYogaClient } from '@/lib/sport/workouts-client'
 import {
   activerVariante,
@@ -27,7 +27,6 @@ import {
   supprimerVariante,
 } from '@/lib/db/sport-variantes'
 import { supabase } from '@/lib/supabase'
-import { PHASES_DESIGN } from '@/lib/data/phases-design'
 import { BannerSuggestionGaia } from '@/components/sport/BannerSuggestionGaia'
 import { adapterPosturesGaia, messageGaiaTousSports } from '@/lib/sport/gaia-adaptation'
 import type {
@@ -37,7 +36,6 @@ import type {
   PostureYoga,
   PourcentagesGaia,
   ProfilEffort,
-  SeanceYoga,
   SportVariante,
   TypeEffort,
   TypeYoga,
@@ -51,12 +49,6 @@ function parseType(n: string | null): TypeYoga | null {
   if (t === 'yin' || t === 'flow' || t === 'power') return t
   return null
 }
-
-const MODES: { t: TypeYoga; label: string; e: string }[] = [
-  { t: 'yin', label: 'Yin', e: '🌙' },
-  { t: 'flow', label: 'Flow', e: '🌿' },
-  { t: 'power', label: 'Power', e: '⚡' },
-]
 
 export function OngletYoga({
   phase,
@@ -75,8 +67,8 @@ export function OngletYoga({
 }) {
   const r = useRouter()
   const edit = !!seanceExistante
-  const def: SeanceYoga = phase ? getSeanceParPhase(phase) : getSeanceYoga('flow')
-  const [type, setType] = useState<TypeYoga>(parseType(seanceExistante?.notes ?? null) ?? def.type)
+  // Le style (yin/flow/power) n'est plus choisi : on garde celui d'une séance existante, sinon « flow ».
+  const type: TypeYoga = parseType(seanceExistante?.notes ?? null) ?? 'flow'
   const [timer, setTimer] = useState(false)
   const [coches, setCoches] = useState<Set<number>>(() => new Set())
   const [res, setRes] = useState(seanceExistante?.feeling ?? 0)
@@ -86,10 +78,11 @@ export function OngletYoga({
   const [variantes, setVariantes] = useState<SportVariante[]>([])
   const [varianteActiveId, setVarianteActiveId] = useState<string | null>(null)
   const [modalePostures, setModalePostures] = useState(false)
+  const [pret, setPret] = useState(false)
 
   const varianteActive = variantes.find((v) => v.id === varianteActiveId) ?? null
-  const seance = getSeanceYoga(type)
-  const postures: PostureYoga[] = varianteActive?.postures?.length ? varianteActive.postures : seance.postures
+  // Plus de séance intégrée : uniquement les postures du programme créé.
+  const postures: PostureYoga[] = varianteActive?.postures ?? []
   // Séance Gaia : durées des postures ajustées selon la phase (affichage + timer, le programme ne change pas).
   const [modeGaia, setModeGaia] = useState<'normale' | 'gaia'>('normale')
   const pct = phase ? pourcentages[phase] : 0
@@ -97,15 +90,13 @@ export function OngletYoga({
 
   useEffect(() => {
     setCoches(new Set())
-  }, [type, varianteActiveId])
+  }, [varianteActiveId])
 
   useEffect(() => {
-    const defLocal: SeanceYoga = phase ? getSeanceParPhase(phase) : getSeanceYoga('flow')
-    setType(parseType(seanceExistante?.notes ?? null) ?? defLocal.type)
     setRes(seanceExistante?.feeling ?? 0)
     setNotes((seanceExistante?.notes ?? '').replace(/^\[\w+\]\s*/, ''))
     setTimer(false)
-  }, [seanceExistante, date, phase])
+  }, [seanceExistante, date])
 
   useEffect(() => {
     let actif = true
@@ -113,7 +104,9 @@ export function OngletYoga({
       const vs = await getVariantes(supabase, userId, 'yoga', 'na')
       if (!actif) return
       setVariantes(vs)
-      setVarianteActiveId(vs.find((v) => v.est_active)?.id ?? null)
+      // Sans programme actif, on ouvre le premier programme existant.
+      setVarianteActiveId((vs.find((v) => v.est_active) ?? vs[0])?.id ?? null)
+      setPret(true)
     })()
     return () => {
       actif = false
@@ -126,15 +119,6 @@ export function OngletYoga({
       n.has(i) ? n.delete(i) : n.add(i)
       return n
     })
-
-  async function choisirType(t: TypeYoga) {
-    setType(t)
-    setTimer(false)
-    if (varianteActiveId) {
-      const ok = await activerVariante(supabase, userId, 'yoga', 'na', null)
-      if (ok) setVarianteActiveId(null)
-    }
-  }
 
   async function changerIntensiteYoga(profil: ProfilEffort) {
     if (!varianteActive) return
@@ -157,13 +141,15 @@ export function OngletYoga({
   }
 
   async function creerVarianteYoga(nom: string) {
-    const v = await creerVariante(supabase, userId, 'yoga', 'na', nom, { postures })
+    // Un nouveau programme démarre vide : on ouvre directement l'ajout de postures.
+    const v = await creerVariante(supabase, userId, 'yoga', 'na', nom, { postures: [] })
     if (!v) {
       toast.error('Création de la variante impossible.')
       return
     }
     setVariantes((prev) => [...prev, v])
     setVarianteActiveId(v.id)
+    setModalePostures(true)
   }
 
   async function renommerVarianteYoga(id: string, nom: string) {
@@ -179,7 +165,7 @@ export function OngletYoga({
       return
     }
     setVariantes((prev) => prev.filter((v) => v.id !== id))
-    if (varianteActiveId === id) setVarianteActiveId(null)
+    if (varianteActiveId === id) setVarianteActiveId(variantes.find((v) => v.id !== id)?.id ?? null)
   }
 
   async function sauvegarderPosturesYoga(nouvelles: PostureYoga[]) {
@@ -206,7 +192,8 @@ export function OngletYoga({
   async function save() {
     setCh(true)
     try {
-      const p = { type, dureeMin: seance.dureeMin, feeling: res > 0 ? res : null, notes: notes || null }
+      const dureePostures = Math.round(postures.reduce((t, x) => t + x.dureeSec, 0) / 60)
+      const p = { type, dureeMin: varianteActive?.duree_min || dureePostures || 30, feeling: res > 0 ? res : null, notes: notes || null }
       if (edit && seanceExistante) await modifierSeanceYogaClient(seanceExistante.id, p)
       else await loggerSeanceYogaClient({ date, ...p })
       await enregistrerContenuLibreSeance(supabase, userId, date, 'yoga', lignesFaites, !!seanceExistante?.contenu_libre?.length)
@@ -220,46 +207,28 @@ export function OngletYoga({
       setCh(false)
     }
   }
+  const cadre = 'flex flex-col gap-4 rounded-xl border border-violet-200/80 bg-[#F5F3FF]/80 p-4 dark:border-violet-900/50 dark:bg-violet-950/20'
+  if (!pret) return <p className="text-sm text-muted-foreground">Chargement…</p>
+  if (!varianteActive) {
+    return (
+      <div className={cadre}>
+        <ProgrammeVide sport="yoga" onCreer={(nom) => void creerVarianteYoga(nom)} />
+      </div>
+    )
+  }
+
   return (
-    <div className="flex flex-col gap-4 rounded-xl border border-violet-200/80 bg-[#F5F3FF]/80 p-4 dark:border-violet-900/50 dark:bg-violet-950/20">
+    <div className={cadre}>
       {edit ? (
         <div className="flex items-center gap-2 text-sm text-[#6D28D9] dark:text-violet-300">
           <Pencil className="size-4" /> Modification
         </div>
       ) : null}
-      {phase && !edit ? (
-        <p className="text-sm text-violet-800/80 dark:text-violet-200/90">
-          Suggestion : {getSeanceParPhase(phase).nom}
-        </p>
-      ) : null}
-      <div className="flex flex-wrap gap-2">
-        {MODES.map((m) => {
-          const phasesConseillees = getSeanceYoga(m.t)
-            .phaseCycle.map((p) => PHASES_DESIGN[p].label)
-            .join(' · ')
-          return (
-            <button
-              key={m.t}
-              type="button"
-              onClick={() => void choisirType(m.t)}
-              className={`min-w-0 flex-1 rounded-lg px-2 py-2 text-center text-sm sm:px-3 ${
-                type === m.t && !varianteActiveId ? 'bg-[#7C3AED] text-white' : 'bg-white/90 dark:bg-neutral-800/90'
-              }`}
-            >
-              <span className="block">
-                {m.e} {m.label}
-              </span>
-              <span className={`block text-[9px] font-normal ${type === m.t && !varianteActiveId ? 'text-white/80' : 'text-neutral-500 dark:text-neutral-400'}`}>
-                {phasesConseillees}
-              </span>
-            </button>
-          )
-        })}
-      </div>
       <SelecteurVariante
         variantes={variantes}
-        activeId={varianteActiveId ?? ONGLET_DEFAUT_ID}
-        onSelect={(id) => void selectionnerVarianteYoga(id === ONGLET_DEFAUT_ID ? null : id)}
+        onglets={[]}
+        activeId={varianteActive.id}
+        onSelect={(id) => void selectionnerVarianteYoga(id)}
         onCreer={(nom) => void creerVarianteYoga(nom)}
         onRenommer={(id, nom) => void renommerVarianteYoga(id, nom)}
         onSupprimer={(id) => void supprimerVarianteYoga(id)}
@@ -278,7 +247,9 @@ export function OngletYoga({
         <BannerSuggestionGaia phase={phase} message={messageGaiaTousSports(phase, pct)} modeActif={modeGaia} onChangerMode={setModeGaia} />
       ) : null}
       <div className="flex items-center justify-between gap-2">
-        <p className="text-sm text-neutral-600 dark:text-neutral-400">{seance.description}</p>
+        <p className="text-sm text-neutral-600 dark:text-neutral-400">
+          {postures.length ? `${postures.length} posture${postures.length > 1 ? 's' : ''}` : 'Aucune posture : appuie sur « Modifier » pour en ajouter.'}
+        </p>
         <Button type="button" size="sm" variant="outline" onClick={() => setModalePostures(true)} className="shrink-0">
           <Pencil className="mr-1 size-3" /> Modifier
         </Button>
@@ -288,7 +259,7 @@ export function OngletYoga({
           <YogaPostureLigne key={i} p={p} index={i} fait={coches.has(i)} onToggle={toggle} />
         ))}
       </div>
-      {!timer ? (
+      {!postures.length ? null : !timer ? (
         <Button type="button" className="w-full border-violet-300 bg-[#7C3AED] hover:bg-violet-800" onClick={() => setTimer(true)}>
           ▶ Lancer le timer guidé
         </Button>
@@ -322,7 +293,6 @@ export function OngletYoga({
       {modalePostures ? (
         <ModaleEditPosturesYoga
           posturesActuelles={postures}
-          posturesDefaut={seance.postures}
           onFermer={() => setModalePostures(false)}
           onSauvegarde={sauvegarderPosturesYoga}
         />

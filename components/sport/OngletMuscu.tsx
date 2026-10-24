@@ -12,11 +12,12 @@ import { BannerSuggestionGaia } from '@/components/sport/BannerSuggestionGaia'
 import { CarteIntensiteSeance } from '@/components/parametres/CarteIntensiteSeance'
 import { ExerciceItem } from '@/components/sport/ExerciceItem'
 import { ModaleEditSeance } from '@/components/sport/ModaleEditSeance'
-import { ONGLET_DEFAUT_ID, SelecteurVariante } from '@/components/sport/SelecteurVariante'
+import { SelecteurVariante } from '@/components/sport/SelecteurVariante'
+import { ProgrammeVide } from '@/components/sport/ProgrammeVide'
 import { MuscuRessentiEmojis } from '@/components/sport/muscu/MuscuRessentiEmojis'
 import { MuscuTypeLieu } from '@/components/sport/muscu/MuscuTypeLieu'
 import { Button } from '@/components/ui/button'
-import { EXERCICES, getExercicesParSeance } from '@/lib/data/exercises'
+import { EXERCICES } from '@/lib/data/exercises'
 import { getDernieresCharges } from '@/lib/db/charges'
 import {
   activerVariante,
@@ -35,7 +36,7 @@ import {
   enrichirDepuisCatalog,
   exCatalogVersAdapte,
 } from '@/lib/sport/muscuExerciceAdapte'
-import { exercicesDepuisCustom, exercicesToCustom, typeMuscuVersPlanning } from '@/lib/sport/muscuCustomMap'
+import { exercicesDepuisCustom, typeMuscuVersPlanning } from '@/lib/sport/muscuCustomMap'
 import { POURCENTAGES_GAIA_DEFAUT } from '@/types'
 import type {
   LigneSeanceLibre,
@@ -88,6 +89,7 @@ export function OngletMuscu({
   const [variantes, setVariantes] = useState<SportVariante[]>([])
   const [varianteActiveId, setVarianteActiveId] = useState<string | null>(null)
   const [custom, setCustom] = useState<ExerciceCustom[] | null>(null)
+  const [pret, setPret] = useState(false)
   const [ressenti, setRessenti] = useState<number | null>(seanceExistante?.feeling ?? null)
   const [modale, setModale] = useState(false)
   const [ch, setCh] = useState(false)
@@ -113,11 +115,12 @@ export function OngletMuscu({
     setCharges((prev) => ({ ...prev, ...chMap }))
   }, [seanceExistante, date])
 
-  const list = useMemo(() => (custom?.length ? exercicesDepuisCustom(custom, typeSeance, lieu) : getExercicesParSeance(typeSeance, lieu)), [custom, typeSeance, lieu])
+  // Plus de séance intégrée : uniquement les exercices du programme créé par l'utilisatrice.
+  const list = useMemo(() => exercicesDepuisCustom(custom ?? [], typeSeance, lieu), [custom, typeSeance, lieu])
 
   const seanceA = useMemo((): SeanceAdaptee | null => {
     if (!list.length) return null
-    const b = custom?.length ? custom : exercicesToCustom(list)
+    const b = custom ?? []
     const a = adapterSeancePhase(b, dernieres, pPh, pourcentages)
     return { ...a, exercices: enrichirDepuisCatalog(a.exercices, list) }
   }, [custom, list, dernieres, pPh, pourcentages])
@@ -139,9 +142,11 @@ export function OngletMuscu({
       ])
       if (!actif) return
       setVariantes(vs)
-      const active = vs.find((v) => v.est_active) ?? null
+      // Sans programme actif, on ouvre le premier programme existant.
+      const active = vs.find((v) => v.est_active) ?? vs[0] ?? null
       setVarianteActiveId(active?.id ?? null)
-      setCustom(active?.exercices?.length ? active.exercices : null)
+      setCustom(active?.exercices ?? null)
+      setPret(true)
       // Les dernières charges ne pré-remplissent plus `charges` : elles écrasaient
       // la charge proposée par Gaia. Elles servent de placeholder gris clair.
       setDernieres(d)
@@ -177,20 +182,21 @@ export function OngletMuscu({
     }
     setVarianteActiveId(id)
     const v = id ? variantes.find((x) => x.id === id) ?? null : null
-    setCustom(v?.exercices?.length ? v.exercices : null)
+    setCustom(v?.exercices ?? null)
   }
 
   async function creerVarianteMuscu(nom: string) {
     const typePlanning = typeMuscuVersPlanning(typeSeance)
-    const contenuBase = custom?.length ? custom : exercicesToCustom(list)
-    const v = await creerVariante(supabase, userId, typePlanning, lieu, nom, { exercices: contenuBase })
+    // Un nouveau programme démarre vide : on ouvre directement l'ajout d'exercices.
+    const v = await creerVariante(supabase, userId, typePlanning, lieu, nom, { exercices: [] })
     if (!v) {
       toast.error('Création de la variante impossible.')
       return
     }
     setVariantes((prev) => [...prev, v])
     setVarianteActiveId(v.id)
-    setCustom(v.exercices)
+    setCustom([])
+    setModale(true)
   }
 
   async function renommerVarianteMuscu(id: string, nom: string) {
@@ -207,8 +213,9 @@ export function OngletMuscu({
     }
     setVariantes((prev) => prev.filter((v) => v.id !== id))
     if (varianteActiveId === id) {
-      setVarianteActiveId(null)
-      setCustom(null)
+      const suivante = variantes.find((v) => v.id !== id) ?? null
+      setVarianteActiveId(suivante?.id ?? null)
+      setCustom(suivante?.exercices ?? null)
     }
   }
 
@@ -235,17 +242,31 @@ export function OngletMuscu({
     toast.success('Séance personnalisée enregistrée')
   }
 
+  if (!pret) return <p className="text-sm text-muted-foreground">Chargement…</p>
+  if (!varianteActive) {
+    return (
+      <div className="flex flex-col gap-4">
+        <MuscuTypeLieu type={typeSeance} lieu={lieu} phase={phase} onType={setTypeSeance} onLieu={setLieu} />
+        <ProgrammeVide sport={`muscu ${LBL[typeSeance]} (${lieu})`} onCreer={(nom) => void creerVarianteMuscu(nom)} />
+      </div>
+    )
+  }
+
   return (
     <div className="flex flex-col gap-4">
       <MuscuTypeLieu type={typeSeance} lieu={lieu} phase={phase} onType={setTypeSeance} onLieu={setLieu} />
       <SelecteurVariante
         variantes={variantes}
-        activeId={varianteActiveId ?? ONGLET_DEFAUT_ID}
-        onSelect={(id) => void selectionnerVariante(id === ONGLET_DEFAUT_ID ? null : id)}
+        onglets={[]}
+        activeId={varianteActive.id}
+        onSelect={(id) => void selectionnerVariante(id)}
         onCreer={(nom) => void creerVarianteMuscu(nom)}
         onRenommer={(id, nom) => void renommerVarianteMuscu(id, nom)}
         onSupprimer={(id) => void supprimerVarianteMuscu(id)}
       />
+      {aff.length === 0 ? (
+        <p className="text-sm text-muted-foreground">Aucun exercice dans ce programme : appuie sur « Modifier » pour en ajouter.</p>
+      ) : null}
       {varianteActive ? (
         <CarteIntensiteSeance
           label={`Intensité — ${varianteActive.nom}`}
@@ -358,7 +379,7 @@ export function OngletMuscu({
         <ModaleEditSeance
           typeSeance={typeMuscuVersPlanning(typeSeance)}
           lieu={lieu}
-          exercicesActuels={custom?.length ? custom : exercicesToCustom(list)}
+          exercicesActuels={custom ?? []}
           exercicesCatalogue={EXERCICES}
           onFermer={() => setModale(false)}
           onSauvegarde={sauvegarderContenuMuscu}

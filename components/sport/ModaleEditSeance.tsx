@@ -1,13 +1,12 @@
 'use client'
 
 import { useEffect, useMemo, useState } from 'react'
-import { Plus, RefreshCw, Search } from 'lucide-react'
+import { Plus, Search } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog'
 import { Input } from '@/components/ui/input'
 import { ExerciceEditRow } from '@/components/sport/ExerciceEditRow'
-import { getExercicesParSeance } from '@/lib/data/exercises'
-import { exerciceVersCustom, planningVersTypeMuscu, exercicesToCustom } from '@/lib/sport/muscuCustomMap'
+import { exerciceVersCustom, planningVersTypeMuscu } from '@/lib/sport/muscuCustomMap'
 import type { Exercice, ExerciceCustom, Lieu, TypeSeanceMuscu } from '@/types'
 
 function reindex(list: ExerciceCustom[]): ExerciceCustom[] {
@@ -43,7 +42,6 @@ export function ModaleEditSeance({
 }: ModaleEditSeanceProps) {
   const typeSeance = ts as TypeSeanceMuscu
   const sm = useMemo(() => planningVersTypeMuscu(typeSeance), [typeSeance])
-  const def = useMemo(() => reindex(exercicesToCustom(getExercicesParSeance(sm, lieu))), [sm, lieu])
   const [exo, setExo] = useState(() => reindex(exercicesActuels))
   const [q, setQ] = useState('')
   const [ch, setCh] = useState(false)
@@ -66,10 +64,6 @@ export function ModaleEditSeance({
   const sup = (i: number) => setExo((p) => reindex(p.filter((_, j) => j !== i)))
   const aj = (e: Exercice) => setExo((p) => reindex([...p, exerciceVersCustom(e, p.length)]))
 
-  /** Réinitialisation locale uniquement — il faut cliquer "Sauvegarder" pour la persister. */
-  function defaut() {
-    setExo([...def])
-  }
 
   async function save() {
     if (!exo.length) return
@@ -115,10 +109,7 @@ export function ModaleEditSeance({
           </ul>
         </div>
         <DialogFooter className="flex-col gap-2 p-4 sm:flex-row sm:justify-between">
-          <Button type="button" variant="outline" disabled={ch} onClick={defaut}>
-            <RefreshCw className="mr-1 size-4" />
-            Remettre par défaut
-          </Button>
+          <span />
           <div className="flex gap-2">
             <Button type="button" variant="secondary" onClick={onFermer} disabled={ch}>
               Annuler

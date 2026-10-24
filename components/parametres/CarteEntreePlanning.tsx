@@ -52,7 +52,7 @@ export function CarteEntreePlanning({ entree, variantesDisponibles, modelesDispo
 
       <div className="flex flex-wrap gap-1.5">
         <button type="button" disabled={enChargement} onClick={() => changer(null)} className={cn(PILL, actuel == null ? PILL_ACTIVE : PILL_INACTIF)}>
-          {estAutre ? 'Séance libre' : 'Programme Gaia par défaut'}
+          Séance libre (choisie le jour même)
         </button>
         {options.map((o) => (
           <button key={o.id} type="button" disabled={enChargement} onClick={() => changer(o.id)} className={cn(PILL, actuel === o.id ? PILL_ACTIVE : PILL_INACTIF)}>
