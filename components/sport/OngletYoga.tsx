@@ -15,6 +15,8 @@ import { CarteIntensiteSeance } from '@/components/parametres/CarteIntensiteSean
 import { MuscuRessentiEmojis } from '@/components/sport/muscu/MuscuRessentiEmojis'
 import { SelecteurVariante } from '@/components/sport/SelecteurVariante'
 import { ProgrammeVide } from '@/components/sport/ProgrammeVide'
+import { AssistantSeance } from '@/components/sport/aide/AssistantSeance'
+import { BoutonAideSeance } from '@/components/sport/aide/BoutonAideSeance'
 import { ModaleEditPosturesYoga } from '@/components/sport/ModaleEditPosturesYoga'
 import { loggerSeanceYogaClient, modifierSeanceYogaClient } from '@/lib/sport/workouts-client'
 import {
@@ -79,6 +81,7 @@ export function OngletYoga({
   const [varianteActiveId, setVarianteActiveId] = useState<string | null>(null)
   const [modalePostures, setModalePostures] = useState(false)
   const [pret, setPret] = useState(false)
+  const [aide, setAide] = useState(false)
 
   const varianteActive = variantes.find((v) => v.id === varianteActiveId) ?? null
   // Plus de séance intégrée : uniquement les postures du programme créé.
@@ -140,16 +143,17 @@ export function OngletYoga({
     setTimer(false)
   }
 
-  async function creerVarianteYoga(nom: string) {
-    // Un nouveau programme démarre vide : on ouvre directement l'ajout de postures.
-    const v = await creerVariante(supabase, userId, 'yoga', 'na', nom, { postures: [] })
+  async function creerVarianteYoga(nom: string, nouvelles: PostureYoga[] = []) {
+    // Sans contenu (création manuelle), on ouvre directement l'ajout de postures.
+    const v = await creerVariante(supabase, userId, 'yoga', 'na', nom, { postures: nouvelles })
     if (!v) {
       toast.error('Création de la variante impossible.')
       return
     }
     setVariantes((prev) => [...prev, v])
     setVarianteActiveId(v.id)
-    setModalePostures(true)
+    if (!nouvelles.length) setModalePostures(true)
+    else toast.success(`Programme « ${nom} » créé`)
   }
 
   async function renommerVarianteYoga(id: string, nom: string) {
@@ -208,11 +212,24 @@ export function OngletYoga({
     }
   }
   const cadre = 'flex flex-col gap-4 rounded-xl border border-violet-200/80 bg-[#F5F3FF]/80 p-4 dark:border-violet-900/50 dark:bg-violet-950/20'
+  const assistant = aide ? (
+    <AssistantSeance
+      contexte={{ sport: 'yoga' }}
+      phase={phase}
+      libelleValider="Créer ce programme"
+      onFermer={() => setAide(false)}
+      onUtiliser={async (s, nom) => {
+        await creerVarianteYoga(nom, s.postures)
+        setAide(false)
+      }}
+    />
+  ) : null
   if (!pret) return <p className="text-sm text-muted-foreground">Chargement…</p>
   if (!varianteActive) {
     return (
       <div className={cadre}>
-        <ProgrammeVide sport="yoga" onCreer={(nom) => void creerVarianteYoga(nom)} />
+        <ProgrammeVide sport="yoga" onCreer={(nom) => void creerVarianteYoga(nom)} onAide={() => setAide(true)} />
+        {assistant}
       </div>
     )
   }
@@ -234,6 +251,8 @@ export function OngletYoga({
         onSupprimer={(id) => void supprimerVarianteYoga(id)}
         couleurActif="bg-[#7C3AED] text-white"
       />
+      <BoutonAideSeance onClick={() => setAide(true)} />
+      {assistant}
       {varianteActive ? (
         <CarteIntensiteSeance
           label={`Intensité — ${varianteActive.nom}`}

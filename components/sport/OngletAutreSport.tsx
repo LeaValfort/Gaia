@@ -10,6 +10,8 @@ import { ChoixSportLibre } from '@/components/sport/libre/ChoixSportLibre'
 import { BarreModelesSeance } from '@/components/sport/libre/BarreModelesSeance'
 import { BannerSuggestionGaia } from '@/components/sport/BannerSuggestionGaia'
 import { useModeGaiaLignes } from '@/hooks/useModeGaiaLignes'
+import { AssistantSeance } from '@/components/sport/aide/AssistantSeance'
+import { BoutonAideSeance } from '@/components/sport/aide/BoutonAideSeance'
 import { messageGaiaTousSports } from '@/lib/sport/gaia-adaptation'
 import { EditeurSeanceLibre } from '@/components/sport/libre/EditeurSeanceLibre'
 import { useSeanceLibre } from '@/hooks/useSeanceLibre'
@@ -59,6 +61,7 @@ export function OngletAutreSport({ userId, date, activiteExistante, onEnregistre
   const [f, setF] = useState<ActivityLogFormData>(() => formDepuisActivite(activiteExistante))
   const [lignes, setLignes] = useState<LigneSeanceLibre[]>(() => activiteExistante?.contenu ?? [])
   const [ch, setCh] = useState(false)
+  const [aide, setAide] = useState(false)
   const { modeles, dernieres, enregistrerModele, supprimerModele } = useSeanceLibre(userId)
   const pct = phase ? pourcentages[phase] : 0
   const gaia = useModeGaiaLignes(lignes, setLignes, pct)
@@ -122,6 +125,22 @@ export function OngletAutreSport({ userId, date, activiteExistante, onEnregistre
             <Input value={f.sport_name} onChange={(e) => setV('sport_name', e.target.value)} className={CHAMP} placeholder={t === 'autre' ? 'Pilates, headstand, corde à sauter…' : 'Ex. Fractionné'} />
           </div>
           {cfg.champs.filter((c) => c.cle !== 'sport_name').map((c) => champ(c, f, setV))}
+          <BoutonAideSeance libelle="Créer la séance avec Gaia" onClick={() => setAide(true)} />
+          {aide && t ? (
+            <AssistantSeance
+              contexte={{ sport: 'libre', sport_libre: t === 'autre' ? f.sport_name.trim() || 'sport' : cfg.nom }}
+              phase={phase}
+              libelleValider="Utiliser cette séance"
+              avecNom={false}
+              onFermer={() => setAide(false)}
+              onUtiliser={(s) => {
+                setLignes(s.lignes)
+                gaia.reinitialiser()
+                if (!f.sport_name.trim()) setV('sport_name', s.nom)
+                setAide(false)
+              }}
+            />
+          ) : null}
           {phase && lignes.length ? (
             <BannerSuggestionGaia phase={phase} message={messageGaiaTousSports(phase, pct)} modeActif={gaia.mode} onChangerMode={gaia.changerMode} />
           ) : null}

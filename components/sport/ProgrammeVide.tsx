@@ -1,7 +1,7 @@
 'use client'
 
 import { useState } from 'react'
-import { Plus } from 'lucide-react'
+import { Plus, Sparkles } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 
@@ -9,10 +9,12 @@ interface ProgrammeVideProps {
   /** Ex. « muscu Full body », « natation », « yoga ». */
   sport: string
   onCreer: (nom: string) => void
+  /** Ouvre l'aide à la création (IA). */
+  onAide: () => void
 }
 
 /** Aucun programme pour ce sport : Gaia n'en impose pas, on crée le sien à partir de zéro. */
-export function ProgrammeVide({ sport, onCreer }: ProgrammeVideProps) {
+export function ProgrammeVide({ sport, onCreer, onAide }: ProgrammeVideProps) {
   const [nom, setNom] = useState('')
   const valider = () => {
     if (nom.trim()) onCreer(nom.trim())
@@ -36,6 +38,9 @@ export function ProgrammeVide({ sport, onCreer }: ProgrammeVideProps) {
           <Plus className="mr-1 size-3.5" /> Créer
         </Button>
       </form>
+      <Button type="button" variant="outline" size="sm" onClick={onAide} className="w-full border-amber-300 text-amber-800 dark:border-amber-800 dark:text-amber-200">
+        <Sparkles className="mr-1.5 size-3.5" /> Créer avec l’aide de Gaia
+      </Button>
     </div>
   )
 }

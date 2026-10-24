@@ -16,6 +16,8 @@ import { BannerSuggestionGaia } from '@/components/sport/BannerSuggestionGaia'
 import { CarteIntensiteSeance } from '@/components/parametres/CarteIntensiteSeance'
 import { SelecteurVariante } from '@/components/sport/SelecteurVariante'
 import { ProgrammeVide } from '@/components/sport/ProgrammeVide'
+import { AssistantSeance } from '@/components/sport/aide/AssistantSeance'
+import { BoutonAideSeance } from '@/components/sport/aide/BoutonAideSeance'
 import { ModaleEditBlocsNatation } from '@/components/sport/ModaleEditBlocsNatation'
 import { BlocNatationLigne } from '@/components/sport/natation/BlocNatationLigne'
 import { appliquerPourcentage, messagePourcentageGaia } from '@/lib/planning-sport'
@@ -79,6 +81,7 @@ export function OngletNatation({
   const [blocs, setBlocs] = useState<BlocNatation[] | null>(null)
   const [modaleBlocs, setModaleBlocs] = useState(false)
   const [pret, setPret] = useState(false)
+  const [aide, setAide] = useState(false)
 
   useEffect(() => {
     setNiv(seanceExistante?.swim.level ?? 1)
@@ -138,17 +141,18 @@ export function OngletNatation({
     setBlocs(v?.blocs_natation ?? null)
   }
 
-  async function creerVarianteNatation(nom: string) {
-    // Un nouveau programme démarre vide : on ouvre directement l'ajout de blocs.
-    const v = await creerVariante(supabase, userId, 'natation', 'na', nom, { niveauNatation: niv, blocsNatation: [] })
+  async function creerVarianteNatation(nom: string, nouveauxBlocs: BlocNatation[] = []) {
+    // Sans contenu (création manuelle), on ouvre directement l'ajout de blocs.
+    const v = await creerVariante(supabase, userId, 'natation', 'na', nom, { niveauNatation: niv, blocsNatation: nouveauxBlocs })
     if (!v) {
       toast.error('Création de la variante impossible.')
       return
     }
     setVariantes((prev) => [...prev, v])
     setVarianteActiveId(v.id)
-    setBlocs([])
-    setModaleBlocs(true)
+    setBlocs(nouveauxBlocs)
+    if (!nouveauxBlocs.length) setModaleBlocs(true)
+    else toast.success(`Programme « ${nom} » créé`)
   }
 
   async function renommerVarianteNatation(id: string, nom: string) {
@@ -240,11 +244,24 @@ export function OngletNatation({
   }
 
   const cadre = 'flex flex-col gap-4 rounded-xl border border-emerald-200/80 bg-[#ECFDF5]/80 p-4 dark:border-emerald-900/50 dark:bg-emerald-950/20'
+  const assistant = aide ? (
+    <AssistantSeance
+      contexte={{ sport: 'natation' }}
+      phase={phase}
+      libelleValider="Créer ce programme"
+      onFermer={() => setAide(false)}
+      onUtiliser={async (s, nom) => {
+        await creerVarianteNatation(nom, s.blocs)
+        setAide(false)
+      }}
+    />
+  ) : null
   if (!pret) return <p className="text-sm text-muted-foreground">Chargement…</p>
   if (!varianteActive) {
     return (
       <div className={cadre}>
-        <ProgrammeVide sport="natation" onCreer={(nom) => void creerVarianteNatation(nom)} />
+        <ProgrammeVide sport="natation" onCreer={(nom) => void creerVarianteNatation(nom)} onAide={() => setAide(true)} />
+        {assistant}
       </div>
     )
   }
@@ -266,6 +283,8 @@ export function OngletNatation({
         onglets={[]}
         couleurActif="bg-[#059669] text-white"
       />
+      <BoutonAideSeance onClick={() => setAide(true)} />
+      {assistant}
       {varianteActive ? (
         <CarteIntensiteSeance
           label={`Intensité — ${varianteActive.nom}`}

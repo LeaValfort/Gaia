@@ -1442,3 +1442,39 @@ export interface SessionBatch {
   faits: string[]
   updated_at: string
 }
+
+// ------------------------------------------------------------
+// Aide à la création de séance (IA)
+// ------------------------------------------------------------
+
+/** Famille de séance à générer : chacune a son format de contenu. */
+export type SportAide = 'muscu' | 'natation' | 'yoga' | 'libre'
+
+/** Réponses de l'utilisatrice à l'assistant de création de séance. */
+export interface CriteresSeance {
+  sport: SportAide
+  objectif: string
+  niveau: string
+  duree_min: number
+  materiel: string[]
+  zones: string[]
+  /** Envies, contraintes ou choses à éviter, en texte libre. */
+  envies: string
+  /** Phase du cycle à prendre en compte (null = ne pas adapter). */
+  phase: Phase | null
+  /** Muscu : type et lieu du programme en cours de création. */
+  type_muscu?: TypeSeanceMuscle
+  lieu?: Lieu
+  /** Autres sports : nom du sport (ex. « Course à pied »). */
+  sport_libre?: string
+}
+
+/** Séance proposée par l'IA, à relire avant d'en faire un programme. */
+export interface SeanceGeneree {
+  nom: string
+  conseil: string
+  exercices: ExerciceCustom[]
+  blocs: BlocNatation[]
+  postures: PostureYoga[]
+  lignes: LigneSeanceLibre[]
+}

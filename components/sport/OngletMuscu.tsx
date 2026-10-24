@@ -14,6 +14,8 @@ import { ExerciceItem } from '@/components/sport/ExerciceItem'
 import { ModaleEditSeance } from '@/components/sport/ModaleEditSeance'
 import { SelecteurVariante } from '@/components/sport/SelecteurVariante'
 import { ProgrammeVide } from '@/components/sport/ProgrammeVide'
+import { AssistantSeance } from '@/components/sport/aide/AssistantSeance'
+import { BoutonAideSeance } from '@/components/sport/aide/BoutonAideSeance'
 import { MuscuRessentiEmojis } from '@/components/sport/muscu/MuscuRessentiEmojis'
 import { MuscuTypeLieu } from '@/components/sport/muscu/MuscuTypeLieu'
 import { Button } from '@/components/ui/button'
@@ -90,6 +92,7 @@ export function OngletMuscu({
   const [varianteActiveId, setVarianteActiveId] = useState<string | null>(null)
   const [custom, setCustom] = useState<ExerciceCustom[] | null>(null)
   const [pret, setPret] = useState(false)
+  const [aide, setAide] = useState(false)
   const [ressenti, setRessenti] = useState<number | null>(seanceExistante?.feeling ?? null)
   const [modale, setModale] = useState(false)
   const [ch, setCh] = useState(false)
@@ -185,18 +188,19 @@ export function OngletMuscu({
     setCustom(v?.exercices ?? null)
   }
 
-  async function creerVarianteMuscu(nom: string) {
+  async function creerVarianteMuscu(nom: string, exercices: ExerciceCustom[] = []) {
     const typePlanning = typeMuscuVersPlanning(typeSeance)
-    // Un nouveau programme démarre vide : on ouvre directement l'ajout d'exercices.
-    const v = await creerVariante(supabase, userId, typePlanning, lieu, nom, { exercices: [] })
+    // Sans contenu (création manuelle), on ouvre directement l'ajout d'exercices.
+    const v = await creerVariante(supabase, userId, typePlanning, lieu, nom, { exercices })
     if (!v) {
       toast.error('Création de la variante impossible.')
       return
     }
     setVariantes((prev) => [...prev, v])
     setVarianteActiveId(v.id)
-    setCustom([])
-    setModale(true)
+    setCustom(exercices)
+    if (!exercices.length) setModale(true)
+    else toast.success(`Programme « ${nom} » créé`)
   }
 
   async function renommerVarianteMuscu(id: string, nom: string) {
@@ -242,12 +246,26 @@ export function OngletMuscu({
     toast.success('Séance personnalisée enregistrée')
   }
 
+  const assistant = aide ? (
+    <AssistantSeance
+      contexte={{ sport: 'muscu', type_muscu: typeSeance, lieu }}
+      phase={phase}
+      libelleValider="Créer ce programme"
+      onFermer={() => setAide(false)}
+      onUtiliser={async (s, nom) => {
+        await creerVarianteMuscu(nom, s.exercices)
+        setAide(false)
+      }}
+    />
+  ) : null
+
   if (!pret) return <p className="text-sm text-muted-foreground">Chargement…</p>
   if (!varianteActive) {
     return (
       <div className="flex flex-col gap-4">
         <MuscuTypeLieu type={typeSeance} lieu={lieu} phase={phase} onType={setTypeSeance} onLieu={setLieu} />
-        <ProgrammeVide sport={`muscu ${LBL[typeSeance]} (${lieu})`} onCreer={(nom) => void creerVarianteMuscu(nom)} />
+        <ProgrammeVide sport={`muscu ${LBL[typeSeance]} (${lieu})`} onCreer={(nom) => void creerVarianteMuscu(nom)} onAide={() => setAide(true)} />
+        {assistant}
       </div>
     )
   }
@@ -264,6 +282,8 @@ export function OngletMuscu({
         onRenommer={(id, nom) => void renommerVarianteMuscu(id, nom)}
         onSupprimer={(id) => void supprimerVarianteMuscu(id)}
       />
+      <BoutonAideSeance onClick={() => setAide(true)} />
+      {assistant}
       {aff.length === 0 ? (
         <p className="text-sm text-muted-foreground">Aucun exercice dans ce programme : appuie sur « Modifier » pour en ajouter.</p>
       ) : null}
