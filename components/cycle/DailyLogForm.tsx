@@ -66,7 +66,7 @@ export function DailyLogForm({
       const heuresSommeil = extended.sleep_hours.trim()
       const sleepHoursParsed = heuresSommeil ? parseFloat(heuresSommeil) : null
 
-      await upsertDailyLog({
+      const res = await upsertDailyLog({
         date,
         phase,
         cycle_day: jourDuCycle,
@@ -86,10 +86,15 @@ export function DailyLogForm({
         flow_intensity: extended.flow_intensity,
         free_note: extended.free_note.trim() || null,
       })
+      if (!res.ok) {
+        setErreur(`Impossible de sauvegarder le journal : ${res.message ?? 'erreur inconnue'}`)
+        return
+      }
       router.refresh()
       onSaved?.()
     } catch {
-      setErreur('Impossible de sauvegarder le journal. Réessaie.')
+      // Souvent une ancienne version de l'app gardée en cache après une mise à jour.
+      setErreur('Impossible de sauvegarder le journal. Ferme et rouvre Gaia (nouvelle version), puis réessaie.')
     } finally {
       setChargement(false)
     }

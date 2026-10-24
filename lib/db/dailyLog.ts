@@ -69,24 +69,29 @@ export async function getDailyLogParDate(date: string): Promise<DailyLog | null>
  */
 export async function upsertDailyLog(
   log: Omit<DailyLog, 'id' | 'user_id' | 'created_at'>
-): Promise<void> {
+): Promise<{ ok: boolean; message?: string }> {
+  // Renvoie l'erreur au lieu de la lever : en production, Next masque le message des erreurs levées.
   try {
     const supabase = await creerClientServeur()
     const { data: { user } } = await supabase.auth.getUser()
-    if (!user) throw new Error('Non connectée')
+    if (!user) return { ok: false, message: 'Session expirée : reconnecte-toi.' }
 
     const { error } = await supabase
       .from('daily_logs')
       .upsert({ ...log, user_id: user.id }, { onConflict: 'user_id,date' })
 
-    if (error) throw error
+    if (error) {
+      console.error('Erreur upsertDailyLog:', error)
+      return { ok: false, message: error.message }
+    }
     // Douleur élevée : alerte immédiate aux proches autorisés, après la réponse.
     if (douleurHaute(log)) {
       const ownerId = user.id
       after(() => notifierProches(ownerId, 'douleur_haute', log.date))
     }
+    return { ok: true }
   } catch (erreur) {
     console.error('Erreur upsertDailyLog:', erreur)
-    throw erreur
+    return { ok: false, message: erreur instanceof Error ? erreur.message : 'Erreur inconnue' }
   }
 }
