@@ -43,8 +43,9 @@ export function SectionPourcentagesGaia({ prefs, onUpdate }: SectionPourcentages
         <p>
           Réglage de confort personnalisable, pas une prescription scientifique stricte — la
           littérature ne fixe pas de pourcentage précis (voir Bibliographie). Ces valeurs
-          s&apos;appliquent à la charge en muscu et à la distance en natation via le bouton
-          « Séance Gaia ».
+          s&apos;appliquent à tous les sports via le bouton « Séance Gaia » : charges en muscu,
+          distance en natation, durée des postures en yoga, et durées, distances et charges
+          des séances libres (course, pilates, vélo…).
         </p>
       </div>
 

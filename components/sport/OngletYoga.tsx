@@ -28,11 +28,14 @@ import {
 } from '@/lib/db/sport-variantes'
 import { supabase } from '@/lib/supabase'
 import { PHASES_DESIGN } from '@/lib/data/phases-design'
+import { BannerSuggestionGaia } from '@/components/sport/BannerSuggestionGaia'
+import { adapterPosturesGaia, messageGaiaTousSports } from '@/lib/sport/gaia-adaptation'
 import type {
   LigneSeanceLibre,
   IntensiteEffort,
   Phase,
   PostureYoga,
+  PourcentagesGaia,
   ProfilEffort,
   SeanceYoga,
   SportVariante,
@@ -61,12 +64,14 @@ export function OngletYoga({
   date,
   seanceExistante,
   onEnregistre,
+  pourcentages,
 }: {
   phase: Phase | null
   userId: string
   date: string
   seanceExistante?: WorkoutYogaComplet | null
   onEnregistre?: () => void
+  pourcentages: PourcentagesGaia
 }) {
   const r = useRouter()
   const edit = !!seanceExistante
@@ -85,6 +90,10 @@ export function OngletYoga({
   const varianteActive = variantes.find((v) => v.id === varianteActiveId) ?? null
   const seance = getSeanceYoga(type)
   const postures: PostureYoga[] = varianteActive?.postures?.length ? varianteActive.postures : seance.postures
+  // Séance Gaia : durées des postures ajustées selon la phase (affichage + timer, le programme ne change pas).
+  const [modeGaia, setModeGaia] = useState<'normale' | 'gaia'>('normale')
+  const pct = phase ? pourcentages[phase] : 0
+  const posturesSeance = modeGaia === 'gaia' ? adapterPosturesGaia(postures, pct) : postures
 
   useEffect(() => {
     setCoches(new Set())
@@ -265,6 +274,9 @@ export function OngletYoga({
           onChangerDuree={(v: number) => void changerIntensiteYoga({ intensite: varianteActive.intensite, type_effort: varianteActive.type_effort, duree_min: v })}
         />
       ) : null}
+      {phase ? (
+        <BannerSuggestionGaia phase={phase} message={messageGaiaTousSports(phase, pct)} modeActif={modeGaia} onChangerMode={setModeGaia} />
+      ) : null}
       <div className="flex items-center justify-between gap-2">
         <p className="text-sm text-neutral-600 dark:text-neutral-400">{seance.description}</p>
         <Button type="button" size="sm" variant="outline" onClick={() => setModalePostures(true)} className="shrink-0">
@@ -272,7 +284,7 @@ export function OngletYoga({
         </Button>
       </div>
       <div className="flex flex-col gap-2">
-        {postures.map((p, i) => (
+        {posturesSeance.map((p, i) => (
           <YogaPostureLigne key={i} p={p} index={i} fait={coches.has(i)} onToggle={toggle} />
         ))}
       </div>
@@ -281,7 +293,7 @@ export function OngletYoga({
           ▶ Lancer le timer guidé
         </Button>
       ) : (
-        <TimerYoga postures={postures} />
+        <TimerYoga postures={posturesSeance} />
       )}
       <LignesProgramme
         key={`yoga-${varianteActiveId ?? 'defaut'}-${seanceExistante?.id ?? 'nouvelle'}`}

@@ -15,6 +15,7 @@ function parseEntree(row: Record<string, unknown>): PlanningSportEntry {
     type_seance: row.type_seance as TypeVarianteSport | 'autre',
     variante_id: typeof row.variante_id === 'string' ? row.variante_id : null,
     activite_type: typeof row.activite_type === 'string' ? (row.activite_type as TypeActivite) : null,
+    modele_id: typeof row.modele_id === 'string' ? row.modele_id : null,
     intervalle_semaines: typeof row.intervalle_semaines === 'number' ? row.intervalle_semaines : 1,
     decalage_semaine: typeof row.decalage_semaine === 'number' ? row.decalage_semaine : 0,
     created_at: String(row.created_at),
@@ -56,6 +57,8 @@ export async function creerEntreePlanning(
         type_seance: entree.type_seance,
         variante_id: entree.variante_id ?? null,
         activite_type: entree.activite_type ?? null,
+        // N'envoyer la colonne que si elle est utilisée : le planning marche même sans la migration.
+        ...(entree.modele_id ? { modele_id: entree.modele_id } : {}),
         intervalle_semaines: entree.intervalle_semaines ?? 1,
         decalage_semaine: entree.decalage_semaine ?? 0,
       })
@@ -79,6 +82,7 @@ export async function modifierEntreePlanning(
     const patch: Record<string, unknown> = { updated_at: new Date().toISOString() }
     if ('variante_id' in updates) patch.variante_id = updates.variante_id ?? null
     if ('activite_type' in updates) patch.activite_type = updates.activite_type ?? null
+    if ('modele_id' in updates) patch.modele_id = updates.modele_id ?? null
     if (updates.intervalle_semaines != null) patch.intervalle_semaines = updates.intervalle_semaines
     if (updates.decalage_semaine != null) patch.decalage_semaine = updates.decalage_semaine
     const { error } = await supabase.from('planning_sport_entries').update(patch).eq('id', entreeId)

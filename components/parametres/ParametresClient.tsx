@@ -134,12 +134,9 @@ export function ParametresClient({
           ouvert={sectionOuverte === 'sport'}
           onToggle={() => toggleSection('sport')}
         >
-          <SectionPlanningSportCalendrier userId={userId} macrosMode={prefs.macros_mode ?? 'auto'} />
+          <SectionPlanningSportCalendrier userId={userId} />
           <p className="mt-4 text-xs text-muted-foreground">
-            L&apos;intensité de chaque programme (pour les macros) se règle maintenant sur la page Sport, à la création ou depuis l&apos;onglet du programme concerné.
-            {(prefs.macros_mode ?? 'auto') === 'auto'
-              ? ' En mode Auto, un programme précis (pas « libre ») est requis pour chaque séance planifiée afin de pouvoir calculer les macros à l’avance.'
-              : ''}
+            Touche un jour pour voir ou modifier ses séances, + pour en ajouter. Sans programme précis, Gaia utilise un profil par défaut du sport pour calculer tes macros. L&apos;intensité de chaque programme se règle sur la page Sport.
           </p>
           <div className="mt-5 border-t border-neutral-200 pt-4 dark:border-neutral-800">
             <p className="mb-2 text-xs font-semibold uppercase tracking-wide text-muted-foreground">

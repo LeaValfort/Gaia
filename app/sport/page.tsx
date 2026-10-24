@@ -379,6 +379,7 @@ export default function SportPage() {
                 date={dateSeance}
                 seanceExistante={seancesJour.yoga}
                 onEnregistre={apresEnregistrement}
+                pourcentages={pourcentages}
               />
             ) : null}
             {formOuvert === 'autre' && !chargementSeances ? (
@@ -388,6 +389,8 @@ export default function SportPage() {
                 date={dateSeance}
                 activiteExistante={activiteEditee}
                 onEnregistre={apresEnregistrement}
+                phase={phaseSeance ?? navPhase}
+                pourcentages={pourcentages}
               />
             ) : null}
           </div>

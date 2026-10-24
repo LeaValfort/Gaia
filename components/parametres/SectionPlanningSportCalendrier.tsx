@@ -3,7 +3,7 @@
 import { useEffect, useMemo, useState } from 'react'
 import { toast } from 'sonner'
 import { JourPlanningCalendrier } from '@/components/parametres/JourPlanningCalendrier'
-import { getTypesActivitesLoggees } from '@/lib/db/activity-logs'
+import { getModelesSeance } from '@/lib/db/modeles-seance'
 import {
   creerEntreePlanning,
   getEntreesPlanning,
@@ -13,15 +13,7 @@ import {
 import { getToutesVariantesPourType } from '@/lib/db/sport-variantes'
 import { grouperEntreesParJour } from '@/lib/planning-sport-recurrence'
 import { supabase } from '@/lib/supabase'
-import type {
-  JourSemaine,
-  MacrosMode,
-  NouvellePlanningSportEntry,
-  PlanningSportEntry,
-  SportVariante,
-  TypeActivite,
-  TypeVarianteSport,
-} from '@/types'
+import type { JourSemaine, ModeleSeance, NouvellePlanningSportEntry, PlanningSportEntry, SportVariante, TypeVarianteSport } from '@/types'
 
 const JOURS: { cle: JourSemaine; label: string }[] = [
   { cle: 'lundi', label: 'Lundi' },
@@ -43,23 +35,14 @@ const VARIANTES_VIDES: Record<TypeVarianteSport, SportVariante[]> = {
 
 /**
  * Calendrier hebdo du planning sport : plusieurs séances possibles par jour,
- * chacune avec une récurrence et un programme (ou « libre ») optionnels.
- * L'intensité de chaque programme (pour les macros) se règle sur la page Sport,
- * pas ici. En mode macros Auto, le « libre » n'est plus proposé pour Muscu/
- * Natation/Yoga : un programme précis est requis (voir `macrosMode`).
- * N'a aucun effet sur le planning jour-par-jour existant — ce branchement
- * viendra dans une étape suivante.
+ * chacune avec un programme (ou modèle de séance) et une récurrence.
+ * Sans programme précis, les macros utilisent le profil Gaia par défaut du sport.
  */
-export function SectionPlanningSportCalendrier({
-  userId,
-  macrosMode,
-}: {
-  userId: string
-  macrosMode: MacrosMode
-}) {
+export function SectionPlanningSportCalendrier({ userId }: { userId: string }) {
   const [entrees, setEntrees] = useState<PlanningSportEntry[]>([])
   const [variantesParType, setVariantesParType] = useState(VARIANTES_VIDES)
-  const [activitesLoggees, setActivitesLoggees] = useState<TypeActivite[]>([])
+  const [modeles, setModeles] = useState<ModeleSeance[]>([])
+  const [ajoutEnCours, setAjoutEnCours] = useState(false)
   const [chargement, setChargement] = useState(true)
   const [jourOuvert, setJourOuvert] = useState<JourSemaine | null>(null)
   const [entreeEnCours, setEntreeEnCours] = useState<string | null>(null)
@@ -67,13 +50,13 @@ export function SectionPlanningSportCalendrier({
   useEffect(() => {
     async function charger() {
       setChargement(true)
-      const [ent, activites, ...variantes] = await Promise.all([
+      const [ent, mods, ...variantes] = await Promise.all([
         getEntreesPlanning(supabase, userId),
-        getTypesActivitesLoggees(supabase, userId),
+        getModelesSeance(supabase, userId),
         ...TYPES_VARIANTES.map((t) => getToutesVariantesPourType(supabase, userId, t)),
       ])
       setEntrees(ent)
-      setActivitesLoggees(activites)
+      setModeles(mods)
       const map = { ...VARIANTES_VIDES }
       TYPES_VARIANTES.forEach((t, i) => {
         map[t] = variantes[i]
@@ -86,18 +69,17 @@ export function SectionPlanningSportCalendrier({
 
   const parJour = useMemo(() => grouperEntreesParJour(entrees), [entrees])
 
-  async function ajouter(jour: JourSemaine, type: PlanningSportEntry['type_seance'], activite?: TypeActivite) {
-    const nouvelle = await creerEntreePlanning(supabase, userId, {
-      jour_semaine: jour,
-      type_seance: type,
-      ...(activite ? { activite_type: activite } : {}),
-    })
+  async function ajouter(jour: JourSemaine, entree: Omit<NouvellePlanningSportEntry, 'jour_semaine'>) {
+    setAjoutEnCours(true)
+    const nouvelle = await creerEntreePlanning(supabase, userId, { ...entree, jour_semaine: jour })
+    setAjoutEnCours(false)
     if (!nouvelle) {
       toast.error('Impossible d’ajouter la séance.')
       return
     }
     setEntrees((prev) => [...prev, nouvelle])
     setJourOuvert(null)
+    toast.success('Séance ajoutée au planning')
   }
 
   async function changer(id: string, updates: Partial<NouvellePlanningSportEntry>) {
@@ -122,22 +104,20 @@ export function SectionPlanningSportCalendrier({
   if (chargement) return <p className="text-sm text-muted-foreground">Chargement…</p>
 
   return (
-    <div className="space-y-4">
+    <div className="space-y-2">
       {JOURS.map(({ cle, label }) => (
         <JourPlanningCalendrier
           key={cle}
           label={label}
           entrees={parJour[cle]}
           variantesParType={variantesParType}
-          activitesLoggees={activitesLoggees}
-          macrosObligatoire={macrosMode === 'auto'}
+          modeles={modeles}
           ouvert={jourOuvert === cle}
+          ajoutEnCours={ajoutEnCours}
           entreeEnCours={entreeEnCours}
           onToggleAjout={() => setJourOuvert((prev) => (prev === cle ? null : cle))}
-          onAjouter={(type, activite) => void ajouter(cle, type, activite)}
-          onChangerVariante={(id, v) => void changer(id, { variante_id: v })}
-          onChangerActivite={(id, a) => void changer(id, { activite_type: a })}
-          onChangerRecurrence={(id, i, d) => void changer(id, { intervalle_semaines: i, decalage_semaine: d })}
+          onAjouter={(e) => void ajouter(cle, e)}
+          onModifier={(id, u) => void changer(id, u)}
           onSupprimer={(id) => void supprimer(id)}
         />
       ))}

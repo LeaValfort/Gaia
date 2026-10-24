@@ -1,116 +1,103 @@
 'use client'
 
-import { Plus } from 'lucide-react'
+import { useState } from 'react'
+import { ChevronDown, Plus } from 'lucide-react'
 import { Button } from '@/components/ui/button'
+import { AjoutSeancePlanning } from '@/components/parametres/AjoutSeancePlanning'
 import { CarteEntreePlanning } from '@/components/parametres/CarteEntreePlanning'
-import { SPORTS_CONFIG } from '@/lib/data/sportsConfig'
-import { LABELS_PLANNING } from '@/lib/planning-sport'
-import type { PlanningSportEntry, SportVariante, TypeActivite, TypeVarianteSport } from '@/types'
-
-/**
- * Types fixes toujours proposables au planning. « Autre sport » n'y figure pas :
- * on propose à la place un bouton par activité déjà loggée (voir `activitesLoggees`),
- * puisque ce sport n'a normalement pas de contenu de séance à planifier à l'avance.
- */
-const TYPES_FIXES: { id: PlanningSportEntry['type_seance']; label: string }[] = [
-  { id: 'muscu_full', label: LABELS_PLANNING.muscu_full.label },
-  { id: 'muscu_upper', label: LABELS_PLANNING.muscu_upper.label },
-  { id: 'yoga', label: LABELS_PLANNING.yoga.label },
-  { id: 'natation', label: LABELS_PLANNING.natation.label },
-]
+import { libelleEntreePlanning } from '@/lib/planning-sport-jour'
+import { cn } from '@/lib/utils'
+import type { ModeleSeance, NouvellePlanningSportEntry, PlanningSportEntry, SportVariante, TypeVarianteSport } from '@/types'
 
 export interface JourPlanningCalendrierProps {
   label: string
   entrees: PlanningSportEntry[]
   variantesParType: Record<TypeVarianteSport, SportVariante[]>
-  /** Types d'activités « Autre sport » déjà loggées, pour un bouton par activité. */
-  activitesLoggees: TypeActivite[]
-  /** Macros en mode Auto : un programme précis devient obligatoire (plus de « libre »). */
-  macrosObligatoire: boolean
+  modeles: ModeleSeance[]
+  /** Formulaire d'ajout ouvert pour ce jour. */
   ouvert: boolean
+  ajoutEnCours: boolean
   entreeEnCours: string | null
   onToggleAjout: () => void
-  onAjouter: (type: PlanningSportEntry['type_seance'], activite?: TypeActivite) => void
-  onChangerVariante: (entreeId: string, varianteId: string | null) => void
-  onChangerActivite: (entreeId: string, activite: TypeActivite | null) => void
-  onChangerRecurrence: (entreeId: string, intervalleSemaines: number, decalageSemaine: number) => void
+  onAjouter: (entree: Omit<NouvellePlanningSportEntry, 'jour_semaine'>) => void
+  onModifier: (entreeId: string, updates: Partial<NouvellePlanningSportEntry>) => void
   onSupprimer: (entreeId: string) => void
 }
 
-/** Une journée du calendrier : ses séances planifiées + le bouton pour en ajouter une. */
+/** Résumé court d'une séance : « 🧘 Yoga · Flow doux · 1 sem/2 ». */
+function resume(e: PlanningSportEntry, variantesParType: Record<TypeVarianteSport, SportVariante[]>, modeles: ModeleSeance[]): string {
+  const { label, emoji } = libelleEntreePlanning(e)
+  const prog =
+    e.type_seance === 'autre'
+      ? modeles.find((m) => m.id === e.modele_id)?.nom
+      : variantesParType[e.type_seance].find((v) => v.id === e.variante_id)?.nom
+  const freq = e.intervalle_semaines > 1 ? `1 sem/${e.intervalle_semaines}` : null
+  return [`${emoji} ${label}`, prog, freq].filter(Boolean).join(' · ')
+}
+
+/** Une journée du planning, compacte (une ligne) ; on la déplie pour modifier ses séances. */
 export function JourPlanningCalendrier({
   label,
   entrees,
   variantesParType,
-  activitesLoggees,
-  macrosObligatoire,
+  modeles,
   ouvert,
+  ajoutEnCours,
   entreeEnCours,
   onToggleAjout,
   onAjouter,
-  onChangerVariante,
-  onChangerActivite,
-  onChangerRecurrence,
+  onModifier,
   onSupprimer,
 }: JourPlanningCalendrierProps) {
+  const [deplie, setDeplie] = useState(false)
+
   return (
-    <div className="space-y-2">
-      <div className="flex items-center justify-between">
-        <p className="text-sm font-semibold text-neutral-800 dark:text-neutral-100">{label}</p>
-        <Button type="button" size="sm" variant="ghost" onClick={onToggleAjout}>
-          <Plus className="mr-1 size-3.5" /> Ajouter
+    <div className="space-y-2 rounded-xl border border-neutral-200 px-3 py-2 dark:border-neutral-800">
+      <div className="flex items-center gap-2">
+        <button
+          type="button"
+          disabled={!entrees.length}
+          onClick={() => setDeplie((d) => !d)}
+          className="flex min-w-0 flex-1 items-center gap-2 text-left disabled:cursor-default"
+          aria-expanded={deplie}
+        >
+          <span className="w-20 shrink-0 text-sm font-semibold text-neutral-800 dark:text-neutral-100">{label}</span>
+          <span className="min-w-0 flex-1 truncate text-xs text-muted-foreground">
+            {entrees.length ? entrees.map((e) => resume(e, variantesParType, modeles)).join('  +  ') : 'Repos'}
+          </span>
+          {entrees.length ? (
+            <ChevronDown className={cn('size-4 shrink-0 text-muted-foreground transition-transform', deplie && 'rotate-180')} aria-hidden />
+          ) : null}
+        </button>
+        <Button type="button" size="icon-sm" variant="ghost" onClick={onToggleAjout} aria-label={`Ajouter une séance le ${label}`}>
+          <Plus className="size-4" />
         </Button>
       </div>
 
-      {entrees.length === 0 ? (
-        <p className="pl-1 text-xs text-muted-foreground">Repos</p>
-      ) : (
+      {deplie && entrees.length ? (
         <div className="space-y-2">
           {entrees.map((entree) => (
             <CarteEntreePlanning
               key={entree.id}
               entree={entree}
-              variantesDisponibles={
-                entree.type_seance === 'autre' ? [] : variantesParType[entree.type_seance as TypeVarianteSport]
-              }
-              programmeObligatoire={macrosObligatoire && entree.type_seance !== 'autre'}
+              variantesDisponibles={entree.type_seance === 'autre' ? [] : variantesParType[entree.type_seance]}
+              modelesDisponibles={entree.type_seance === 'autre' ? modeles.filter((m) => m.sport_type === entree.activite_type) : []}
               enChargement={entreeEnCours === entree.id}
-              onChangerVariante={(id) => onChangerVariante(entree.id, id)}
-              onChangerActivite={(a) => onChangerActivite(entree.id, a)}
-              onChangerRecurrence={(i, d) => onChangerRecurrence(entree.id, i, d)}
+              onModifier={(u) => onModifier(entree.id, u)}
               onSupprimer={() => onSupprimer(entree.id)}
             />
           ))}
         </div>
-      )}
+      ) : null}
 
       {ouvert ? (
-        <div className="flex flex-wrap gap-1.5 pl-1">
-          {TYPES_FIXES.map(({ id, label: lib }) => (
-            <button
-              key={id}
-              type="button"
-              onClick={() => onAjouter(id)}
-              className="rounded-full border border-amber-200 bg-amber-50 px-2.5 py-1 text-[11px] font-medium text-amber-900 transition-colors hover:bg-amber-100 dark:border-amber-900/50 dark:bg-amber-950/30 dark:text-amber-100"
-            >
-              {lib}
-            </button>
-          ))}
-          {activitesLoggees.map((activite) => {
-            const config = SPORTS_CONFIG.find((s) => s.type === activite)
-            if (!config) return null
-            return (
-              <button
-                key={activite}
-                type="button"
-                onClick={() => onAjouter('autre', activite)}
-                className="rounded-full border border-amber-200 bg-amber-50 px-2.5 py-1 text-[11px] font-medium text-amber-900 transition-colors hover:bg-amber-100 dark:border-amber-900/50 dark:bg-amber-950/30 dark:text-amber-100"
-              >
-                {config.nom}
-              </button>
-            )
-          })}
-        </div>
+        <AjoutSeancePlanning
+          variantesParType={variantesParType}
+          modeles={modeles}
+          enCours={ajoutEnCours}
+          onValider={onAjouter}
+          onAnnuler={onToggleAjout}
+        />
       ) : null}
     </div>
   )

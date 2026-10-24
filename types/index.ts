@@ -1127,6 +1127,8 @@ export interface PlanningSportEntry {
   variante_id: string | null
   /** Activité précise si type_seance === 'autre' (ex. danse) ; null = libre. */
   activite_type: TypeActivite | null
+  /** Modèle de séance libre choisi (autres sports) ; null = séance par défaut. */
+  modele_id: string | null
   /** 1 = toutes les semaines, 2 = une semaine sur deux, etc. */
   intervalle_semaines: number
   /** Semaine de départ dans le cycle, entre 0 et intervalle_semaines - 1. */
@@ -1141,6 +1143,7 @@ export interface NouvellePlanningSportEntry {
   type_seance: TypeVarianteSport | 'autre'
   variante_id?: string | null
   activite_type?: TypeActivite | null
+  modele_id?: string | null
   intervalle_semaines?: number
   decalage_semaine?: number
 }

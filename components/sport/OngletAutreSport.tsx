@@ -8,6 +8,9 @@ import { Input } from '@/components/ui/input'
 import { Textarea } from '@/components/ui/textarea'
 import { ChoixSportLibre } from '@/components/sport/libre/ChoixSportLibre'
 import { BarreModelesSeance } from '@/components/sport/libre/BarreModelesSeance'
+import { BannerSuggestionGaia } from '@/components/sport/BannerSuggestionGaia'
+import { useModeGaiaLignes } from '@/hooks/useModeGaiaLignes'
+import { messageGaiaTousSports } from '@/lib/sport/gaia-adaptation'
 import { EditeurSeanceLibre } from '@/components/sport/libre/EditeurSeanceLibre'
 import { useSeanceLibre } from '@/hooks/useSeanceLibre'
 import { enregistrerActiviteClient } from '@/lib/sport/activities-client'
@@ -15,7 +18,7 @@ import { formDepuisActivite } from '@/lib/sport/activite-form'
 import { copierLignes, lignesRenseignees } from '@/lib/sport/seance-libre'
 import { ACTIVITY_LOG_INITIAL, getSportConfig, type ConfigChamp } from '@/lib/data/sportsConfig'
 import { cn } from '@/lib/utils'
-import type { ActivityLog, ActivityLogFormData, LigneSeanceLibre } from '@/types'
+import type { ActivityLog, ActivityLogFormData, LigneSeanceLibre, Phase, PourcentagesGaia } from '@/types'
 
 const EMOJIS = ['😴', '😕', '😊', '⚡', '🚀'] as const
 const LABEL = 'text-xs font-medium text-amber-900/80 dark:text-amber-200/80'
@@ -47,14 +50,18 @@ interface OngletAutreSportProps {
   /** Activité à modifier (ouverte depuis « Dernières séances »). Remonter le composant via `key` pour changer. */
   activiteExistante?: ActivityLog | null
   onEnregistre?: () => void
+  phase: Phase | null
+  pourcentages: PourcentagesGaia
 }
 
-export function OngletAutreSport({ userId, date, activiteExistante, onEnregistre }: OngletAutreSportProps) {
+export function OngletAutreSport({ userId, date, activiteExistante, onEnregistre, phase, pourcentages }: OngletAutreSportProps) {
   const r = useRouter()
   const [f, setF] = useState<ActivityLogFormData>(() => formDepuisActivite(activiteExistante))
   const [lignes, setLignes] = useState<LigneSeanceLibre[]>(() => activiteExistante?.contenu ?? [])
   const [ch, setCh] = useState(false)
   const { modeles, dernieres, enregistrerModele, supprimerModele } = useSeanceLibre(userId)
+  const pct = phase ? pourcentages[phase] : 0
+  const gaia = useModeGaiaLignes(lignes, setLignes, pct)
   const t = f.sport_type
   const cfg = t ? getSportConfig(t) : null
   const setV = (k: keyof ActivityLogFormData, v: string) => setF((p) => ({ ...p, [k]: v }))
@@ -67,6 +74,7 @@ export function OngletAutreSport({ userId, date, activiteExistante, onEnregistre
       toast.success(activiteExistante ? 'Séance mise à jour ! 🎯' : 'Activité enregistrée ! 🎯')
       setF(ACTIVITY_LOG_INITIAL)
       setLignes([])
+      gaia.reinitialiser()
       onEnregistre?.()
       r.refresh()
     } catch (e) {
@@ -94,6 +102,7 @@ export function OngletAutreSport({ userId, date, activiteExistante, onEnregistre
           setF({ ...ACTIVITY_LOG_INITIAL, sport_type: m.sport_type, sport_name: m.sport_name ?? '' })
           // Copie avec de nouveaux identifiants : la séance ne modifie pas le modèle.
           setLignes(copierLignes(m.contenu))
+          gaia.reinitialiser()
         }}
         onEnregistrer={enregistrerCommeModele}
         onSupprimer={async (id) => {
@@ -113,6 +122,9 @@ export function OngletAutreSport({ userId, date, activiteExistante, onEnregistre
             <Input value={f.sport_name} onChange={(e) => setV('sport_name', e.target.value)} className={CHAMP} placeholder={t === 'autre' ? 'Pilates, headstand, corde à sauter…' : 'Ex. Fractionné'} />
           </div>
           {cfg.champs.filter((c) => c.cle !== 'sport_name').map((c) => champ(c, f, setV))}
+          {phase && lignes.length ? (
+            <BannerSuggestionGaia phase={phase} message={messageGaiaTousSports(phase, pct)} modeActif={gaia.mode} onChangerMode={gaia.changerMode} />
+          ) : null}
           <EditeurSeanceLibre lignes={lignes} dernieresCharges={dernieres} sport={t} onChange={setLignes} />
           <div>
             <p className={`mb-1 ${LABEL}`}>Ressenti</p>
