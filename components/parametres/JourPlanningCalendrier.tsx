@@ -7,13 +7,15 @@ import { AjoutSeancePlanning } from '@/components/parametres/AjoutSeancePlanning
 import { CarteEntreePlanning } from '@/components/parametres/CarteEntreePlanning'
 import { libelleEntreePlanning } from '@/lib/planning-sport-jour'
 import { cn } from '@/lib/utils'
-import type { ModeleSeance, NouvellePlanningSportEntry, PlanningSportEntry, SportVariante, TypeVarianteSport } from '@/types'
+import type { ModeleSeance, TypeActivite, NouvellePlanningSportEntry, PlanningSportEntry, SportVariante, TypeVarianteSport } from '@/types'
 
 export interface JourPlanningCalendrierProps {
   label: string
   entrees: PlanningSportEntry[]
   variantesParType: Record<TypeVarianteSport, SportVariante[]>
   modeles: ModeleSeance[]
+  /** Autres sports déjà pratiqués (séances enregistrées). */
+  activitesLoggees: TypeActivite[]
   /** Formulaire d'ajout ouvert pour ce jour. */
   ouvert: boolean
   ajoutEnCours: boolean
@@ -41,6 +43,7 @@ export function JourPlanningCalendrier({
   entrees,
   variantesParType,
   modeles,
+  activitesLoggees,
   ouvert,
   ajoutEnCours,
   entreeEnCours,
@@ -94,6 +97,7 @@ export function JourPlanningCalendrier({
         <AjoutSeancePlanning
           variantesParType={variantesParType}
           modeles={modeles}
+          activitesLoggees={activitesLoggees}
           enCours={ajoutEnCours}
           onValider={onAjouter}
           onAnnuler={onToggleAjout}

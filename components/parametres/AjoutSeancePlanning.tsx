@@ -19,17 +19,24 @@ const PILL_INACTIF = 'border-amber-200 bg-amber-50 text-amber-900 hover:bg-amber
 interface AjoutSeancePlanningProps {
   variantesParType: Record<TypeVarianteSport, SportVariante[]>
   modeles: ModeleSeance[]
+  /** Autres sports déjà pratiqués : proposés même sans modèle. */
+  activitesLoggees: TypeActivite[]
   enCours: boolean
   onValider: (entree: Omit<NouvellePlanningSportEntry, 'jour_semaine'>) => void
   onAnnuler: () => void
 }
 
 /** Ajout d'une séance au planning : sport → programme / modèle → fréquence → Valider. */
-export function AjoutSeancePlanning({ variantesParType, modeles, enCours, onValider, onAnnuler }: AjoutSeancePlanningProps) {
+export function AjoutSeancePlanning({ variantesParType, modeles, activitesLoggees, enCours, onValider, onAnnuler }: AjoutSeancePlanningProps) {
   const [sport, setSport] = useState<ChoixSport | null>(null)
   // id d'une variante (muscu/natation/yoga) ou d'un modèle (autres sports) ; null = par défaut
   const [programme, setProgramme] = useState<string | null>(null)
   const [recurrence, setRecurrence] = useState({ intervalle: 1, decalage: 0 })
+  const [tousLesSports, setTousLesSports] = useState(false)
+
+  // Sports proposés : ceux qui ont déjà un modèle de séance ou des séances enregistrées.
+  const connus = new Set<TypeActivite>([...modeles.map((m) => m.sport_type), ...activitesLoggees])
+  const autresSports = SPORTS_CONFIG.filter((s) => s.type !== 'natation_libre' && (tousLesSports || connus.has(s.type)))
 
   const choisir = (s: ChoixSport) => {
     setSport(s)
@@ -61,7 +68,7 @@ export function AjoutSeancePlanning({ variantesParType, modeles, enCours, onVali
               {LABELS_PLANNING[t].emoji} {LABELS_PLANNING[t].label}
             </button>
           ))}
-          {SPORTS_CONFIG.filter((s) => s.type !== 'natation_libre').map((s) => (
+          {autresSports.map((s) => (
             <button
               key={s.type}
               type="button"
@@ -71,6 +78,11 @@ export function AjoutSeancePlanning({ variantesParType, modeles, enCours, onVali
               {s.nom}
             </button>
           ))}
+          {!tousLesSports ? (
+            <button type="button" onClick={() => setTousLesSports(true)} className={cn(PILL, 'border-dashed border-neutral-300 text-muted-foreground dark:border-neutral-700')}>
+              Autre sport…
+            </button>
+          ) : null}
         </div>
       </div>
 

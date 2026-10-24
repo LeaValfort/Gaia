@@ -3,6 +3,7 @@
 import { useEffect, useMemo, useState } from 'react'
 import { toast } from 'sonner'
 import { JourPlanningCalendrier } from '@/components/parametres/JourPlanningCalendrier'
+import { getTypesActivitesLoggees } from '@/lib/db/activity-logs'
 import { getModelesSeance } from '@/lib/db/modeles-seance'
 import {
   creerEntreePlanning,
@@ -13,7 +14,7 @@ import {
 import { getToutesVariantesPourType } from '@/lib/db/sport-variantes'
 import { grouperEntreesParJour } from '@/lib/planning-sport-recurrence'
 import { supabase } from '@/lib/supabase'
-import type { JourSemaine, ModeleSeance, NouvellePlanningSportEntry, PlanningSportEntry, SportVariante, TypeVarianteSport } from '@/types'
+import type { JourSemaine, ModeleSeance, TypeActivite, NouvellePlanningSportEntry, PlanningSportEntry, SportVariante, TypeVarianteSport } from '@/types'
 
 const JOURS: { cle: JourSemaine; label: string }[] = [
   { cle: 'lundi', label: 'Lundi' },
@@ -42,6 +43,7 @@ export function SectionPlanningSportCalendrier({ userId }: { userId: string }) {
   const [entrees, setEntrees] = useState<PlanningSportEntry[]>([])
   const [variantesParType, setVariantesParType] = useState(VARIANTES_VIDES)
   const [modeles, setModeles] = useState<ModeleSeance[]>([])
+  const [activitesLoggees, setActivitesLoggees] = useState<TypeActivite[]>([])
   const [ajoutEnCours, setAjoutEnCours] = useState(false)
   const [chargement, setChargement] = useState(true)
   const [jourOuvert, setJourOuvert] = useState<JourSemaine | null>(null)
@@ -50,13 +52,15 @@ export function SectionPlanningSportCalendrier({ userId }: { userId: string }) {
   useEffect(() => {
     async function charger() {
       setChargement(true)
-      const [ent, mods, ...variantes] = await Promise.all([
+      const [ent, mods, activites, ...variantes] = await Promise.all([
         getEntreesPlanning(supabase, userId),
         getModelesSeance(supabase, userId),
+        getTypesActivitesLoggees(supabase, userId),
         ...TYPES_VARIANTES.map((t) => getToutesVariantesPourType(supabase, userId, t)),
       ])
       setEntrees(ent)
       setModeles(mods)
+      setActivitesLoggees(activites)
       const map = { ...VARIANTES_VIDES }
       TYPES_VARIANTES.forEach((t, i) => {
         map[t] = variantes[i]
@@ -112,6 +116,7 @@ export function SectionPlanningSportCalendrier({ userId }: { userId: string }) {
           entrees={parJour[cle]}
           variantesParType={variantesParType}
           modeles={modeles}
+          activitesLoggees={activitesLoggees}
           ouvert={jourOuvert === cle}
           ajoutEnCours={ajoutEnCours}
           entreeEnCours={entreeEnCours}
