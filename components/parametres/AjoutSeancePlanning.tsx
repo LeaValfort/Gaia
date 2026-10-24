@@ -11,7 +11,8 @@ import type { ModeleSeance, NouvellePlanningSportEntry, SportVariante, TypeActiv
 /** Choix du sport : un type à programmes (muscu, natation, yoga) ou une activité « autre sport ». */
 type ChoixSport = { type: TypeVarianteSport } | { type: 'autre'; activite: TypeActivite }
 
-const TYPES_PROGRAMMES: TypeVarianteSport[] = ['muscu_full', 'muscu_upper', 'natation', 'yoga']
+// « Muscu » = muscu_full (le type Upper/Lower n'est plus proposé).
+const TYPES_PROGRAMMES: TypeVarianteSport[] = ['muscu_full', 'natation', 'yoga']
 const PILL = 'rounded-full border px-2.5 py-1 text-[11px] font-medium transition-colors'
 const PILL_ACTIVE = 'border-amber-600 bg-amber-600 text-white'
 const PILL_INACTIF = 'border-amber-200 bg-amber-50 text-amber-900 hover:bg-amber-100 dark:border-amber-900/50 dark:bg-amber-950/30 dark:text-amber-100'

@@ -56,8 +56,6 @@ import type {
   WorkoutMuscuComplet,
 } from '@/types'
 
-const NOTES: Record<string, TypeSeanceMuscle> = { 'Full body': 'full_body', 'Upper / Lower': 'upper_lower' }
-const LBL: Record<TypeSeanceMuscle, string> = { full_body: 'Full body', upper_lower: 'Upper / Lower' }
 type M = 'normale' | 'gaia'
 
 export function OngletMuscu({
@@ -78,9 +76,8 @@ export function OngletMuscu({
 }) {
   const r = useRouter()
   const edit = !!seanceExistante
-  const [typeSeance, setTypeSeance] = useState<TypeSeanceMuscle>(
-    seanceExistante?.notes && NOTES[seanceExistante.notes] ? NOTES[seanceExistante.notes]! : 'full_body'
-  )
+  // Plus de type Full body / Upper-Lower à choisir : tous les programmes sont rangés en « full_body ».
+  const [typeSeance] = useState<TypeSeanceMuscle>('full_body')
   const [lieu, setLieu] = useState<Lieu>(seanceExistante?.location ?? 'maison')
   const [mode, setMode] = useState<M>('normale')
   const [exercicesFaits, setExercicesFaits] = useState<string[]>(() =>
@@ -105,9 +102,6 @@ export function OngletMuscu({
       setRessenti(null)
       return
     }
-    setTypeSeance(
-      seanceExistante.notes && NOTES[seanceExistante.notes] ? NOTES[seanceExistante.notes]! : 'full_body'
-    )
     setLieu(seanceExistante.location ?? 'maison')
     setExercicesFaits([...new Set(seanceExistante.sets.map((s) => s.exercise_name))])
     setRessenti(seanceExistante.feeling ?? null)
@@ -263,8 +257,8 @@ export function OngletMuscu({
   if (!varianteActive) {
     return (
       <div className="flex flex-col gap-4">
-        <MuscuTypeLieu type={typeSeance} lieu={lieu} phase={phase} onType={setTypeSeance} onLieu={setLieu} />
-        <ProgrammeVide sport={`muscu ${LBL[typeSeance]} (${lieu})`} onCreer={(nom) => void creerVarianteMuscu(nom)} onAide={() => setAide(true)} />
+        <MuscuTypeLieu lieu={lieu} phase={phase} onLieu={setLieu} />
+        <ProgrammeVide sport={`muscu (${lieu})`} onCreer={(nom) => void creerVarianteMuscu(nom)} onAide={() => setAide(true)} />
         {assistant}
       </div>
     )
@@ -272,7 +266,7 @@ export function OngletMuscu({
 
   return (
     <div className="flex flex-col gap-4">
-      <MuscuTypeLieu type={typeSeance} lieu={lieu} phase={phase} onType={setTypeSeance} onLieu={setLieu} />
+      <MuscuTypeLieu lieu={lieu} phase={phase} onLieu={setLieu} />
       <SelecteurVariante
         variantes={variantes}
         onglets={[]}
@@ -297,7 +291,7 @@ export function OngletMuscu({
         />
       ) : null}
       <div className="flex flex-wrap items-center justify-between gap-2">
-        <p className="text-sm font-semibold text-neutral-800 dark:text-neutral-100">💪 {LBL[typeSeance]} — {lieu === 'maison' ? '🏠' : '🏋️'}</p>
+        <p className="text-sm font-semibold text-neutral-800 dark:text-neutral-100">💪 {varianteActive.nom}</p>
         <Button type="button" size="sm" variant="outline" onClick={() => setModale(true)} className="shrink-0">
           <Pencil className="mr-1 size-3" /> Modifier
         </Button>

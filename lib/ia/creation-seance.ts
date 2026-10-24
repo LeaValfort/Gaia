@@ -20,7 +20,8 @@ function formatSport(c: CriteresSeance): string {
     case 'muscu': {
       const lieu = c.lieu ?? 'maison'
       const noms = EXERCICES.filter((e) => e.lieu === 'both' || e.lieu === lieu).map((e) => e.nom).join(', ')
-      return `Séance de musculation (${c.type_muscu === 'upper_lower' ? 'upper / lower' : 'full body'}, à la ${lieu}).
+      const ou = lieu === 'street' ? 'en street workout (parc, barres, poids du corps)' : lieu === 'salle' ? 'en salle' : 'à la maison'
+      return `Séance de musculation ${ou}.
 Utilise de préférence ces exercices (noms exacts) : ${noms}. Tu peux en ajouter d'autres avec un nom clair en français.
 Format : { "nom": "...", "conseil": "...", "exercices": [{ "nom": "Squat", "series": 3, "reps": 12, "unite": "reps", "repos_sec": 60 }] }
 "unite" vaut "reps" ou "secondes" (gainage…). 4 à 8 exercices.`

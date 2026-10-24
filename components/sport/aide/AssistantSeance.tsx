@@ -30,7 +30,8 @@ export function AssistantSeance({ contexte, phase, libelleValider, avecNom = tru
     objectif: OBJECTIFS_AIDE[contexte.sport][0],
     niveau: 'Intermédiaire',
     duree_min: 45,
-    materiel: contexte.lieu === 'salle' ? ['Barre et machines (salle)', 'Haltères'] : ['Poids du corps'],
+    materiel:
+      contexte.lieu === 'salle' ? ['Barre et machines (salle)', 'Haltères'] : contexte.lieu === 'street' ? ['Poids du corps', 'Barre de traction / parc'] : ['Poids du corps'],
     zones: [],
     envies: '',
     phase,

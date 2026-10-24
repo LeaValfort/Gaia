@@ -119,7 +119,7 @@ export interface ExtendedLogData {
 export type TypeSeance = 'muscu' | 'natation' | 'yoga' | 'escalade' | 'autre'
 
 /** Lieu d'entraînement */
-export type Lieu = 'maison' | 'salle'
+export type Lieu = 'maison' | 'salle' | 'street'
 
 /** Une séance de sport */
 export interface Workout {

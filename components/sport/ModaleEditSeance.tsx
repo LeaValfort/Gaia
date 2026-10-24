@@ -6,7 +6,7 @@ import { Button } from '@/components/ui/button'
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog'
 import { Input } from '@/components/ui/input'
 import { ExerciceEditRow } from '@/components/sport/ExerciceEditRow'
-import { exerciceVersCustom, planningVersTypeMuscu } from '@/lib/sport/muscuCustomMap'
+import { exerciceVersCustom } from '@/lib/sport/muscuCustomMap'
 import type { Exercice, ExerciceCustom, Lieu, TypeSeanceMuscu } from '@/types'
 
 function reindex(list: ExerciceCustom[]): ExerciceCustom[] {
@@ -23,8 +23,9 @@ export interface ModaleEditSeanceProps {
   onFermer: () => void
 }
 
-function filtre(ex: Exercice, seance: ReturnType<typeof planningVersTypeMuscu>, lieu: Lieu) {
-  return ex.seance === seance && (ex.lieu === 'both' || ex.lieu === lieu)
+/** Plus de filtre par type de séance ; en street, seuls les exercices « partout ». */
+function filtre(ex: Exercice, lieu: Lieu) {
+  return ex.lieu === 'both' || ex.lieu === lieu
 }
 
 /**
@@ -41,7 +42,6 @@ export function ModaleEditSeance({
   onFermer,
 }: ModaleEditSeanceProps) {
   const typeSeance = ts as TypeSeanceMuscu
-  const sm = useMemo(() => planningVersTypeMuscu(typeSeance), [typeSeance])
   const [exo, setExo] = useState(() => reindex(exercicesActuels))
   const [q, setQ] = useState('')
   const [ch, setCh] = useState(false)
@@ -50,11 +50,11 @@ export function ModaleEditSeance({
     const t = q.trim().toLowerCase()
     const pris = new Set(exo.map((e) => e.nom))
     return exercicesCatalogue
-      .filter((e) => filtre(e, sm, lieu))
+      .filter((e) => filtre(e, lieu))
       .filter((e) => !pris.has(e.nom))
       .filter((e) => !t || e.nom.toLowerCase().includes(t))
       .slice(0, 30)
-  }, [q, exo, exercicesCatalogue, sm, lieu])
+  }, [q, exo, exercicesCatalogue, lieu])
   const maj = (i: number, u: Partial<ExerciceCustom>) =>
     setExo((p) => {
       const n = [...p]

@@ -32,7 +32,7 @@ export async function POST(request: NextRequest) {
     envies: txt(b.envies, 500),
     phase: PHASES.includes(b.phase as Phase) ? (b.phase as Phase) : null,
     type_muscu: b.type_muscu === 'upper_lower' ? 'upper_lower' : 'full_body',
-    lieu: b.lieu === 'salle' ? 'salle' : 'maison',
+    lieu: b.lieu === 'salle' || b.lieu === 'street' ? b.lieu : 'maison',
     sport_libre: txt(b.sport_libre, 60) || undefined,
   }
 

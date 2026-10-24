@@ -14,7 +14,7 @@ export const LABELS_PLANNING: Record<
   TypePlanningJour,
   { label: string; emoji: string; couleur: string }
 > = {
-  muscu_full: { label: 'Muscu Full body', emoji: '💪', couleur: 'bg-blue-100' },
+  muscu_full: { label: 'Muscu', emoji: '💪', couleur: 'bg-blue-100' },
   muscu_upper: { label: 'Muscu Upper/Lower', emoji: '🏋️', couleur: 'bg-blue-100' },
   yoga: { label: 'Yoga', emoji: '🧘', couleur: 'bg-violet-100' },
   natation: { label: 'Natation', emoji: '🏊', couleur: 'bg-emerald-100' },

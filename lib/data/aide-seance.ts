@@ -13,7 +13,7 @@ export const NIVEAUX_AIDE = ['Débutante', 'Intermédiaire', 'Avancée'] as cons
 
 export const DUREES_AIDE = [20, 30, 45, 60] as const
 
-export const MATERIEL_AIDE = ['Poids du corps', 'Haltères', 'Élastiques', 'Kettlebell', 'Barre et machines (salle)', 'Tapis', 'Banc / chaise'] as const
+export const MATERIEL_AIDE = ['Poids du corps', 'Haltères', 'Élastiques', 'Kettlebell', 'Barre et machines (salle)', 'Tapis', 'Banc / chaise', 'Barre de traction / parc'] as const
 
 export const ZONES_AIDE: Record<SportAide, string[]> = {
   muscu: ['Fessiers', 'Jambes', 'Haut du corps', 'Dos', 'Bras', 'Abdos / gainage'],
