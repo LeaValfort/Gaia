@@ -8,7 +8,8 @@ import type { CarteSubstitution } from '@/lib/sport/substitution-jour'
 import type { TypePlanningJour } from '@/types'
 import { cn } from '@/lib/utils'
 
-const OPTIONS: TypePlanningJour[] = ['muscu_full', 'muscu_upper', 'yoga', 'natation', 'autre', 'repos']
+// « Muscu » = muscu_full (Upper/Lower n'est plus proposé).
+const OPTIONS: TypePlanningJour[] = ['muscu_full', 'yoga', 'natation', 'autre', 'repos']
 
 export interface SelecteurSeanceJourProps {
   /** Séance ciblée (ou substitution "libre" du jour entier s'il n'y a aucune séance prévue). */

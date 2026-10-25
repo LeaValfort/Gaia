@@ -69,7 +69,10 @@ export default function SportPage() {
   const [prenom, setPrenom] = useState<string | null>(null)
   const [loading, setLoading] = useState(true)
   const [erreur, setErreur] = useState<string | null>(null)
-  const [formOuvert, setFormOuvert] = useState<FormSport | null>(null)
+  // Formulaire choisi à la main ; sinon on ouvre la séance prévue aujourd'hui (voir `formOuvert`).
+  const [formChoisi, setFormOuvert] = useState<FormSport | null>(null)
+  // « ← Retour aux séances » : on affiche alors la liste de tous les sports.
+  const [voirTousLesSports, setVoirTousLesSports] = useState(false)
   const [refreshSeances, setRefreshSeances] = useState(0)
   const [dateSeance, setDateSeance] = useState(() => format(new Date(), 'yyyy-MM-dd'))
   const [effectiveStart, setEffectiveStart] = useState<string | null>(null)
@@ -85,6 +88,8 @@ export default function SportPage() {
 
   const apresEnregistrement = useCallback(() => {
     setFormOuvert(null)
+    // Séance enregistrée : on ne rouvre pas la séance prévue, on revient à la liste.
+    setVoirTousLesSports(true)
     setActiviteEditee(null)
     setRefreshSeances((n) => n + 1)
   }, [])
@@ -135,6 +140,7 @@ export default function SportPage() {
   function ouvrirNouveau(form: FormSport | null) {
     setActiviteEditee(null)
     setFormOuvert(form)
+    if (!form) setVoirTousLesSports(true)
   }
 
   useEffect(() => {
@@ -218,6 +224,13 @@ export default function SportPage() {
     [entreesResolues, overridesAuj]
   )
   const typesJourEffectifs = useMemo(() => seancesEffectives.map((s) => s.type), [seancesEffectives])
+  // Séance prévue aujourd'hui (hors repos) : ouverte d'office, sans la liste des autres sports.
+  const formPrevu = useMemo((): FormSport | null => {
+    const t = typesJourEffectifs.find((x) => x !== 'repos')
+    if (!t) return null
+    return t === 'muscu_full' || t === 'muscu_upper' ? 'muscu' : t === 'yoga' || t === 'natation' ? t : 'autre'
+  }, [typesJourEffectifs])
+  const formOuvert: FormSport | null = formChoisi ?? (voirTousLesSports ? null : formPrevu)
   const cartesSubstitution = useMemo(
     () => cartesSubstitutionJour(entreesResolues, overridesAuj),
     [entreesResolues, overridesAuj]
@@ -225,6 +238,9 @@ export default function SportPage() {
 
   async function changerSeance(entreeId: string | null, type: TypePlanningJour) {
     setChOverride(true)
+    // La nouvelle séance prévue s'ouvre à la place de l'ancienne.
+    setFormOuvert(null)
+    setVoirTousLesSports(false)
     const ok = await setOverrideJour(today, type, entreeId)
     if (ok) setOverridesAuj(await getOverridesJour(today))
     else toast.error('Impossible de changer la séance.')
@@ -327,12 +343,14 @@ export default function SportPage() {
           ))}
         </div>
 
+        {!formPrevu || voirTousLesSports ? (
         <ListeLoggerSeance
           typesJour={typesJourEffectifs}
           seanceProfils={seanceProfils}
           formOuvert={formOuvert}
           onOuvrir={ouvrirNouveau}
         />
+        ) : null}
 
         {formOuvert ? (
           <div ref={formRef} className="flex scroll-mt-20 flex-col gap-3 rounded-2xl border border-neutral-200 bg-white p-4 dark:border-neutral-800 dark:bg-neutral-900/80">
