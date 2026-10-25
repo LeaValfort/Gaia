@@ -7,8 +7,6 @@ import { PillsSelector } from './PillsSelector'
 import {
   APPETIT_OPTIONS,
   EMOTIONS,
-  FLOT_OPTIONS,
-  SAIGNEMENT_HORS_REGLES_OPTIONS,
   LIBIDO_OPTIONS,
   SOMMEIL_OPTIONS,
   STRESS_OPTIONS,
@@ -37,7 +35,7 @@ function depuisPillUnique(tableau: string[]): string | null {
   return tableau[0] ?? null
 }
 
-export function DailyLogSectionEtendue({ data, onChange, phase }: DailyLogSectionEtendueProps) {
+export function DailyLogSectionEtendue({ data, onChange }: DailyLogSectionEtendueProps) {
   // Symptômes propres au profil santé (thyroïde, SOPK, endométriose…), ajoutés à la liste de base.
   const conditions = useConditionsSante()
   const symptomes = [...new Set([...SYMPTOMES, ...symptomesConditions(conditions)])]
@@ -56,15 +54,6 @@ export function DailyLogSectionEtendue({ data, onChange, phase }: DailyLogSectio
         options={symptomes}
         selected={data.symptoms}
         onChange={(v) => maj(data, onChange, 'symptoms', v)}
-      />
-
-      {/* Toujours le spotting en plus du flux : la phase affichée est une prédiction, les règles peuvent être en retard. */}
-      <PillsSelector
-        label={phase === 'menstruation' ? 'Flux / spotting' : 'Saignement / spotting (ne démarre pas de cycle)'}
-        options={phase === 'menstruation' ? ['Spotting', ...FLOT_OPTIONS] : SAIGNEMENT_HORS_REGLES_OPTIONS}
-        selected={data.flow_intensity ? [data.flow_intensity] : []}
-        onChange={(v) => maj(data, onChange, 'flow_intensity', depuisPillUnique(v))}
-        multiSelect={false}
       />
 
       <PillsSelector

@@ -16,6 +16,7 @@ import {
   logAContenuEnrichi,
 } from '@/lib/data/journalOptions'
 import { upsertDailyLog } from '@/lib/db/dailyLog'
+import { SelecteurSaignement } from '@/components/cycle/SelecteurSaignement'
 import { cn } from '@/lib/utils'
 import type { DailyLog, ExtendedLogData, Phase } from '@/types'
 import { ENERGY_MAX, ENERGY_MIN, PAIN_MAX, PAIN_MIN } from '@/types'
@@ -144,6 +145,13 @@ export function DailyLogForm({
           />
         </div>
       </div>
+
+      {/* Toujours visible (plus caché dans le questionnaire) : spotting / flux du jour. */}
+      <SelecteurSaignement
+        phase={phase}
+        valeur={extended.flow_intensity}
+        onChange={(v) => setExtended((prev) => ({ ...prev, flow_intensity: v }))}
+      />
 
       <div className="flex items-end gap-2">
         <div className="flex-1 space-y-1.5">
