@@ -1,0 +1,20 @@
+# Rappel de pilule Gaia : appelle la route toutes les 10 minutes (heure UTC ;
+# la route compare elle-même avec l'heure de Paris). GitHub peut décaler un
+# passage de quelques minutes. Nécessite le secret de dépôt CRON_SECRET
+# (même valeur que la variable Vercel).
+name: Rappel pilule
+
+on:
+  schedule:
+    - cron: '*/10 * * * *'
+  workflow_dispatch:
+
+jobs:
+  rappel:
+    runs-on: ubuntu-latest
+    timeout-minutes: 2
+    steps:
+      - name: Appeler Gaia
+        run: |
+          curl -fsS -H "Authorization: Bearer ${{ secrets.CRON_SECRET }}" \
+            https://gaia-virid-alpha.vercel.app/api/cron/rappel-pilule

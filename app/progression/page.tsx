@@ -1,4 +1,5 @@
 import { format, parseISO } from 'date-fns'
+import { sansPhases } from '@/lib/mode'
 import { fr } from 'date-fns/locale'
 import { redirect } from 'next/navigation'
 import { designPhaseAffichage } from '@/lib/data/phases-design'
@@ -44,7 +45,7 @@ export default async function PageProgression() {
   ])
 
   const mode = prefs?.mode_utilisateur ?? DEFAULT_MODE_UTILISATEUR
-  const sansSuivi = mode === 'sans_cycle'
+  const sansSuivi = sansPhases(mode)
 
   let phase: Phase = 'folliculaire'
   if (!sansSuivi && effectiveStart) {

@@ -1,4 +1,5 @@
 import { redirect } from 'next/navigation'
+import { sansPhases } from '@/lib/mode'
 import { creerClientServeur } from '@/lib/supabase-server'
 import { getUserPreferences, initUserPreferences } from '@/lib/db/parametres'
 import { getMacroProfile } from '@/lib/db/macro-profiles'
@@ -46,7 +47,7 @@ export default async function PageParametres({ searchParams }: PageParametresPro
     <div className="min-h-screen bg-[#F8F7FF] dark:bg-gray-950">
       <Nav
         phase={null}
-        sansCycle={prefs.mode_utilisateur === 'sans_cycle'}
+        sansCycle={sansPhases(prefs.mode_utilisateur)}
         prenom={prenom}
       />
       <div className="mx-auto max-w-7xl px-4 py-6 pb-24 sm:px-6">

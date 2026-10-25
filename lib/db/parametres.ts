@@ -24,7 +24,7 @@ function mapPrefs(row: Record<string, unknown>): UserPreferences {
   return {
     ...r,
     mode_utilisateur:
-      r.mode_utilisateur === 'sans_cycle' ? 'sans_cycle' : DEFAULT_MODE_UTILISATEUR,
+      r.mode_utilisateur === 'sans_cycle' || r.mode_utilisateur === 'sans_regles' ? r.mode_utilisateur : DEFAULT_MODE_UTILISATEUR,
     google_calendar_enabled: r.google_calendar_enabled !== false,
     repas_jour_accueil: r.repas_jour_accueil !== false,
     suivi_calorique: r.suivi_calorique !== false,

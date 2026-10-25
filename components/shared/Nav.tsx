@@ -1,6 +1,7 @@
 'use client'
 
 import Link from 'next/link'
+import { modeDepuis } from '@/lib/mode'
 import { usePathname, useRouter } from 'next/navigation'
 import { useTheme } from 'next-themes'
 import { useEffect, useState } from 'react'
@@ -61,7 +62,7 @@ export function Nav({ phase, sansCycle, prenom }: NavProps) {
       const { data } = await supabase.from('user_preferences').select('mode_utilisateur').eq('user_id', user.id).maybeSingle()
       if (annule || !data) return
       const m = data.mode_utilisateur
-      if (m === 'sans_cycle' || m === 'cycle') setMode(m)
+      setMode(modeDepuis(m))
     }
     void chargerMode()
     const onPrefs = () => void chargerMode()

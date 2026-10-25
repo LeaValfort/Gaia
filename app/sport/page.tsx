@@ -1,6 +1,7 @@
 'use client'
 
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
+import { sansPhases } from '@/lib/mode'
 import { format, parseISO } from 'date-fns'
 import { toast } from 'sonner'
 import { supabase } from '@/lib/supabase'
@@ -190,7 +191,7 @@ export default function SportPage() {
           console.warn('seance_profils indisponible:', errProfils.message)
         }
 
-        const sc = prefs?.mode_utilisateur === 'sans_cycle'
+        const sc = sansPhases(prefs?.mode_utilisateur as string | undefined)
         setSansCycle(sc)
 
         if (sc) {

@@ -1,4 +1,4 @@
-import { format } from 'date-fns'
+import { format, subMonths } from 'date-fns'
 import { Settings } from 'lucide-react'
 import Link from 'next/link'
 import { redirect } from 'next/navigation'
@@ -13,6 +13,7 @@ import { genererNouveauxConseilsSiNecessaire } from '@/lib/conseils-ia'
 import { getConseilsPhaseDuJour } from '@/lib/db/conseils'
 import { CycleCalendar } from '@/components/cycle/CycleCalendar'
 import { SidebarCycle } from '@/components/cycle/SidebarCycle'
+import { VueSansRegles } from '@/components/cycle/sans-regles/VueSansRegles'
 import { Button } from '@/components/ui/button'
 import {
   detecterRetardDepuisAncre,
@@ -24,7 +25,7 @@ import {
 import { BADGE_PHASE_CYCLE } from '@/lib/cycle-affichage'
 import { PHASES_DESIGN } from '@/lib/data/phases-design'
 import { getDonneesCyclePourAffichage } from '@/lib/db/cycles'
-import { getDailyLogsParMois } from '@/lib/db/dailyLog'
+import { getDailyLogParDate, getDailyLogsParMois } from '@/lib/db/dailyLog'
 import { getUserPreferences } from '@/lib/db/parametres'
 import { creerClientServeur } from '@/lib/supabase-server'
 import { cn } from '@/lib/utils'
@@ -46,6 +47,32 @@ export default async function PageCycle({ searchParams }: PageProps) {
   const {
     data: { user },
   } = await supabase.auth.getUser()
+
+  // Contraception sans règles : page dédiée, sans phases ni prédictions.
+  if (prefsMode?.mode_utilisateur === 'sans_regles' && user) {
+    const auj = new Date()
+    const avant = subMonths(auj, 1)
+    const [logsMois, logsAvant, logDuJour] = await Promise.all([
+      getDailyLogsParMois(auj.getFullYear(), auj.getMonth() + 1),
+      getDailyLogsParMois(avant.getFullYear(), avant.getMonth() + 1),
+      getDailyLogParDate(format(auj, 'yyyy-MM-dd')),
+    ])
+    const prenomSr = user.user_metadata?.full_name?.trim().split(/\s+/)[0] ?? user.email?.split('@')[0] ?? 'toi'
+    return (
+      <div className="min-h-screen bg-[#F8F7FF] dark:bg-gray-950">
+        <Nav phase={null} sansCycle prenom={prenomSr} />
+        <div className="mx-auto flex max-w-7xl flex-col gap-6 px-4 py-6 pb-24 sm:px-6">
+          <PageHeader title="Mon suivi" />
+          <VueSansRegles
+            userId={user.id}
+            date={format(auj, 'yyyy-MM-dd')}
+            logDuJour={logDuJour}
+            logsRecents={[...Object.values(logsAvant), ...Object.values(logsMois)]}
+          />
+        </div>
+      </div>
+    )
+  }
 
   const params = await searchParams
   const moisActuel = params.mois ?? format(new Date(), 'yyyy-MM')

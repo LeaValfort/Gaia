@@ -1,4 +1,5 @@
 import { redirect } from 'next/navigation'
+import { sansPhases } from '@/lib/mode'
 import { parseISO } from 'date-fns'
 import { creerClientServeur } from '@/lib/supabase-server'
 import { AlimentationLayout } from '@/components/alimentation/AlimentationLayout'
@@ -46,7 +47,7 @@ export default async function PageAlimentation() {
 
   const { prefs, stats, effectiveStart, cycleLength } = await getDonneesCyclePourAffichage()
   const mode = prefs?.mode_utilisateur ?? DEFAULT_MODE_UTILISATEUR
-  const sansSuivi = mode === 'sans_cycle'
+  const sansSuivi = sansPhases(mode)
   const suiviCalorique = prefs?.suivi_calorique !== false
 
   const [intakesJour, macroProfil, entreesPlanning, overridesJour, ...variantesParType] = await Promise.all([

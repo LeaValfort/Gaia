@@ -1,4 +1,6 @@
 import Link from 'next/link'
+import { CartePilule } from '@/components/cycle/sans-regles/CartePilule'
+import { sansPhases } from '@/lib/mode'
 import { RdvSanteProches } from '@/components/accueil/RdvSanteProches'
 import { RepasPrevusDuJour } from '@/components/accueil/RepasPrevusDuJour'
 import { getMealPlanJour } from '@/lib/db/mealplan'
@@ -119,7 +121,7 @@ export default async function PageAujourdhui({
 
   const { prefs, stats, effectiveStart, cycleLength } = donnees
   const mode = prefs?.mode_utilisateur ?? DEFAULT_MODE_UTILISATEUR
-  const sansSuivi = mode === 'sans_cycle'
+  const sansSuivi = sansPhases(mode)
   const suiviCalorique = prefs?.suivi_calorique !== false
   const typeJournee = getTypeJournee(aujourdhui)
 
@@ -209,6 +211,7 @@ export default async function PageAujourdhui({
             />
           ) : null}
           <SeanceDuJour phase={phaseHeader} sansCycle={sansSuivi} seances={seancesEffectives} />
+          {mode === 'sans_regles' && userId ? <CartePilule userId={userId} /> : null}
           <JournalDuJour
             phase={phaseHeader ?? 'folliculaire'}
             sansCycle={sansSuivi}

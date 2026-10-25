@@ -1,4 +1,5 @@
 import { addDays, format, parseISO } from 'date-fns'
+import { sansPhases } from '@/lib/mode'
 import { supabase } from '@/lib/supabase'
 import { getCycleDay, getPhaseForDay } from '@/lib/cycle'
 import { procheFromRow } from '@/lib/proches-map'
@@ -69,7 +70,7 @@ export async function fetchCycleContextProches(): Promise<CycleContextProches | 
     .eq('user_id', user.id)
     .maybeSingle()
 
-  const sansCycle = prefs?.mode_utilisateur === 'sans_cycle'
+  const sansCycle = sansPhases(prefs?.mode_utilisateur as string | undefined)
   const prenom = prenomAffichageDepuisUser(user)
   if (sansCycle || !prefs?.last_cycle_start) {
     return {

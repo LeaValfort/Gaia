@@ -829,7 +829,13 @@ export type Theme = 'light' | 'dark' | 'system'
 
 /** Préférences et paramètres de l'utilisatrice */
 /** Mode d’affichage : suivi cycle complet ou nutrition générale sans cycle */
-export type ModeUtilisateur = 'cycle' | 'sans_cycle'
+/**
+ * - cycle : suivi complet par phase ;
+ * - sans_regles : contraception hormonale sans règles (pilule en continu, stérilet hormonal…) :
+ *   journal, spotting et pilule, mais pas de phases ni de prédictions ;
+ * - sans_cycle : pas de suivi de cycle du tout.
+ */
+export type ModeUtilisateur = 'cycle' | 'sans_cycle' | 'sans_regles'
 
 /**
  * Pourcentage d'ajustement (+/-) appliqué selon la phase du cycle, réglable
@@ -1477,4 +1483,11 @@ export interface SeanceGeneree {
   blocs: BlocNatation[]
   postures: PostureYoga[]
   lignes: LigneSeanceLibre[]
+}
+
+/** Rappel de pilule (table pilule_reglages). */
+export interface ReglagesPilule {
+  rappel_actif: boolean
+  /** HH:MM, heure de Paris. */
+  heure: string
 }

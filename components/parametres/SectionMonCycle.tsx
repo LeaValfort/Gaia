@@ -17,7 +17,6 @@ import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover'
 import { Slider } from '@/components/ui/slider'
-import { Switch } from '@/components/ui/switch'
 import { getCycleDay, getInfosPhase, getPhaseForDay } from '@/lib/cycle'
 import { cn } from '@/lib/utils'
 import type { ModeUtilisateur, Phase, UserPreferences } from '@/types'
@@ -26,6 +25,16 @@ interface SectionMonCycleProps {
   prefs: UserPreferences
   onUpdate: (updates: Partial<Omit<UserPreferences, 'id' | 'user_id'>>) => Promise<boolean>
 }
+
+const MODES: { id: ModeUtilisateur; label: string; aide: string }[] = [
+  { id: 'cycle', label: '🌙 Avec mes règles', aide: 'Recommandations adaptées à ta phase du cycle (sport, alimentation, calendrier).' },
+  {
+    id: 'sans_regles',
+    label: '💊 Contraception sans règles',
+    aide: 'Pilule en continu, stérilet hormonal, implant… : pas de phases ni de prédictions, mais journal, spotting et rappel de pilule sur la page Cycle.',
+  },
+  { id: 'sans_cycle', label: 'Sans suivi de cycle', aide: 'Nutrition et sport généraux, sans page Cycle (ménopause, grossesse…).' },
+]
 
 export function SectionMonCycle({ prefs, onUpdate }: SectionMonCycleProps) {
   const avecCycle = prefs.mode_utilisateur === 'cycle'
@@ -48,8 +57,7 @@ export function SectionMonCycle({ prefs, onUpdate }: SectionMonCycleProps) {
     ? format(debut, 'd MMMM yyyy', { locale: fr })
     : null
 
-  function demanderChangementMode(coche: boolean) {
-    const mode: ModeUtilisateur = coche ? 'cycle' : 'sans_cycle'
+  function demanderChangementMode(mode: ModeUtilisateur) {
     if (mode === prefs.mode_utilisateur) return
     setModeEnAttente(mode)
     setDialogOuvert(true)
@@ -72,20 +80,27 @@ export function SectionMonCycle({ prefs, onUpdate }: SectionMonCycleProps) {
 
   return (
     <>
-      <div className="flex items-center justify-between gap-4 py-1">
-        <Label htmlFor="toggle-cycle" className="text-sm font-medium">
-          Avec cycle menstruel
-        </Label>
-        <Switch
-          id="toggle-cycle"
-          checked={avecCycle}
-          onCheckedChange={demanderChangementMode}
-        />
+      <div className="space-y-2 py-1">
+        <p className="text-sm font-medium">Mon suivi</p>
+        <div className="flex flex-wrap gap-1.5" role="group" aria-label="Mode de suivi">
+          {MODES.map((m) => (
+            <button
+              key={m.id}
+              type="button"
+              onClick={() => demanderChangementMode(m.id)}
+              className={cn(
+                'rounded-full border px-3 py-1.5 text-xs font-medium transition-colors',
+                prefs.mode_utilisateur === m.id
+                  ? 'border-violet-500 bg-violet-600 text-white'
+                  : 'border-neutral-200 text-neutral-700 hover:border-neutral-300 dark:border-neutral-700 dark:text-neutral-200'
+              )}
+            >
+              {m.label}
+            </button>
+          ))}
+        </div>
+        <p className="text-xs text-muted-foreground">{MODES.find((m) => m.id === prefs.mode_utilisateur)?.aide}</p>
       </div>
-
-      {!avecCycle ? (
-        <p className="text-sm text-muted-foreground">Mode sans cycle — nutrition générale</p>
-      ) : null}
 
       {avecCycle && infosPhase && jourDuCycle ? (
         <div className="flex flex-wrap items-center gap-2 text-sm">

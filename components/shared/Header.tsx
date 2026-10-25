@@ -1,6 +1,7 @@
 'use client'
 
 import Link from 'next/link'
+import { modeDepuis } from '@/lib/mode'
 import { usePathname } from 'next/navigation'
 import { useTheme } from 'next-themes'
 import { useEffect, useState } from 'react'
@@ -39,7 +40,7 @@ export function Header() {
         .maybeSingle()
       if (annule || !data) return
       const m = data.mode_utilisateur
-      if (m === 'sans_cycle' || m === 'cycle') setMode(m)
+      setMode(modeDepuis(m))
     }
     void chargerMode()
     const onPrefs = () => { void chargerMode() }
