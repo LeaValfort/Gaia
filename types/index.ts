@@ -429,6 +429,8 @@ export interface RecetteGeneree {
   ingredients_approximes: string[]
   /** Pourquoi ce plat est adapté à la phase / au profil (1-2 phrases) */
   raison: string
+  /** Reprise de la bibliothèque commune (pas générée à l'instant). */
+  depuis_bibliotheque?: boolean
 }
 
 /** Saisie journalière d’un créneau repas (macros manuelles, hors recette du planning) */

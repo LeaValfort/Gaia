@@ -2,6 +2,9 @@
 // l'IA, macros calculées via CIQUAL (Chantier 5, refonte — remplace les macros inventées par l'IA).
 
 import { NextRequest, NextResponse } from 'next/server'
+
+// Groq puis, en secours, Claude : laisser le temps aux deux tentatives.
+export const maxDuration = 60
 import { genererRecettes } from '@/lib/ia/generation-recette'
 import { getSanteProfil } from '@/lib/db/sante'
 import { consigneRecettesConditions } from '@/lib/data/conditions-sante'
@@ -11,6 +14,8 @@ import type { RecetteBase } from '@/lib/ia/recette-brute'
 import { calculerMacrosRecette, ajusterPourCalories, versNutrition100g, versMacrosParPortion } from '@/lib/nutrition/calcul-recette'
 import { objectifsRepasDefaut } from '@/lib/repartitionRepas'
 import { getRecettes } from '@/lib/db/recettes'
+import { ajouterRecettesCommunes, chercherRecettesCommunes } from '@/lib/db/recettes-communes'
+import { recetteConvient, tirerAuHasard } from '@/lib/recettes/bibliotheque'
 import { creerClientServeur } from '@/lib/supabase-server'
 import type { Phase, Recipe, RecetteGeneree, TypeJournee, TypeRepas } from '@/types'
 
@@ -30,7 +35,7 @@ function filtrerRecettesPersonnelles(recettes: Recipe[], query: string, phase: P
 
 /** Calcule les macros d'une recette générée, ajuste les quantités sur l'objectif calorique du
  *  créneau, puis reconstruit la recette finale avec ingrédients (et macros) à jour. */
-function finaliserRecette(base: RecetteBase, typeRepas: TypeRepas, objectifCaloriesPortion: number): RecetteGeneree {
+function finaliserRecette(base: RecetteBase, typeRepas: TypeRepas, objectifCaloriesPortion: number, depuisBibliotheque = false): RecetteGeneree {
   const premierCalcul = calculerMacrosRecette(base.ingredients_structures)
   const ingredientsAjustes = ajusterPourCalories(
     base.ingredients_structures,
@@ -58,8 +63,12 @@ function finaliserRecette(base: RecetteBase, typeRepas: TypeRepas, objectifCalor
     ingredients_non_reconnus: resultat.ingredientsNonReconnus,
     ingredients_approximes: resultat.ingredientsApproximes,
     raison: base.raison,
+    depuis_bibliotheque: depuisBibliotheque,
   }
 }
+
+/** Nombre de recettes proposées par recherche (hors batch cooking). */
+const NOMBRE_PROPOSITIONS = 6
 
 export async function GET(request: NextRequest) {
   const { searchParams } = new URL(request.url)
@@ -89,26 +98,44 @@ export async function GET(request: NextRequest) {
     const perso = filtrerRecettesPersonnelles(toutesRecettes, query, phase)
 
     const objectif = objectifsRepasDefaut(typeJournee, typeRepas)
-    const bases = avecIA
-      ? await genererRecettes({
-          phase,
-          typeJournee,
-          typeRepas,
-          objectif,
-          allergies,
-          tempsMax,
-          recherche: query || undefined,
-          consigneSante: [
-            consigneRecettesConditions(profilSante?.conditions ?? []),
-            consigneSaison(new Date()),
-            liees ? CONSIGNE_RECETTES_LIEES : '',
-          ]
-            .filter(Boolean)
-            .join('\n'),
-          nombre: liees ? 4 : undefined,
-        })
-      : []
-    const generees = bases.map((b) => finaliserRecette(b, typeRepas, objectif.calories))
+    const conditions = profilSante?.conditions ?? []
+    const mois = new Date().getMonth() + 1
+
+    // 1. Bibliothèque commune d'abord (sauf batch cooking : les recettes doivent être liées).
+    const communes =
+      avecIA && !liees
+        ? (await chercherRecettesCommunes(supabase, { typeRepas, phase, tempsMax, mois })).filter((r) =>
+            recetteConvient(r, { allergies, conditions, recherche: query })
+          )
+        : []
+    const reprises = tirerAuHasard(communes, NOMBRE_PROPOSITIONS)
+
+    // 2. L'IA complète seulement ce qui manque, sans recréer un plat existant.
+    const nombre = liees ? 4 : NOMBRE_PROPOSITIONS - reprises.length
+    const nouvelles =
+      avecIA && nombre > 0
+        ? await genererRecettes({
+            phase,
+            typeJournee,
+            typeRepas,
+            objectif,
+            allergies,
+            tempsMax,
+            recherche: query || undefined,
+            consigneSante: [consigneRecettesConditions(conditions), consigneSaison(new Date()), liees ? CONSIGNE_RECETTES_LIEES : '']
+              .filter(Boolean)
+              .join('\n'),
+            nombre,
+            aEviter: communes.map((r) => r.nom),
+          })
+        : []
+    // 3. Les nouvelles recettes rejoignent la bibliothèque, pour toutes.
+    await ajouterRecettesCommunes(supabase, user.id, nouvelles, { typeRepas, mois, conditions, lieeBatch: liees })
+
+    const generees = [
+      ...reprises.map((b) => finaliserRecette(b, typeRepas, objectif.calories, true)),
+      ...nouvelles.map((b) => finaliserRecette(b, typeRepas, objectif.calories)),
+    ]
 
     return NextResponse.json({ perso, generees })
   } catch (erreur) {

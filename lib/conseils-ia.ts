@@ -1,6 +1,6 @@
 'use server'
 
-import Anthropic from '@anthropic-ai/sdk'
+import { demanderIA, extraireJson } from '@/lib/ia/llm'
 import { getUserPreferences, updateUserPreferences } from '@/lib/db/parametres'
 import { getSources } from '@/lib/db/sources'
 import { getTousLesConseils, insererConseils } from '@/lib/db/conseils'
@@ -68,19 +68,10 @@ export async function genererNouveauxConseilsSiNecessaire(): Promise<void> {
       ;(existantsParCle[cle] ??= []).push(c.texte)
     }
 
-    const client = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY })
-    const message = await client.messages.create({
-      model: 'claude-haiku-4-5-20251001',
-      max_tokens: 2048,
-      messages: [{ role: 'user', content: construirePrompt(sources, existantsParCle) }],
+    const genes = await demanderIA(construirePrompt(sources, existantsParCle), 2048, (texte) => {
+      const j = extraireJson(texte, 'tableau')
+      return Array.isArray(j) && j.length ? (j as ConseilGenere[]) : null
     })
-
-    const contenu = message.content[0]
-    if (contenu.type !== 'text') throw new Error('Réponse inattendue de Claude')
-    const jsonMatch = contenu.text.match(/\[[\s\S]*\]/)
-    if (!jsonMatch) throw new Error('Pas de JSON dans la réponse')
-
-    const genes = JSON.parse(jsonMatch[0]) as ConseilGenere[]
     const sourceIdParTitre = new Map(sources.map((s) => [s.titre, s.id]))
 
     const lignes = genes

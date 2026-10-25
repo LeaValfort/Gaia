@@ -1,4 +1,4 @@
-import Anthropic from '@anthropic-ai/sdk'
+import { demanderIA, extraireJson } from '@/lib/ia/llm'
 import type { ConservationBatch, DerouleBatch, EtapeBatch, Recipe } from '@/types'
 
 /**
@@ -66,18 +66,8 @@ export function parseDeroule(raw: unknown): DerouleBatch | null {
 
 export async function genererDerouleBatch(recettes: Recipe[]): Promise<DerouleBatch | null> {
   try {
-    const client = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY })
-    const message = await client.messages.create({
-      model: 'claude-haiku-4-5-20251001',
-      // Jusqu'à 12 recettes : assez de place pour ne pas couper le JSON en route.
-      max_tokens: 8192,
-      messages: [{ role: 'user', content: construirePrompt(recettes) }],
-    })
-    const contenu = message.content[0]
-    if (contenu.type !== 'text') throw new Error('Type de réponse inattendu')
-    const json = contenu.text.match(/\{[\s\S]*\}/)
-    if (!json) throw new Error('Pas de JSON dans la réponse')
-    return parseDeroule(JSON.parse(json[0]))
+    // Jusqu'à 12 recettes : assez de place pour ne pas couper le JSON en route.
+    return await demanderIA(construirePrompt(recettes), 8192, (texte) => parseDeroule(extraireJson(texte, 'objet')))
   } catch (erreur) {
     const e = erreur as { status?: number; message?: string; error?: unknown }
     console.error('Erreur genererDerouleBatch:', JSON.stringify({ status: e?.status, message: e?.message, body: e?.error }))

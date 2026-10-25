@@ -25,14 +25,16 @@ interface BadgesRecetteProps {
   onToggleFavori?: () => void
   /** Ingrédients de la recette : badge « de saison » s'ils contiennent un produit du mois. */
   ingredients?: string[]
+  /** Recette reprise de la bibliothèque commune. */
+  bibliotheque?: boolean
   className?: string
 }
 
-export function BadgesRecette({ tempsMin, nutrition100g, favori, onToggleFavori, ingredients, className }: BadgesRecetteProps) {
+export function BadgesRecette({ tempsMin, nutrition100g, favori, onToggleFavori, ingredients, bibliotheque, className }: BadgesRecetteProps) {
   const nutriScore = nutrition100g ? calculerNutriScore(nutrition100g) : null
   const saison = ingredients ? ingredientsDeSaison(ingredients, new Date()) : []
 
-  if (!tempsMin && !nutriScore && !onToggleFavori && !saison.length) return null
+  if (!tempsMin && !nutriScore && !onToggleFavori && !saison.length && !bibliotheque) return null
 
   return (
     <div className={cn('flex items-center gap-1.5', className)}>
@@ -48,6 +50,15 @@ export function BadgesRecette({ tempsMin, nutrition100g, favori, onToggleFavori,
           className="inline-flex items-center rounded-full bg-green-100 px-1.5 py-0.5 text-[10px] font-medium text-green-800 dark:bg-green-900/40 dark:text-green-200"
         >
           🌱 De saison
+        </span>
+      ) : null}
+
+      {bibliotheque ? (
+        <span
+          title="Recette déjà créée, reprise de la bibliothèque commune de Gaia"
+          className="inline-flex items-center rounded-full bg-sky-100 px-1.5 py-0.5 text-[10px] font-medium text-sky-800 dark:bg-sky-900/40 dark:text-sky-200"
+        >
+          📚 Bibliothèque
         </span>
       ) : null}
 

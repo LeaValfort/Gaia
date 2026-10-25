@@ -3,7 +3,7 @@
 // L'IA reçoit l'objectif macro du créneau (typeRepas) pour proposer des proportions réalistes ;
 // les quantités finales sont ensuite ajustées précisément sur les calories cibles.
 
-import Anthropic from '@anthropic-ai/sdk'
+import { demanderIA, extraireJson } from '@/lib/ia/llm'
 import { SYNONYMES_CIQUAL } from '@/lib/data/ciqual-synonymes'
 import { versRecetteBase, type RecetteBase, type RecetteBrute } from '@/lib/ia/recette-brute'
 import { ALIMENTS_STARS } from '@/lib/nutrition'
@@ -28,6 +28,8 @@ export interface ParametresGeneration {
   nombre?: number
   /** Consigne liée au profil santé (thyroïde, SOPK…), déjà rédigée ; vide si aucun. */
   consigneSante?: string
+  /** Plats déjà proposés (bibliothèque commune) : à ne pas recréer. */
+  aEviter?: string[]
 }
 
 const LABEL_REPAS: Record<TypeRepas, string> = {
@@ -61,6 +63,7 @@ Allergies / intolérances à éviter absolument : ${allergies}
 Temps de préparation maximum : ${params.tempsMax} minutes
 ${params.consigneSante ?? ''}
 ${recherche ? `Doit inclure ou s'inspirer de : "${recherche}"` : ''}
+${params.aEviter?.length ? `Ces plats existent déjà, propose des plats DIFFÉRENTS : ${params.aEviter.slice(0, 60).join(' ; ')}` : ''}
 
 Propose exactement ${nombre} recettes complètes, adaptées à ce créneau, cette phase et cet objectif.
 Choisis des proportions d'ingrédients réalistes pour t'approcher de l'objectif donné (ce n'est pas toi
@@ -102,23 +105,15 @@ Réponds UNIQUEMENT avec un tableau JSON valide, sans texte avant ni après, au 
  *  Ne lève jamais : retourne [] en cas d'échec. */
 export async function genererRecettes(params: ParametresGeneration): Promise<RecetteBase[]> {
   try {
-    const client = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY })
-    const message = await client.messages.create({
-      model: 'claude-haiku-4-5-20251001',
-      max_tokens: 6144,
-      messages: [{ role: 'user', content: construirePrompt(params) }],
+    // Réponse jugée illisible (→ fournisseur suivant) si aucune recette valide n'en sort.
+    return await demanderIA(construirePrompt(params), 6144, (texte) => {
+      const brutes = extraireJson(texte, 'tableau')
+      if (!Array.isArray(brutes)) return null
+      const recettes = (brutes as RecetteBrute[])
+        .map((b) => versRecetteBase(b, params.phase))
+        .filter((r): r is RecetteBase => r !== null)
+      return recettes.length ? recettes : null
     })
-
-    const contenu = message.content[0]
-    if (contenu.type !== 'text') throw new Error('Type de réponse inattendu')
-
-    const jsonMatch = contenu.text.match(/\[[\s\S]*\]/)
-    if (!jsonMatch) throw new Error('Pas de JSON dans la réponse')
-
-    const brutes = JSON.parse(jsonMatch[0]) as RecetteBrute[]
-    return brutes
-      .map((b) => versRecetteBase(b, params.phase))
-      .filter((r): r is RecetteBase => r !== null)
   } catch (erreur) {
     // Log à plat (jamais un objet imbriqué) pour que le détail exact soit lisible
     // directement dans les logs Vercel, sans avoir à déplier un objet tronqué.

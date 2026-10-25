@@ -1,4 +1,4 @@
-import Anthropic from '@anthropic-ai/sdk'
+import { demanderIA, extraireJson } from '@/lib/ia/llm'
 import { EXERCICES } from '@/lib/data/exercises'
 import { PHASES_DESIGN } from '@/lib/data/phases-design'
 import { POSTURES_CATALOGUE } from '@/lib/data/postures-catalogue'
@@ -101,17 +101,7 @@ export function parseSeanceGeneree(raw: unknown): SeanceGeneree | null {
 
 export async function genererSeance(c: CriteresSeance): Promise<SeanceGeneree | null> {
   try {
-    const client = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY })
-    const message = await client.messages.create({
-      model: 'claude-haiku-4-5-20251001',
-      max_tokens: 4096,
-      messages: [{ role: 'user', content: construirePrompt(c) }],
-    })
-    const contenu = message.content[0]
-    if (contenu.type !== 'text') throw new Error('Type de réponse inattendu')
-    const json = contenu.text.match(/\{[\s\S]*\}/)
-    if (!json) throw new Error('Pas de JSON dans la réponse')
-    return parseSeanceGeneree(JSON.parse(json[0]))
+    return await demanderIA(construirePrompt(c), 4096, (texte) => parseSeanceGeneree(extraireJson(texte, 'objet')))
   } catch (erreur) {
     const e = erreur as { status?: number; message?: string }
     console.error('Erreur genererSeance:', JSON.stringify({ status: e?.status, message: e?.message }))
