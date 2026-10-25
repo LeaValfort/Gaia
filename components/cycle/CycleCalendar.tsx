@@ -232,7 +232,7 @@ export function CycleCalendar({
                     />
                   ) : null}
                   {/* Spotting : saignement noté hors règles, sans démarrer de cycle */}
-                  {dansMois && logsParDate[dateStr]?.flow_intensity && phaseJour !== 'menstruation' ? (
+                  {dansMois && logsParDate[dateStr]?.flow_intensity && (phaseJour !== 'menstruation' || logsParDate[dateStr]?.flow_intensity === 'Spotting') ? (
                     <Droplet
                       className="pointer-events-none absolute left-1 top-1 z-[1] size-2.5 text-rose-500 md:size-3"
                       fill="currentColor"

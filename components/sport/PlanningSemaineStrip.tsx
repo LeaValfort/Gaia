@@ -1,6 +1,6 @@
 'use client'
 
-import { addDays, format, isSameDay, startOfWeek } from 'date-fns'
+import { addDays, format, isAfter, isSameDay, startOfDay, startOfWeek } from 'date-fns'
 import { fr } from 'date-fns/locale'
 import { entreesActivesPourDate } from '@/lib/planning-sport-recurrence'
 import { CLES_SEMAINE, emojiEtTypeCourt, JOURS_ABREGE } from '@/lib/sport-page'
@@ -9,9 +9,14 @@ import { cn } from '@/lib/utils'
 
 interface PlanningSemaineStripProps {
   entrees: PlanningSportEntry[]
+  /** Jour de la séance en cours de saisie (yyyy-MM-dd). */
+  dateSelectionnee: string
+  /** Toucher un jour passé (ou aujourd'hui) pour logger sa séance. */
+  onChoisirJour: (jour: Date) => void
 }
 
-export function PlanningSemaineStrip({ entrees }: PlanningSemaineStripProps) {
+/** Semaine en cours ; chaque jour jusqu'à aujourd'hui est cliquable pour logger sa séance. */
+export function PlanningSemaineStrip({ entrees, dateSelectionnee, onChoisirJour }: PlanningSemaineStripProps) {
   const auj = new Date()
   const debutSemaine = startOfWeek(auj, { weekStartsOn: 1 })
 
@@ -25,17 +30,24 @@ export function PlanningSemaineStrip({ entrees }: PlanningSemaineStripProps) {
           const repos = seancesJour.length === 0
           const { emoji, court } = repos ? { emoji: '😴', court: 'Repos' } : emojiEtTypeCourt(seancesJour[0].type_seance)
           const label = !repos && seancesJour.length > 1 ? `+${seancesJour.length}` : court
+          const futur = isAfter(startOfDay(dateJour), startOfDay(auj))
+          const choisi = format(dateJour, 'yyyy-MM-dd') === dateSelectionnee
 
           return (
-            <div
+            <button
+              type="button"
               key={cle}
+              disabled={futur}
+              onClick={() => onChoisirJour(dateJour)}
               title={format(dateJour, 'EEEE d MMMM', { locale: fr })}
+              aria-pressed={choisi}
               className={cn(
-                'flex shrink-0 flex-col items-center gap-0.5 rounded-xl border px-3 py-2 text-center',
+                'flex shrink-0 flex-col items-center gap-0.5 rounded-xl border px-3 py-2 text-center transition-colors disabled:cursor-default',
                 estAuj
                   ? 'border-amber-400 bg-amber-50 dark:border-amber-600 dark:bg-amber-950/40'
-                  : 'border-neutral-200 bg-white dark:border-neutral-800 dark:bg-neutral-900/80',
-                repos && !estAuj && 'opacity-45'
+                  : 'border-neutral-200 bg-white hover:bg-neutral-50 dark:border-neutral-800 dark:bg-neutral-900/80',
+                choisi && 'ring-2 ring-amber-500 ring-offset-1 dark:ring-offset-neutral-950',
+                (repos || futur) && !estAuj && !choisi && 'opacity-45'
               )}
             >
               <span className="text-base leading-none" aria-hidden>
@@ -54,7 +66,7 @@ export function PlanningSemaineStrip({ entrees }: PlanningSemaineStripProps) {
               >
                 {label}
               </span>
-            </div>
+            </button>
           )
         })}
       </div>

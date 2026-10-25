@@ -58,23 +58,14 @@ export function DailyLogSectionEtendue({ data, onChange, phase }: DailyLogSectio
         onChange={(v) => maj(data, onChange, 'symptoms', v)}
       />
 
-      {phase === 'menstruation' ? (
-        <PillsSelector
-          label="Flux"
-          options={FLOT_OPTIONS}
-          selected={data.flow_intensity ? [data.flow_intensity] : []}
-          onChange={(v) => maj(data, onChange, 'flow_intensity', depuisPillUnique(v))}
-          multiSelect={false}
-        />
-      ) : (
-        <PillsSelector
-          label="Saignement / spotting (ne démarre pas de cycle)"
-          options={SAIGNEMENT_HORS_REGLES_OPTIONS}
-          selected={data.flow_intensity ? [data.flow_intensity] : []}
-          onChange={(v) => maj(data, onChange, 'flow_intensity', depuisPillUnique(v))}
-          multiSelect={false}
-        />
-      )}
+      {/* Toujours le spotting en plus du flux : la phase affichée est une prédiction, les règles peuvent être en retard. */}
+      <PillsSelector
+        label={phase === 'menstruation' ? 'Flux / spotting' : 'Saignement / spotting (ne démarre pas de cycle)'}
+        options={phase === 'menstruation' ? ['Spotting', ...FLOT_OPTIONS] : SAIGNEMENT_HORS_REGLES_OPTIONS}
+        selected={data.flow_intensity ? [data.flow_intensity] : []}
+        onChange={(v) => maj(data, onChange, 'flow_intensity', depuisPillUnique(v))}
+        multiSelect={false}
+      />
 
       <PillsSelector
         label="Libido"

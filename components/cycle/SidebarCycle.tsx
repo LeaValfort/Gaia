@@ -4,6 +4,8 @@ import { format, parseISO } from 'date-fns'
 import { fr } from 'date-fns/locale'
 import { AlerteRetard } from '@/components/cycle/AlerteRetard'
 import { BoutonDebutRegles } from '@/components/cycle/BoutonDebutRegles'
+import { ReglesEnCours } from '@/components/cycle/ReglesEnCours'
+import { etatReglesAujourdhui } from '@/lib/cycle-regles'
 import { datePrevueProchainesReglesDepuisAncre } from '@/lib/cycle'
 import {
   labelRegulariteCycle,
@@ -53,6 +55,8 @@ export function SidebarCycle({
   const datePrevueLabel = format(datePrevue, 'd MMMM yyyy', { locale: fr })
 
   const historique = cycles.slice(0, 5)
+  // `cycles` est trié du plus récent au plus ancien.
+  const regles = etatReglesAujourdhui(cycles[0], new Date())
 
   return (
     <aside className="flex flex-col gap-5 lg:sticky lg:top-24">
@@ -63,6 +67,8 @@ export function SidebarCycle({
           onConfirmer={() => document.getElementById(ID_TRIGGER_DEBUT_REGLES)?.click()}
         />
       ) : null}
+
+      {regles ? <ReglesEnCours etat={regles} /> : null}
 
       <BoutonDebutRegles
         idTrigger={ID_TRIGGER_DEBUT_REGLES}

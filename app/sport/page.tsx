@@ -23,6 +23,7 @@ import { cartesSubstitutionJour } from '@/lib/sport/substitution-jour'
 import { BADGE_PHASE_CYCLE } from '@/lib/cycle-affichage'
 import { PHASES_DESIGN } from '@/lib/data/phases-design'
 import { getEntreesPlanning } from '@/lib/db/planning-sport-entries'
+import { entreesActivesPourDate } from '@/lib/planning-sport-recurrence'
 import { getActiviteParId } from '@/lib/db/modeles-seance'
 import type { SeanceHistorique } from '@/lib/db/seances-historique'
 import { getOverridesJour, setOverrideJour, supprimerOverrideJour } from '@/lib/db/planning-overrides'
@@ -54,6 +55,12 @@ function pourcentagesEffectifs(p: PourcentagesGaia | null | undefined): Pourcent
 }
 
 type FormSport = SportLoggerId | 'autre'
+
+/** Formulaire à ouvrir pour un type de séance planifiée (rien pour le repos). */
+function formPourType(t: TypePlanningJour | undefined): FormSport | null {
+  if (!t || t === 'repos') return null
+  return t === 'muscu_full' || t === 'muscu_upper' ? 'muscu' : t === 'yoga' || t === 'natation' ? t : 'autre'
+}
 
 export default function SportPage() {
   const [phaseAffichee, setPhaseAffichee] = useState<Phase | null>(null)
@@ -225,11 +232,23 @@ export default function SportPage() {
   )
   const typesJourEffectifs = useMemo(() => seancesEffectives.map((s) => s.type), [seancesEffectives])
   // Séance prévue aujourd'hui (hors repos) : ouverte d'office, sans la liste des autres sports.
-  const formPrevu = useMemo((): FormSport | null => {
-    const t = typesJourEffectifs.find((x) => x !== 'repos')
-    if (!t) return null
-    return t === 'muscu_full' || t === 'muscu_upper' ? 'muscu' : t === 'yoga' || t === 'natation' ? t : 'autre'
-  }, [typesJourEffectifs])
+  const formPrevu = useMemo(() => formPourType(typesJourEffectifs.find((x) => x !== 'repos')), [typesJourEffectifs])
+
+  /** Toucher un jour de la semaine : on logge sa séance prévue (ou on choisit le sport). */
+  function choisirJour(jour: Date) {
+    const iso = format(jour, 'yyyy-MM-dd')
+    setActiviteEditee(null)
+    setDateSeance(iso)
+    if (iso === today) {
+      setFormOuvert(null)
+      setVoirTousLesSports(false)
+      return
+    }
+    const form = formPourType(entreesActivesPourDate(entreesPlanning, jour)[0]?.type_seance)
+    setFormOuvert(form)
+    setVoirTousLesSports(!form)
+    if (form) remonterAuFormulaire()
+  }
   const formOuvert: FormSport | null = formChoisi ?? (voirTousLesSports ? null : formPrevu)
   const cartesSubstitution = useMemo(
     () => cartesSubstitutionJour(entreesResolues, overridesAuj),
@@ -329,7 +348,7 @@ export default function SportPage() {
 
         {!sansCycle && phaseAffichee ? <ConseilPhaseSport phase={phaseAffichee} /> : null}
 
-        <PlanningSemaineStrip entrees={entreesPlanning} />
+        <PlanningSemaineStrip entrees={entreesPlanning} dateSelectionnee={dateSeance} onChoisirJour={choisirJour} />
 
         <div className="flex flex-col gap-2">
           {cartesSubstitution.map((carte) => (
